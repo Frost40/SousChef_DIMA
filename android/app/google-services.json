@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "22755112532",
+    "project_id": "souschef-b25cd",
+    "storage_bucket": "souschef-b25cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:22755112532:android:d6e5e0a4363ff2d9659fc1",
+        "android_client_info": {
+          "package_name": "com.example.sous_chef"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFN0W16eq4096GpNUj7l6uv-AXqTeYTl4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
