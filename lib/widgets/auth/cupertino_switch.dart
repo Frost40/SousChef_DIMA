@@ -2,14 +2,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class CustomSwitch extends StatefulWidget {
-  const CustomSwitch({super.key});
+  final bool? initialValue;
+  final ValueChanged<bool>? onChanged;
+
+  const CustomSwitch({
+    super.key,
+    this.initialValue,
+    this.onChanged
+  });
 
   @override
   State<CustomSwitch> createState() => _CustomSwitchState();
 }
 
 class _CustomSwitchState extends State<CustomSwitch> {
-  bool _switchValue = true;
+  late bool _switchValue;
+
+  @override
+  void initState() {
+    super.initState();
+    // Se viene fornito un valore iniziale, usalo, altrimenti default a true
+    _switchValue = widget.initialValue ?? true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoSwitch(
@@ -19,6 +34,8 @@ class _CustomSwitchState extends State<CustomSwitch> {
         setState(() {
           _switchValue = value;
         });
+        // Se è stato fornito un callback onChanged, chiamalo
+        widget.onChanged?.call(value);
       },
     );
   }

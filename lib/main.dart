@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'sous_chef',
         theme: ThemeProvider().themeData,
-        home: LoginScreen(),
+        home: SignUpScreen(),
       ),
     );
   }

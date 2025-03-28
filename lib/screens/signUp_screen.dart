@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:sous_chef/widgets/cupertino_switch.dart';
+import 'package:sous_chef/widgets/auth/cupertino_switch.dart';
+import 'package:sous_chef/widgets/auth/password_field_signup.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/widgets/personalized_textfield.dart';
 
-class SignUpScreen extends StatelessWidget {
+import '../widgets/auth/animated_button.dart';
+import '../widgets/auth/shake_widget.dart';
+import '../widgets/auth/shake_widget_state.dart';
+
+class SignUpScreen extends StatefulWidget {
   static const String routeName = '/signup';
+
+  const SignUpScreen({super.key});
+
+  @override
+  _SignUpScreenState createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -13,8 +26,30 @@ class SignUpScreen extends StatelessWidget {
   final TextEditingController surnameController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  final TextEditingController restaurantNameController = TextEditingController();
 
-  SignUpScreen({super.key});
+  bool _isPasswordSixCharacters = false;
+  bool _isEmailWellFormatted = false;
+
+  final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
+
+  /*onPasswordChanged(String password) {
+    setState(() {
+      _isPasswordSixCharacters = false;
+      if (password.length >= 6) _isPasswordSixCharacters = true;
+    });
+  }
+
+  onEmailChange(String email) {
+    final emailRegex = RegExp(r'^.+@[a-zA-Z]+\.{1}[a-zA-Z]+(\.{0,1}[a-zA-Z]+)$');
+
+    setState(() {
+      _isEmailWellFormatted = false;
+      if (emailRegex.hasMatch(email)) _isEmailWellFormatted = true;
+    });
+  }*/
+
+  bool _isChef = false;
 
   @override
   Widget build(BuildContext context) {
@@ -29,45 +64,110 @@ class SignUpScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            // email field
-            PersonalizedTextField(controller: emailController, hintText: "Email", obscureText: false),
+            PersonalizedTextField(
+                controller: emailController,
+                hintText: "Email",
+                obscureText: false
+            ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            // password field
-            PersonalizedTextField(controller: passwordController, hintText: "Password", obscureText: true),
+            PasswordFieldSignup(
+                textEditingController: passwordController,
+                hintText: "Password",
+            ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            //confirm password field
-            PersonalizedTextField(controller: confirmPasswordController, hintText: "Confirm Password", obscureText: true),
+            PersonalizedTextField(
+                controller: confirmPasswordController,
+                hintText: "Confirm Password",
+                obscureText: true
+            ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            // Name field
-            PersonalizedTextField(controller: nameController, hintText: "Name", obscureText: false),
+            PersonalizedTextField(
+                controller: usernameController,
+                hintText: "Username",
+                obscureText: false
+            ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            // Surname field
-            PersonalizedTextField(controller: surnameController, hintText: "Surname", obscureText: true),
+            Row(
+                children: [
+                  Padding(
+                      padding: const EdgeInsets.only(left: 30.0),
+                      child: Text(
+                        'Registering as a chef',
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 16, // Puoi regolare questo valore
+                            fontWeight: FontWeight.w400 // Opzionale, per renderlo leggermente più grassetto
+                        ))
+                  ),
+                  const Expanded(child: SizedBox()), // Spinge lo switch a destra
+                  Padding(
+                      padding: const EdgeInsets.only(right: 30.0),
+                      child: CustomSwitch(
+                        initialValue: _isChef,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _isChef = value;
+                          });
+                        },
+                      )
+                  )
+                ]
+            ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            // Username field
-            PersonalizedTextField(controller: usernameController, hintText: "Username", obscureText: false),
+            // Conditional TextField for restaurant name
+            if (_isChef)
+              PersonalizedTextField(
+                  controller: restaurantNameController,
+                  hintText: "Restaurant Name",
+                  obscureText: false
+              ),
 
-            const SizedBox(height: 20), // Add space after field
+            const SizedBox(height: 20),
 
-            //Switch
-            CustomSwitch(),
+            ShakeWidget(
+              key: _shakeKey,
+              shakeOffset: 10,
+              child: AnimatedButton(
+                onTap: () {
+                  if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+                    _shakeKey.currentState?.shake();
+                  } else {
+                    // Proceed with signup logic
+                    // Add your signup implementation here
+                  }
+                },
+                child: PersonalizedButton(
+                  text: "SignUp",
+                  onPressed: null, // We're handling the tap in AnimatedButton
+                ),
+              ),
+            ),
 
-            // login button
-            PersonalizedButton(text: "Sign Up", onPressed: (){})
+            const SizedBox(height: 20),
+
+            Padding(
+                padding: const EdgeInsets.only(left: 30.0),
+                child: Text(
+                    'Registering as a chef',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 16, // Puoi regolare questo valore
+                        fontWeight: FontWeight.w400 // Opzionale, per renderlo leggermente più grassetto
+                    ))
+            )
           ]
-
       ),
     );
   }
