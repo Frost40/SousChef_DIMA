@@ -41,6 +41,7 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
+  // icon positioning for tablet
   Widget _buildTabletLayout(BuildContext context) {
     return Row(
       children: [
@@ -68,6 +69,7 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
+  // icon positioning for mobile
   Widget _buildMobileLayout(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.0),
@@ -94,7 +96,9 @@ class LoginScreen extends StatelessWidget {
         leftIcon: Icons.email_rounded,
         iconColor: Theme.of(context).colorScheme.primary,
       ),
+
       const SizedBox(height: 20),
+
       AuthInputField(
         textEditingController: passwordController,
         hintText: "Password",
@@ -102,7 +106,9 @@ class LoginScreen extends StatelessWidget {
         leftIcon: Icons.key_rounded,
         iconColor: Theme.of(context).colorScheme.primary,
       ),
+
       const SizedBox(height: 20),
+
       ShakeWidget(
         key: _shakeKey,
         shakeOffset: 10,
@@ -112,6 +118,7 @@ class LoginScreen extends StatelessWidget {
               _shakeKey.currentState?.shake();
             } else {
               // Proceed with login logic
+              Navigator.of(context).pushReplacementNamed('/home');
             }
           },
           child: PersonalizedButton(
@@ -127,21 +134,26 @@ class LoginScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               // Navigate to sign up screen
+              Navigator.of(context).pushReplacementNamed('/signup');
             },
             child: Text("Sign up"),
           ),
         ],
       ),
+
       const SizedBox(height: 20),
       const DividerWithText(),
       const SizedBox(height: 20),
+
       CustomSocialButton(
         onTap: () {},
         icon: 'assets/facebook.svg',
         text: 'Join using Facebook',
         margin: 0,
       ),
+
       const SizedBox(height: 20),
+
       CustomSocialButton(
         onTap: () {},
         icon: 'assets/google.svg',

@@ -170,6 +170,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _shakeKey.currentState?.shake();
             } else {
               // Procedi con la logica di registrazione
+              Navigator.of(context).pushReplacementNamed('/home');
             }
           },
           child: PersonalizedButton(
