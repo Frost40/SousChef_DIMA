@@ -145,7 +145,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     _shakeKey.currentState?.shake();
                   } else {
                     // Proceed with signup logic
-                    // Add your signup implementation here
+                    // Add signup implementation here
+                    Navigator.of(context).pushReplacementNamed('/home');
                   }
                 },
                 child: PersonalizedButton(

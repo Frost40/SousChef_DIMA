@@ -65,7 +65,8 @@ class LoginScreen extends StatelessWidget {
                   _shakeKey.currentState?.shake();
                 } else {
                   // Proceed with login logic
-                  // Add your login implementation here
+                  // Add login implementation here
+                  Navigator.of(context).pushReplacementNamed('/home');
                 }
               },
               child: PersonalizedButton(
@@ -83,6 +84,8 @@ class LoginScreen extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   // Navigate to sign up screen
+                  Navigator.of(context).pushReplacementNamed('/signup');
+
                 },
                 child: Text("Sign up"),
               ),
