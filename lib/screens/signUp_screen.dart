@@ -18,7 +18,6 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
@@ -32,143 +31,154 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isEmailWellFormatted = false;
 
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
-
-  /*onPasswordChanged(String password) {
-    setState(() {
-      _isPasswordSixCharacters = false;
-      if (password.length >= 6) _isPasswordSixCharacters = true;
-    });
-  }
-
-  onEmailChange(String email) {
-    final emailRegex = RegExp(r'^.+@[a-zA-Z]+\.{1}[a-zA-Z]+(\.{0,1}[a-zA-Z]+)$');
-
-    setState(() {
-      _isEmailWellFormatted = false;
-      if (emailRegex.hasMatch(email)) _isEmailWellFormatted = true;
-    });
-  }*/
-
   bool _isChef = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final screenSize = MediaQuery.of(context).size;
+            final screenWidth = screenSize.width;
+            final screenHeight = screenSize.height;
+            final aspectRatio = screenWidth / screenHeight;
+
+            final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Regola il valore di aspectRatio se necessario
+
+            if (isTablet) {
+              return _buildTabletLayout(context);
+            } else {
+              return _buildMobileLayout(context);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletLayout(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Center(
+            child: Icon(
+              Icons.restaurant,
+              size: 150,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.05, horizontal: MediaQuery.of(context).size.width * 0.05),
+            child: Column(
+              children: _buildFormFields(context),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.05),
+      child: Column(
+        children: [
+          Container(
+            margin: EdgeInsets.only(top: 20, bottom: 30),
+            child: Icon(
               Icons.restaurant,
               size: 100,
               color: Theme.of(context).colorScheme.primary,
             ),
-
-            const SizedBox(height: 20),
-
-            PersonalizedTextField(
-                controller: emailController,
-                hintText: "Email",
-                obscureText: false
-            ),
-
-            const SizedBox(height: 20),
-
-            PasswordFieldSignup(
-                textEditingController: passwordController,
-                hintText: "Password",
-            ),
-
-            const SizedBox(height: 20),
-
-            PersonalizedTextField(
-                controller: confirmPasswordController,
-                hintText: "Confirm Password",
-                obscureText: true
-            ),
-
-            const SizedBox(height: 20),
-
-            PersonalizedTextField(
-                controller: usernameController,
-                hintText: "Username",
-                obscureText: false
-            ),
-
-            const SizedBox(height: 20),
-
-            Row(
-                children: [
-                  Padding(
-                      padding: const EdgeInsets.only(left: 30.0),
-                      child: Text(
-                        'Registering as a chef',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 16, // Puoi regolare questo valore
-                            fontWeight: FontWeight.w400 // Opzionale, per renderlo leggermente più grassetto
-                        ))
-                  ),
-                  const Expanded(child: SizedBox()), // Spinge lo switch a destra
-                  Padding(
-                      padding: const EdgeInsets.only(right: 30.0),
-                      child: CustomSwitch(
-                        initialValue: _isChef,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _isChef = value;
-                          });
-                        },
-                      )
-                  )
-                ]
-            ),
-
-            const SizedBox(height: 20),
-
-            // Conditional TextField for restaurant name
-            if (_isChef)
-              PersonalizedTextField(
-                  controller: restaurantNameController,
-                  hintText: "Restaurant Name",
-                  obscureText: false
-              ),
-
-            const SizedBox(height: 20),
-
-            ShakeWidget(
-              key: _shakeKey,
-              shakeOffset: 10,
-              child: AnimatedButton(
-                onTap: () {
-                  if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-                    _shakeKey.currentState?.shake();
-                  } else {
-                    // Proceed with signup logic
-                    // Add your signup implementation here
-                  }
-                },
-                child: PersonalizedButton(
-                  text: "SignUp",
-                  onPressed: null, // We're handling the tap in AnimatedButton
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Padding(
-                padding: const EdgeInsets.only(left: 30.0),
-                child: Text(
-                    'Registering as a chef',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: 16, // Puoi regolare questo valore
-                        fontWeight: FontWeight.w400 // Opzionale, per renderlo leggermente più grassetto
-                    ))
-            )
-          ]
+          ),
+          ..._buildFormFields(context),
+        ],
       ),
     );
+  }
+
+  List<Widget> _buildFormFields(BuildContext context) {
+    return [
+      PersonalizedTextField(
+        controller: emailController,
+        hintText: "Email",
+        obscureText: false,
+      ),
+      const SizedBox(height: 20),
+      PasswordFieldSignup(
+        textEditingController: passwordController,
+        hintText: "Password",
+      ),
+      const SizedBox(height: 20),
+      PasswordFieldSignup(
+        textEditingController: confirmPasswordController,
+        hintText: "Confirm Password",
+      ),
+      const SizedBox(height: 20),
+      PersonalizedTextField(
+        controller: usernameController,
+        hintText: "Username",
+        obscureText: false,
+      ),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 25.0),
+            child: Text(
+              'Registering as a chef',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          const Expanded(child: SizedBox()),
+          Padding(
+            padding: const EdgeInsets.only(right: 25.0),
+            child: CustomSwitch(
+              initialValue: _isChef,
+              onChanged: (bool value) {
+                setState(() {
+                  _isChef = value;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 20),
+      if (_isChef)
+        PersonalizedTextField(
+          controller: restaurantNameController,
+          hintText: "Restaurant Name",
+          obscureText: false,
+        ),
+      const SizedBox(height: 30),
+      ShakeWidget(
+        key: _shakeKey,
+        shakeOffset: 10,
+        child: AnimatedButton(
+          onTap: () {
+            if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+              _shakeKey.currentState?.shake();
+            } else {
+              // Procedi con la logica di registrazione
+            }
+          },
+          child: PersonalizedButton(
+            text: "SignUp",
+            onPressed: null,
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+    ];
   }
 }
