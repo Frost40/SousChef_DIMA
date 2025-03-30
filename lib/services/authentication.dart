@@ -22,7 +22,7 @@ class Authentication {
     required String password,
     required String username,
     required String name,
-    required String surname,
+    required String surname, String? restaurantName,
   }) async {
     //Creation of the user with Auth Firebase
     UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);

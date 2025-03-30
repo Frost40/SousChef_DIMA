@@ -101,6 +101,8 @@ class AuthProvider with ChangeNotifier {
     required String username,
     required String name,
     required String surname,
+    String? restaurantName,
+    
   }) async {
     clearErrors();
     _isLoading = true;
@@ -113,6 +115,7 @@ class AuthProvider with ChangeNotifier {
         username: username,
         name: name,
         surname: surname,
+        restaurantName: restaurantName
       );
       _isLoading = false;
       notifyListeners();

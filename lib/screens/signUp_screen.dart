@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/widgets/auth/cupertino_switch.dart';
 import 'package:sous_chef/widgets/auth/password_field_signup.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
@@ -103,6 +105,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   List<Widget> _buildFormFields(BuildContext context) {
+    // Access authentication provider
+    final authProvider = Provider.of<AuthProvider>(context);
+    
     return [
       PersonalizedTextField(
         controller: emailController,
@@ -170,7 +175,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _shakeKey.currentState?.shake();
             } else {
               // Procedi con la logica di registrazione
-              Navigator.of(context).pushReplacementNamed('/home');
+              authProvider.signUp(
+                email: emailController.text,
+                password: passwordController.text,
+                name: nameController.text,
+                surname: surnameController.text,
+                username: usernameController.text,
+                restaurantName: restaurantNameController.text,
+              ).then((isSuccessful) {
+                if (isSuccessful) {
+                  // Registration successful
+                  Navigator.of(context).pushReplacementNamed('/login');
+                } else {
+                  // Registration failed, show error message or shake the form
+                  final errorMessage = authProvider.errorMessage ?? 'Registration failed. Please try again.';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(errorMessage)),
+                  );
+                  _shakeKey.currentState?.shake();
+                }
+              });
             }
           },
           child: PersonalizedButton(
