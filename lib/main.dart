@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/services/authentication.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'app_router.dart';
 import 'firebase_options.dart';
 import 'package:sous_chef/screens/home_screen.dart';
+import 'package:sous_chef/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         Provider<AppRouter>(create: (_) => AppRouter()),
       ],
       child: Consumer<AppRouter>(
@@ -46,20 +48,20 @@ class AuthenticationWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return StreamBuilder<firebase_auth.User?>(
       stream: Authentication().authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.active) {
-          User? user = snapshot.data;
+          firebase_auth.User? user = snapshot.data;
           if (user == null) {
-            // l'utente non è loggato, mostra la schermata di login
+            // user not logged in
             return LoginScreen();
           } else {
-            // l'utente è già loggato, mostra la home screen
+            // user already logged in
             return const HomeScreen();
           }
         }
-        // in attesa che la connessione venga stabilita
+        // waiting for authentication state
         return const Scaffold(
           body: Center(
             child: CircularProgressIndicator(),

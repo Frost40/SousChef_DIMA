@@ -179,7 +179,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
       ),
+
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("Don you already have an account?"),
+          TextButton(
+            onPressed: () {
+              // Navigate to sign up screen
+              Navigator.of(context).pushReplacementNamed('/login');
+            },
+            child: Text("Login"),
+          ),
+        ],
+      ),
+
       const SizedBox(height: 20),
+
     ];
   }
+
 }
