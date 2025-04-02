@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
+import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/services/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
@@ -29,11 +30,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         Provider<AppRouter>(create: (_) => AppRouter()),
       ],
-      child: Consumer<AppRouter>(
-        builder: (context, router, child) {
+      child: Consumer2<AppRouter, ThemeProvider>(
+        builder: (context, router, themeProvider, child) {
           return MaterialApp(
             title: 'sous_chef',
-            theme: ThemeProvider().themeData,
+            theme: themeProvider.themeData, // This will now update when theme changes
             home: const AuthenticationWrapper(),
             onGenerateRoute: router.onGenerateRoute,
           );
@@ -58,7 +59,7 @@ class AuthenticationWrapper extends StatelessWidget {
             return LoginScreen();
           } else {
             // user already logged in
-            return const HomeScreen();
+            return MainLayout();
           }
         }
         // waiting for authentication state
