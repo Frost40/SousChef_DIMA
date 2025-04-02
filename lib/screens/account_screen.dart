@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sous_chef/screens/favorites_screen.dart';
+
+import '../widgets/custom_navigation_bar.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});

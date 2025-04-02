@@ -5,6 +5,7 @@ import 'package:sous_chef/widgets/auth/cupertino_switch.dart';
 import 'package:sous_chef/widgets/auth/password_field_signup.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/widgets/personalized_textfield.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../widgets/auth/animated_button.dart';
 import '../widgets/auth/shake_widget.dart';
@@ -34,6 +35,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
+
+  void _navigateToHome() {
+    // Cleaning errors and navigating to home
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearErrors();
+
+    Navigator.of(context).pushReplacementNamed('/home');
+  }
+
+  void _navigateToLogin() {
+    // Cleaning errors
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearErrors();
+
+    // Navigate to login screen
+    Navigator.of(context).pushReplacementNamed('/login');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,41 +183,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
           hintText: "Restaurant Name",
           obscureText: false,
         ),
+
       const SizedBox(height: 30),
+
       ShakeWidget(
         key: _shakeKey,
         shakeOffset: 10,
         child: AnimatedButton(
-          onTap: () {
+          onTap: () async {
             if (emailController.text.isEmpty || passwordController.text.isEmpty) {
               _shakeKey.currentState?.shake();
             } else {
-              // Procedi con la logica di registrazione
-              authProvider.signUp(
+              // Calling the sign-up method from the provider
+              await authProvider.signUp(
                 email: emailController.text,
                 password: passwordController.text,
-                name: nameController.text,
-                surname: surnameController.text,
                 username: usernameController.text,
-                restaurantName: restaurantNameController.text,
-              ).then((isSuccessful) {
-                if (isSuccessful) {
-                  // Registration successful
-                  Navigator.of(context).pushReplacementNamed('/login');
+                restaurantName: _isChef ? restaurantNameController.text : null,
+              );
+
+              // Verify if the widget is still mounted before navigating
+              if (mounted) {
+                // Check if the sign-up was successful
+                if (authProvider.errorMessage == null) {
+                  _navigateToHome();
                 } else {
-                  // Registration failed, show error message or shake the form
-                  final errorMessage = authProvider.errorMessage ?? 'Registration failed. Please try again.';
+                  // Registration failed
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(errorMessage)),
+                    SnackBar(content: Text(authProvider.errorMessage!)),
                   );
                   _shakeKey.currentState?.shake();
                 }
-              });
+              }
             }
           },
           child: PersonalizedButton(
             text: "SignUp",
             onPressed: null,
+            centralWidget: authProvider.isLoading
+                ? LoadingAnimationWidget.staggeredDotsWave(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 30,
+                  )
+                : null,
           ),
         ),
       ),
@@ -211,7 +237,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           TextButton(
             onPressed: () {
               // Navigate to sign up screen
-              Navigator.of(context).pushReplacementNamed('/login');
+              _navigateToLogin();
             },
             child: Text("Login"),
           ),

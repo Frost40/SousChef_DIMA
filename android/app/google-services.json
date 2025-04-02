@@ -12,7 +12,20 @@
           "package_name": "com.example.sous_chef"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "22755112532-idn9drddc3tamqbq9a8csg5t6rnr223u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sous_chef",
+            "certificate_hash": "7a9b091957c1409b2a17eaf17459958ca03a4c17"
+          }
+        },
+        {
+          "client_id": "22755112532-36tps5h2dq9hqt68976153megoog4sv4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBFN0W16eq4096GpNUj7l6uv-AXqTeYTl4"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "22755112532-36tps5h2dq9hqt68976153megoog4sv4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "22755112532-ut73aoppho16qok218bbtj9l3ui47vk3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.sousChef"
+              }
+            }
+          ]
         }
       }
     }

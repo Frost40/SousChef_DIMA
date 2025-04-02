@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../widgets/auth/animated_button.dart';
 import '../widgets/auth/custom_social_button.dart';
@@ -53,21 +54,25 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final screenSize = MediaQuery.of(context).size;
-          final screenWidth = screenSize.width;
-          final screenHeight = screenSize.height;
-          final aspectRatio = screenWidth / screenHeight;
+      body: SafeArea(
+        child: Center(
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final screenSize = MediaQuery.of(context).size;
+              final screenWidth = screenSize.width;
+              final screenHeight = screenSize.height;
+              final aspectRatio = screenWidth / screenHeight;
 
-          final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Adjust aspectRatio value if needed
+              final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Adjust aspectRatio value if needed
 
-          if (isTablet) {
-            return _buildTabletLayout(context);
-          } else {
-            return _buildMobileLayout(context);
-          }
-        },
+              if (isTablet) {
+                return _buildTabletLayout(context);
+              } else {
+                return _buildMobileLayout(context);
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -174,29 +179,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 emptyPassword: passwordController.text.isEmpty,
               );
             } else {
-              // Use the provider to perform login
-              final success = await authProvider.signIn(
+              // Authentication process via provider
+              await authProvider.signIn(
                 emailController.text.trim(),
                 passwordController.text,
               );
 
-              // Check if widget is still mounted before proceeding
-              if (success && mounted && authProvider.isAuthenticated) {
-                _navigateToHome();
-              } else if (mounted) {
-                // If login fails, trigger shake animation
-                _shakeKey.currentState?.shake();
+              if (mounted) {
+                if (authProvider.isAuthenticated) {
+                  _navigateToHome();
+                } else {
+                  // Optic feedback if login fails
+                  _shakeKey.currentState?.shake();
+                }
               }
             }
           },
-          child: authProvider.isLoading
-              ? CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                )
-              : PersonalizedButton(
-                  text: "Login",
-                  onPressed: null,
-                ),
+          child: PersonalizedButton(
+            text: "Login",
+            onPressed: null,
+            centralWidget: authProvider.isLoading
+                ? LoadingAnimationWidget.staggeredDotsWave(
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 30,
+            )
+                : null,
+          ),
         ),
       ),
 
@@ -228,7 +236,16 @@ class _LoginScreenState extends State<LoginScreen> {
       const SizedBox(height: 20),
 
       CustomSocialButton(
-        onTap: () {},
+        onTap: () async {
+          // Authentication process via provider
+          await authProvider.signInWithGoogle();
+
+          if (mounted) {
+            if (authProvider.isAuthenticated) {
+              _navigateToHome();
+            }
+          }
+        },
         icon: 'assets/google.svg',
         text: 'Join using Google',
         margin: 0,

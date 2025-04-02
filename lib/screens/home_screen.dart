@@ -8,7 +8,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Screen'),
@@ -18,9 +18,10 @@ class HomeScreen extends StatelessWidget {
             tooltip: 'Sign Out',
             onPressed: () async {
               await authProvider.signOut();
-              // Navigate to login screen after sign out
+              // Naviga alla schermata di login dopo il logout
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
+                Navigator.of(context, rootNavigator: true)
+                    .pushReplacementNamed('/login');
               }
             },
           ),
