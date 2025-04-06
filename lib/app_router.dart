@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sous_chef/screens/account_settings_screen.dart';
     import 'package:sous_chef/screens/login_screen.dart';
+import 'package:sous_chef/screens/past_orders_screen.dart';
     import 'package:sous_chef/screens/signup_screen.dart';
     import 'package:sous_chef/screens/main_layout.dart';
     import 'package:sous_chef/screens/restaurant_screen.dart';
@@ -47,6 +49,17 @@ import 'package:flutter/material.dart';
           case '/messages':
             return CustomPageRoute(
               page: const MessagesScreen(),
+              transitionType: transitionType ?? TransitionType.fade,
+            );
+          // Aggiungi in lib/app_router.dart
+          case '/account-settings':
+            return CustomPageRoute(
+              page: const AccountSettingsScreen(),
+              transitionType: transitionType ?? TransitionType.fade,
+            );
+          case '/past-orders':
+            return CustomPageRoute(
+              page: const PastOrdersScreen(),
               transitionType: transitionType ?? TransitionType.fade,
             );
           default:

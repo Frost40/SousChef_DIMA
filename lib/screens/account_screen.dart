@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sous_chef/widgets/account_screen/account_field.dart';
 import 'package:sous_chef/widgets/auth/animated_button.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
-import 'package:sous_chef/widgets/theme_switch.dart';
+import 'package:sous_chef/widgets/account_screen/theme_switch.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -16,62 +17,92 @@ class AccountScreen extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account'),
-        actions: [
-          // Theme switch in app bar
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ThemeSwitch(
-              radius: 15.0,
-              width: 60.0,
-              height: 30.0,
-              lightModeIcon: Icon(
-                Icons.wb_sunny,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              darkModeIcon: Icon(
-                Icons.nightlight_round,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
+      extendBodyBehindAppBar: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // AppBar inside the safe area
+            Container(
+              height: kToolbarHeight,
+              color: Theme.of(context).appBarTheme.backgroundColor,
+              child: Stack(
+                children: [
+                  // Centered title (centered in full width)
+                  const Center(
+                    child: Text(
+                      'Account',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  // Right-aligned theme switch
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: ThemeSwitch(
+                        radius: 15.0,
+                        width: 60.0,
+                        height: 30.0,
+                        lightModeIcon: Icon(
+                          Icons.wb_sunny,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        darkModeIcon: Icon(
+                          Icons.nightlight_round,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Screen title
-          Center(
-            child: Text(
-              'Account Screen',
-              style: TextStyle(
-                fontSize: 24,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Logout button with animation
-          AnimatedButton(
-            onTap: () async {
-              // Sign out the user through auth provider
-              await authProvider.signOut();
-              // Navigate to login screen after successful logout
-              if (context.mounted) {
-                Navigator.of(context, rootNavigator: true)
-                    .pushReplacementNamed('/login');
-              }
-            },
-            child: PersonalizedButton(
-              text: "Logout",
-              onPressed: null
+            AccountField(
+                leftIcon: Icons.settings,
+                text: "Account Settings",
+                onTap: () {
+                  Navigator.of(context).pushNamed('/account-settings');
+                }
             ),
-          )
-        ],
+
+            const SizedBox(height: 20),
+
+            AccountField(
+                leftIcon: Icons.receipt_long_rounded,
+                text: "Past Orders",
+                onTap: () {
+                  Navigator.of(context).pushNamed('/past-orders');
+                }
+            ),
+
+            const SizedBox(height: 60),
+
+            // Logout button with animation
+            AnimatedButton(
+              onTap: () async {
+                // Sign out the user through auth provider
+                await authProvider.signOut();
+                // Navigate to login screen after successful logout
+                if (context.mounted) {
+                  Navigator.of(context, rootNavigator: true)
+                      .pushReplacementNamed('/login');
+                }
+              },
+              child: PersonalizedButton(
+                text: "Logout",
+                onPressed: null
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

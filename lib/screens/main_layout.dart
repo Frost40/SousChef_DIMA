@@ -1,8 +1,10 @@
 // lib/screens/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:sous_chef/screens/home_screen.dart';
+import 'package:sous_chef/screens/past_orders_screen.dart';
 import '../widgets/custom_navigation_bar.dart';
 import 'account_screen.dart';
+import 'account_settings_screen.dart';
 import 'favorites_screen.dart';
 import 'orders_screen.dart';
 import '../transition_type.dart';
@@ -18,6 +20,7 @@ class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
   final navigatorKey = GlobalKey<NavigatorState>();
 
+  // Modifica in lib/screens/main_layout.dart
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,6 +42,15 @@ class _MainLayoutState extends State<MainLayout> {
               break;
             case '/account':
               page = const AccountScreen();
+              break;
+            // Aggiungi le sottopagine dell'account
+            case '/account-settings':
+              page = const AccountSettingsScreen();
+              transitionType = TransitionType.slideRight;
+              break;
+            case '/past-orders':
+              page = const PastOrdersScreen();
+              transitionType = TransitionType.slideRight;
               break;
             default:
               page = const HomeScreen();

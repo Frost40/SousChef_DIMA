@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TransitionType { slideLeft, slideRight, fade }
+enum TransitionType { slideLeft, slideRight, fade, smooth }
 
 class CustomPageRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
@@ -39,6 +39,24 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
                   child: child,
                 );
 
+              case TransitionType.smooth:
+                // Transizione fluida stile Spotify/Just Eat
+                const begin = Offset(0.3, 0.0);
+                const end = Offset.zero;
+                const curve = Curves.easeOutQuint;
+
+                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                return SlideTransition(
+                  position: animation.drive(tween),
+                  child: FadeTransition(
+                    opacity: Tween<double>(begin: 0.2, end: 1.0)
+                        .chain(CurveTween(curve: curve))
+                        .animate(animation),
+                    child: child,
+                  ),
+                );
+
               default:
                 return FadeTransition(
                   opacity: animation,
@@ -46,6 +64,6 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
                 );
             }
           },
-          transitionDuration: const Duration(milliseconds: 500),
+          transitionDuration: const Duration(milliseconds: 250),
         );
 }
