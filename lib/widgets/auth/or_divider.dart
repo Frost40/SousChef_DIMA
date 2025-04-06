@@ -11,7 +11,7 @@ class DividerWithText extends StatelessWidget {
         children: [
           Expanded(
             child: Divider(
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               thickness: 1,
             ),
           ),
@@ -21,12 +21,12 @@ class DividerWithText extends StatelessWidget {
             style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
-                color: Theme.of(context).colorScheme.primary),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest),
           ),
           const SizedBox(width: 15),
           Expanded(
             child: Divider(
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               thickness: 1,
             ),
           ),

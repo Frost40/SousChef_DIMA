@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
+<<<<<<< HEAD
+=======
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+>>>>>>> 456e7dcf89bf6929c6c9537b2c2ec9136cad5777
 
 import '../widgets/auth/animated_button.dart';
 import '../widgets/auth/custom_social_button.dart';
@@ -8,34 +14,68 @@ import '../widgets/auth/auth_input_field.dart';
 import '../widgets/auth/shake_widget.dart';
 import '../widgets/auth/shake_widget_state.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
 
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
 
-  LoginScreen({super.key});
+  @override
+  void dispose() {
+    // Clean up controllers when the widget is destroyed
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToHome() {
+    // Cleaning errors and navigating to home
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearErrors();
+
+    Navigator.of(context).pushReplacementNamed('/home');
+  }
+
+  void _navigateToSignUp() {
+    // Cleaning errors
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearErrors();
+
+    // Navigate to sign up screen
+    Navigator.of(context).pushReplacementNamed('/signup');
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final screenSize = MediaQuery.of(context).size;
-          final screenWidth = screenSize.width;
-          final screenHeight = screenSize.height;
-          final aspectRatio = screenWidth / screenHeight;
+      body: SafeArea(
+        child: Center(
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final screenSize = MediaQuery.of(context).size;
+              final screenWidth = screenSize.width;
+              final screenHeight = screenSize.height;
+              final aspectRatio = screenWidth / screenHeight;
 
-          final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Regola il valore di aspectRatio se necessario
+              final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Adjust aspectRatio value if needed
 
-          if (isTablet) {
-            return _buildTabletLayout(context);
-          } else {
-            return _buildMobileLayout(context);
-          }
-        },
+              if (isTablet) {
+                return _buildTabletLayout(context);
+              } else {
+                return _buildMobileLayout(context);
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -87,6 +127,9 @@ class LoginScreen extends StatelessWidget {
   }
 
   List<Widget> _buildFormFields(BuildContext context) {
+    // Access authentication provider
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return [
       const SizedBox(height: 20),
       AuthInputField(
@@ -94,6 +137,8 @@ class LoginScreen extends StatelessWidget {
         hintText: "Email",
         leftIcon: Icons.email_rounded,
         iconColor: Theme.of(context).colorScheme.primary,
+        // Highlight field with error border if there's an email-related error
+        hasError: authProvider.hasEmailError,
       ),
 
       const SizedBox(height: 20),
@@ -104,7 +149,24 @@ class LoginScreen extends StatelessWidget {
         isPassword: true,
         leftIcon: Icons.key_rounded,
         iconColor: Theme.of(context).colorScheme.primary,
+        // Highlight field with error border if there's a password-related error
+        hasError: authProvider.hasPasswordError,
       ),
+
+      // Display error messages from the provider
+      if (authProvider.errorMessage != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 10.0),
+          child: Center(
+            child: Text(
+              authProvider.errorMessage!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
 
       const SizedBox(height: 20),
 
@@ -112,20 +174,43 @@ class LoginScreen extends StatelessWidget {
         key: _shakeKey,
         shakeOffset: 10,
         child: AnimatedButton(
-          onTap: () {
+          onTap: () async {
             if (emailController.text.isEmpty || passwordController.text.isEmpty) {
               _shakeKey.currentState?.shake();
+              authProvider.setFieldErrors(
+                emptyEmail: emailController.text.isEmpty,
+                emptyPassword: passwordController.text.isEmpty,
+              );
             } else {
-              // Proceed with login logic
-              Navigator.of(context).pushReplacementNamed('/home');
+              // Authentication process via provider
+              await authProvider.signIn(
+                emailController.text.trim(),
+                passwordController.text,
+              );
+
+              if (mounted) {
+                if (authProvider.isAuthenticated) {
+                  _navigateToHome();
+                } else {
+                  // Optic feedback if login fails
+                  _shakeKey.currentState?.shake();
+                }
+              }
             }
           },
           child: PersonalizedButton(
             text: "Login",
             onPressed: null,
+            centralWidget: authProvider.isLoading
+                ? LoadingAnimationWidget.staggeredDotsWave(
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 30,
+            )
+                : null,
           ),
         ),
       ),
+
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -133,7 +218,7 @@ class LoginScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               // Navigate to sign up screen
-              Navigator.of(context).pushReplacementNamed('/signup');
+              _navigateToSignUp();
             },
             child: Text("Sign up"),
           ),
@@ -154,7 +239,16 @@ class LoginScreen extends StatelessWidget {
       const SizedBox(height: 20),
 
       CustomSocialButton(
-        onTap: () {},
+        onTap: () async {
+          // Authentication process via provider
+          await authProvider.signInWithGoogle();
+
+          if (mounted) {
+            if (authProvider.isAuthenticated) {
+              _navigateToHome();
+            }
+          }
+        },
         icon: 'assets/google.svg',
         text: 'Join using Google',
         margin: 0,
