@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
-<<<<<<< HEAD
-=======
 import 'package:loading_animation_widget/loading_animation_widget.dart';
->>>>>>> 456e7dcf89bf6929c6c9537b2c2ec9136cad5777
 
 import '../widgets/auth/animated_button.dart';
 import '../widgets/auth/custom_social_button.dart';
@@ -66,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
               final screenHeight = screenSize.height;
               final aspectRatio = screenWidth / screenHeight;
 
-              final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Adjust aspectRatio value if needed
+              final isTablet =
+                  screenWidth > 600 &&
+                  aspectRatio < 1.6; // Adjust aspectRatio value if needed
 
               if (isTablet) {
                 return _buildTabletLayout(context);
@@ -175,7 +174,8 @@ class _LoginScreenState extends State<LoginScreen> {
         shakeOffset: 10,
         child: AnimatedButton(
           onTap: () async {
-            if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+            if (emailController.text.isEmpty ||
+                passwordController.text.isEmpty) {
               _shakeKey.currentState?.shake();
               authProvider.setFieldErrors(
                 emptyEmail: emailController.text.isEmpty,
@@ -201,12 +201,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: PersonalizedButton(
             text: "Login",
             onPressed: null,
-            centralWidget: authProvider.isLoading
-                ? LoadingAnimationWidget.staggeredDotsWave(
-              color: Theme.of(context).colorScheme.onPrimary,
-              size: 30,
-            )
-                : null,
+            centralWidget:
+                authProvider.isLoading
+                    ? LoadingAnimationWidget.staggeredDotsWave(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 30,
+                    )
+                    : null,
           ),
         ),
       ),
