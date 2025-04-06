@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
-import 'package:sous_chef/widgets/personalized_textfield.dart';
 
 import '../widgets/auth/animated_button.dart';
 import '../widgets/auth/custom_social_button.dart';

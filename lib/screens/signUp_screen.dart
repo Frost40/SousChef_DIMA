@@ -27,8 +27,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController restaurantNameController = TextEditingController();
 
-  bool _isPasswordSixCharacters = false;
-  bool _isEmailWellFormatted = false;
+  final bool _isPasswordSixCharacters = false;
+  final bool _isEmailWellFormatted = false;
 
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
