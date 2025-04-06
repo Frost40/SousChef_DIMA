@@ -3,32 +3,48 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/auth/animated_button.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
-import 'package:sous_chef/themes/theme_provider.dart'; // Add this import
+import 'package:sous_chef/themes/theme_provider.dart';
+import 'package:sous_chef/widgets/theme_switch.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Access providers
     final authProvider = Provider.of<AuthProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context); // Add this
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Account'),
         actions: [
-          // Add theme toggle with sun/moon icon
+          // Theme switch in app bar
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: ThemeModeToggle(
-              isDarkMode: themeProvider.isDarkMode,
-              onToggle: () => themeProvider.toggleTheme(),
+            child: ThemeSwitch(
+              // Smaller dimensions
+              radius: 15,
+              thumbRadius: 20,
+              // Icon for dark mode (moon)
+              activeChild: Icon(
+                Icons.nightlight_round,
+                size: 16, // Smaller icon
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              // Icon for light mode (sun)
+              inactiveChild: Icon(
+                Icons.wb_sunny,
+                size: 16, // Smaller icon
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         ],
       ),
       body: Column(
         children: [
+          // Screen title
           Center(
             child: Text(
               'Account Screen',
@@ -39,97 +55,25 @@ class AccountScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 20),
+          const SizedBox(height: 20), // Vertical spacing (corrected from width)
 
+          // Logout button with animation
           AnimatedButton(
-            onTap: () async{
+            onTap: () async {
+              // Sign out the user through auth provider
               await authProvider.signOut();
-                // Naviga alla schermata di login dopo il logout
-                if (context.mounted) {
-                  Navigator.of(context, rootNavigator: true)
-                      .pushReplacementNamed('/login');
-                }
-              },
+              // Navigate to login screen after successful logout
+              if (context.mounted) {
+                Navigator.of(context, rootNavigator: true)
+                    .pushReplacementNamed('/login');
+              }
+            },
             child: PersonalizedButton(
-              text: "Logout", 
-              onPressed: null),
+              text: "Logout",
+              onPressed: null
+            ),
           )
         ],
-      ),
-    );
-  }
-}
-
-// ...existing code...
-
-// Custom theme toggle widget with sun/moon icon
-class ThemeModeToggle extends StatelessWidget {
-  final bool isDarkMode;
-  final VoidCallback onToggle;
-
-  const ThemeModeToggle({
-    Key? key,
-    required this.isDarkMode,
-    required this.onToggle,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        width: 60,
-        height: 30,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          color: isDarkMode 
-              ? Colors.blueGrey[800]
-              : colorScheme.tertiary.withOpacity(0.5),
-        ),
-        child: Stack(
-          children: [
-            // Sun icon (fixed on the left)
-            Positioned(
-              left: 8,
-              top: 6,
-              child: Icon(
-                Icons.wb_sunny,
-                size: 18,
-                color: isDarkMode ? Colors.grey : Colors.amber,
-              ),
-            ),
-            
-            // Moon icon (fixed on the right)
-            Positioned(
-              right: 8,
-              top: 6,
-              child: Icon(
-                Icons.nightlight_round,
-                size: 18,
-                color: isDarkMode ? Colors.white : Colors.grey,
-              ),
-            ),
-            
-            // Sliding indicator
-            AnimatedPositioned(
-              duration: Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              left: isDarkMode ? 30 : 0,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDarkMode 
-                      ? colorScheme.primary.withOpacity(0.8)
-                      : colorScheme.primary.withOpacity(0.8),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
