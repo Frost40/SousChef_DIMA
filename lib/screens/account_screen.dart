@@ -23,19 +23,17 @@ class AccountScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ThemeSwitch(
-              // Smaller dimensions
-              radius: 15,
-              thumbRadius: 20,
-              // Icon for dark mode (moon)
-              activeChild: Icon(
-                Icons.nightlight_round,
-                size: 16, // Smaller icon
+              radius: 15.0,
+              width: 60.0,
+              height: 30.0,
+              lightModeIcon: Icon(
+                Icons.wb_sunny,
+                size: 16,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              // Icon for light mode (sun)
-              inactiveChild: Icon(
-                Icons.wb_sunny,
-                size: 16, // Smaller icon
+              darkModeIcon: Icon(
+                Icons.nightlight_round,
+                size: 16,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -55,7 +53,7 @@ class AccountScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20), // Vertical spacing (corrected from width)
+          const SizedBox(height: 20),
 
           // Logout button with animation
           AnimatedButton(

@@ -34,11 +34,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToHome() {
-    // Cleaning errors and navigating to home
+    // Cleaning errors
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.clearErrors();
 
-    Navigator.of(context).pushReplacementNamed('/home');
+    // Usa il navigatore root e rimuovi tutte le route precedenti
+    Navigator.of(context, rootNavigator: true).pushReplacementNamed('/main');
   }
 
   void _navigateToSignUp() {

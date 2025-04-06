@@ -1,97 +1,111 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 
-class ThemeSwitch extends StatefulWidget {
+class ThemeSwitch extends StatelessWidget {
   final double radius;
-  final double thumbRadius;
-  final Widget? activeChild;
-  final Widget? inactiveChild;
+  final Widget lightModeIcon;
+  final Widget darkModeIcon;
+  final double width;
+  final double height;
 
   const ThemeSwitch({
     super.key,
-    this.radius = 40,
-    this.thumbRadius = 100,
-    this.activeChild,
-    this.inactiveChild
-  });
-
-  @override
-  State<ThemeSwitch> createState() => _ThemeSwitchState();
-}
-
-class _ThemeSwitchState extends State<ThemeSwitch> {
-  // Controller for the switch state
-  late final ValueNotifier<bool> _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize controller with current theme mode
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    _controller = ValueNotifier<bool>(themeProvider.isDarkMode);
-
-    // Add listener to toggle theme when switch changes
-    _controller.addListener(() {
-      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-      themeProvider.toggleTheme();
-    });
-  }
-
-  @override
-  void dispose() {
-    // Clean up controller when widget is disposed
-    _controller.dispose();
-    super.dispose();
-  }
+    this.radius = 15.0,
+    this.width = 60.0,
+    this.height = 30.0,
+    Widget? lightModeIcon,
+    Widget? darkModeIcon,
+  }) :
+    lightModeIcon = lightModeIcon ?? const Icon(
+      Icons.wb_sunny,
+      size: 16,
+      color: Colors.amber,
+    ),
+    darkModeIcon = darkModeIcon ?? const Icon(
+      Icons.nightlight_round,
+      size: 16,
+      color: Colors.indigo,
+    );
 
   @override
   Widget build(BuildContext context) {
-    // Update controller when theme changes externally
-    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
-    if (_controller.value != isDarkMode) {
-      _controller.value = isDarkMode;
-    }
+    // Get theme information from provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final backgroundColor = Theme.of(context).colorScheme.surface;
+    final thumbColor = Theme.of(context).colorScheme.surfaceContainerHighest;
 
-    // Return the AdvancedSwitch with customized properties
-    return AdvancedSwitch(
-      // Background colors based on theme
-      activeColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      inactiveColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-
-      // Icons for each state
-      activeChild: widget.activeChild ?? Icon(
-        Icons.nightlight_round,
-        size: 18,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      inactiveChild: widget.inactiveChild ?? Icon(
-        Icons.wb_sunny,
-        size: 18,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-
-      // Border radius for the switch
-      borderRadius: BorderRadius.all(Radius.circular(widget.radius)),
-
-      // Size customization
-      width: 60, // Smaller width
-      height: 30, // Smaller height
-
-      // Customized thumb (the moving part)
-      thumb: Container(
-        margin: const EdgeInsets.all(3), // Smaller margin
-        height: 24,
-        width: 24,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(widget.thumbRadius)
+    return Container(
+      padding: const EdgeInsets.all(2.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius + 2),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          width: 1.0,
         ),
       ),
+      child: GestureDetector(
+        onTap: () => themeProvider.toggleTheme(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            color: backgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Light mode icon (Sun)
+              Positioned(
+                right: 5,
+                top: 0,
+                bottom: 0,
+                child: Center(child: lightModeIcon),
+              ),
 
-      // Controller to manage the state
-      controller: _controller,
+              // Dark mode icon (Moon)
+              Positioned(
+                left: 5,
+                top: 0,
+                bottom: 0,
+                child: Center(child: darkModeIcon),
+              ),
+
+              // Sliding thumb indicator
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                left: isDarkMode ? (width / 2) : 3,
+                top: 3,
+                child: Container(
+                  width: (width / 2) - 6,
+                  height: height - 6,
+                  decoration: BoxDecoration(
+                    color: thumbColor,
+                    borderRadius: BorderRadius.circular(radius - 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
