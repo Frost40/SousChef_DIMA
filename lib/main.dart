@@ -8,14 +8,11 @@ import 'package:sous_chef/services/database/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'app_router.dart';
 import 'firebase_options.dart';
-import 'package:sous_chef/screens/home_screen.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -34,7 +31,9 @@ class MyApp extends StatelessWidget {
         builder: (context, router, themeProvider, child) {
           return MaterialApp(
             title: 'sous_chef',
-            theme: themeProvider.themeData, // This will now update when theme changes
+            theme:
+                themeProvider
+                    .themeData, // This will now update when theme changes
             home: const AuthenticationWrapper(),
             onGenerateRoute: router.onGenerateRoute,
           );
@@ -63,11 +62,7 @@ class AuthenticationWrapper extends StatelessWidget {
           }
         }
         // waiting for authentication state
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

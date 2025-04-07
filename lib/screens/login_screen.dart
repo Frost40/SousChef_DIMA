@@ -64,7 +64,9 @@ class _LoginScreenState extends State<LoginScreen> {
               final screenHeight = screenSize.height;
               final aspectRatio = screenWidth / screenHeight;
 
-              final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Adjust aspectRatio value if needed
+              final isTablet =
+                  screenWidth > 600 &&
+                  aspectRatio < 1.6; // Adjust aspectRatio value if needed
 
               if (isTablet) {
                 return _buildTabletLayout(context);
@@ -173,7 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
         shakeOffset: 10,
         child: AnimatedButton(
           onTap: () async {
-            if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+            if (emailController.text.isEmpty ||
+                passwordController.text.isEmpty) {
               _shakeKey.currentState?.shake();
               authProvider.setFieldErrors(
                 emptyEmail: emailController.text.isEmpty,
@@ -199,12 +202,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: PersonalizedButton(
             text: "Login",
             onPressed: null,
-            centralWidget: authProvider.isLoading
-                ? LoadingAnimationWidget.staggeredDotsWave(
-              color: Theme.of(context).colorScheme.onPrimary,
-              size: 30,
-            )
-                : null,
+            centralWidget:
+                authProvider.isLoading
+                    ? LoadingAnimationWidget.staggeredDotsWave(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 30,
+                    )
+                    : null,
           ),
         ),
       ),
