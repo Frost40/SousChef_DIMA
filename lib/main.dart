@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
 import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
-import 'package:sous_chef/services/authentication.dart';
+import 'package:sous_chef/services/database/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'app_router.dart';
 import 'firebase_options.dart';

@@ -8,7 +8,12 @@ import 'package:flutter/material.dart';
             return Scaffold(
               appBar: AppBar(
                 title: const Text('Impostazioni Account'),
-                automaticallyImplyLeading: true, // Mostra il pulsante back
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
               ),
               body: const Center(
                 child: Text('Pagina delle impostazioni account'),

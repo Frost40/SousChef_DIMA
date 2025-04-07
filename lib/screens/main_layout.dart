@@ -20,7 +20,7 @@ class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
   final navigatorKey = GlobalKey<NavigatorState>();
 
-  // Modifica in lib/screens/main_layout.dart
+  // lib/screens/main_layout.dart
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,35 +28,40 @@ class _MainLayoutState extends State<MainLayout> {
         key: navigatorKey,
         onGenerateRoute: (settings) {
           Widget page;
-          TransitionType transitionType = TransitionType.fade;
+          // Imposta la transizione predefinita per le pagine interne come slideRight
+          TransitionType transitionType = TransitionType.slideRight;
 
           switch (settings.name) {
             case '/home':
               page = const HomeScreen();
+              // Usa transizione Spotify tra le schede principali
+              transitionType = TransitionType.spotify;
               break;
             case '/orders':
               page = const OrdersScreen();
+              transitionType = TransitionType.spotify;
               break;
             case '/favorites':
               page = const FavoritesScreen();
+              transitionType = TransitionType.spotify;
               break;
             case '/account':
               page = const AccountScreen();
+              transitionType = TransitionType.spotify;
               break;
-            // Aggiungi le sottopagine dell'account
+            // Pagine interne mantengono slideRight di default
             case '/account-settings':
               page = const AccountSettingsScreen();
-              transitionType = TransitionType.slideRight;
               break;
             case '/past-orders':
               page = const PastOrdersScreen();
-              transitionType = TransitionType.slideRight;
               break;
             default:
               page = const HomeScreen();
+              transitionType = TransitionType.spotify;
           }
 
-          // Determina il tipo di transizione in base alla direzione
+          // Sovrascrivi il tipo di transizione se specificato negli argomenti
           if (settings.arguments is Map) {
             final args = settings.arguments as Map;
             if (args.containsKey('transitionType')) {
@@ -75,19 +80,15 @@ class _MainLayoutState extends State<MainLayout> {
         initialIndex: _currentIndex,
         onTap: (index) {
           if (index != _currentIndex) {
-            final oldIndex = _currentIndex;
             setState(() {
               _currentIndex = index;
             });
 
-            final transitionType = index > oldIndex
-                ? TransitionType.slideRight
-                : TransitionType.slideLeft;
-
+            // Usa sempre la transizione Spotify per le schede principali
             final routes = ['/home', '/orders', '/favorites', '/account'];
             navigatorKey.currentState?.pushReplacementNamed(
               routes[index],
-              arguments: {'transitionType': transitionType},
+              arguments: {'transitionType': TransitionType.spotify},
             );
           }
         },

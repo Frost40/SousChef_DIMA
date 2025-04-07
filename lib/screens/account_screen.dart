@@ -7,6 +7,8 @@ import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/widgets/account_screen/theme_switch.dart';
 
+import '../transition_type.dart';
+
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
@@ -69,7 +71,8 @@ class AccountScreen extends StatelessWidget {
                 leftIcon: Icons.settings,
                 text: "Account Settings",
                 onTap: () {
-                  Navigator.of(context).pushNamed('/account-settings');
+                  Navigator.of(context).pushNamed('/account-settings',
+                      arguments: {'transitionType': TransitionType.slideRight});
                 }
             ),
 
@@ -79,7 +82,8 @@ class AccountScreen extends StatelessWidget {
                 leftIcon: Icons.receipt_long_rounded,
                 text: "Past Orders",
                 onTap: () {
-                  Navigator.of(context).pushNamed('/past-orders');
+                  Navigator.of(context).pushNamed('/past-orders',
+                      arguments: {'transitionType': TransitionType.slideRight});
                 }
             ),
 
