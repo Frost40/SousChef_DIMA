@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+extension CustomColorScheme on ColorScheme {
+  Color get darkGrayBackground => const Color(0xFF252525);
+}
+
 ThemeData darkMode = ThemeData(
   colorScheme: ColorScheme.dark(
     primary: Color(0xFFFF6B00),      // Keep the same orange as primary

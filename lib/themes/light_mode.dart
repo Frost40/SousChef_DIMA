@@ -7,6 +7,7 @@ ThemeData lightMode = ThemeData(
     tertiary: Color(0xFFFFB34F),
     surface: Colors.white,        // Dialogs/sheets
     surfaceContainerHighest: Color(0xFF9E9E9E), // Light grey for standout items
+    onSurfaceVariant: Color(0xFF252525), // Dark surface variant
     onPrimary: Colors.white,      // Text/icons on orange
     onSurface: Colors.black87,   // Secondary text
     error: Colors.red,            // Errors

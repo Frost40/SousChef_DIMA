@@ -9,6 +9,7 @@ class OrdersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders'),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Text(
