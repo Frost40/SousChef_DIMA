@@ -193,7 +193,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (authProvider.errorMessage != null)
         Padding(
-          padding: const EdgeInsets.only(top: 10.0),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
           child: Center(
             child: Text(
               authProvider.errorMessage!,
@@ -271,7 +271,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Don you already have an account?"),
+          Text("Do you already have an account?"),
           TextButton(
             onPressed: () {
               // Navigate to sign up screen

@@ -80,29 +80,28 @@ class AuthProvider with ChangeNotifier {
     _hasRestaurantnameError = emptyRestaurantname;
     _hasUsernameError = emptyUsername;
 
-    if (emptyEmail &&
-        emptyPassword &&
-        (emptyConfirmPassword || emptyRestaurantname || emptyUsername)) {
-      _errorMessage = 'Fields cannot be empty';
-    } else if (emptyEmail && emptyPassword) {
-      _errorMessage = 'Email and password cannot be empty';
-    } else if (emptyEmail) {
-      _errorMessage = 'Email cannot be empty';
-    } else if (emptyPassword) {
-      _errorMessage = 'Password cannot be empty';
-    } else if (invalidEmail) {
-      _errorMessage = 'Invalid email format';
-    } else if (invalidPassword) {
-      _errorMessage = 'password must have at least 6 characters';
-    } else if (invalidConfirmPassword) {
-      _errorMessage = 'Confirm Password is different from the password chosen';
-    } else if (emptyConfirmPassword) {
-      _errorMessage = 'Confirm Password cannot be empty';
-    } else if (emptyUsername) {
-      _errorMessage = 'Username cannot be empty';
-    } else if (emptyRestaurantname) {
-      _errorMessage = 'Restaurant name cannot be empty';
+    List<String> errors = [];
+    List<String> emptyFields = [];
+
+    if (emptyEmail) emptyFields.add('Email');
+    if (emptyPassword) emptyFields.add('Password');
+    if (emptyConfirmPassword) emptyFields.add('Confirm Password');
+    if (emptyUsername) emptyFields.add('Username');
+    if (emptyRestaurantname) emptyFields.add('Restaurant name');
+
+    // Aggiungi errore per campi vuoti, se ce ne sono
+    if (emptyFields.isNotEmpty) {
+      errors.add('${emptyFields.join(', ')} cannot be empty');
     }
+
+    // Aggiungi altri errori non legati al fatto che siano vuoti
+    if (invalidEmail) errors.add('Invalid email format');
+    if (invalidPassword) errors.add('Password must have at least 6 characters');
+    if (invalidConfirmPassword) {
+      errors.add('Confirm Password is different from the password chosen');
+    }
+
+    _errorMessage = errors.isNotEmpty ? errors.join('\n') : null;
 
     notifyListeners();
   }
