@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:sous_chef/services/database/authentication.dart';
 import 'package:sous_chef/models/user.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sous_chef/services/database/firestore_services.dart';
 
 /// Provider that manages user authentication using the Authentication service.

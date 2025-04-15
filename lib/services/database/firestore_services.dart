@@ -85,4 +85,26 @@ class FirestoreServices {
     if (!doc.exists) return null;
     return User.fromFirestore(doc);
   }
+
+  //Function to check in the database if an other user with that username already exists
+  Future<bool> isUsernameTaken(String username) async {
+    final result =
+        await _db
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
+  }
+
+  //Function to check in the database if an other user with that Restaurant name already exists
+  Future<bool> isRestaurantNameTaken(String restaurantName) async {
+    final result =
+        await _db
+            .collection('users')
+            .where('restaurantName', isEqualTo: restaurantName)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
+  }
 }
