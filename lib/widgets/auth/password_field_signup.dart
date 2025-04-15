@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 class PasswordFieldSignup extends StatefulWidget {
-
   final TextEditingController textEditingController;
   final String hintText;
+  final bool hasError;
 
   const PasswordFieldSignup({
     required this.textEditingController,
     required this.hintText,
+    required this.hasError,
     super.key,
   });
 
@@ -29,23 +30,20 @@ class _AuthInputFieldState extends State<PasswordFieldSignup> {
           hintText: widget.hintText,
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color:
+                  widget.hasError
+                      ? Colors.red
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(25.0),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
             borderRadius: BorderRadius.circular(25.0),
           ),
           errorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
             borderRadius: BorderRadius.circular(25.0),
           ),
           focusedBorder: OutlineInputBorder(
@@ -64,7 +62,7 @@ class _AuthInputFieldState extends State<PasswordFieldSignup> {
               color: Colors.grey.shade400,
               size: 18,
             ),
-          )
+          ),
         ),
         validator: (val) {
           if (val!.isEmpty) {
@@ -75,5 +73,4 @@ class _AuthInputFieldState extends State<PasswordFieldSignup> {
       ),
     );
   }
-
 }

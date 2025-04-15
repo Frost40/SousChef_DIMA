@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:flutter/material.dart';
 import 'package:sous_chef/models/user.dart';
 
 class FirestoreServices {
@@ -15,9 +14,7 @@ class FirestoreServices {
       throw Exception('No authenticated user');
     }
 
-    await _db.collection('users').doc(_uid).update({
-      'phone': phone
-    });
+    await _db.collection('users').doc(_uid).update({'phone': phone});
   }
 
   /// Updates user name in Firestore
@@ -27,9 +24,7 @@ class FirestoreServices {
       throw Exception('No authenticated user');
     }
 
-    await _db.collection('users').doc(_uid).update({
-      'name': name
-    });
+    await _db.collection('users').doc(_uid).update({'name': name});
   }
 
   /// Updates user surname in Firestore
@@ -39,9 +34,7 @@ class FirestoreServices {
       throw Exception('No authenticated user');
     }
 
-    await _db.collection('users').doc(_uid).update({
-      'surname': surname
-    });
+    await _db.collection('users').doc(_uid).update({'surname': surname});
   }
 
   /// Updates multiple user profile fields at once
@@ -91,5 +84,27 @@ class FirestoreServices {
     final doc = await _db.collection('users').doc(_uid).get();
     if (!doc.exists) return null;
     return User.fromFirestore(doc);
+  }
+
+  //Function to check in the database if an other user with that username already exists
+  Future<bool> isUsernameTaken(String username) async {
+    final result =
+        await _db
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
+  }
+
+  //Function to check in the database if an other user with that Restaurant name already exists
+  Future<bool> isRestaurantNameTaken(String restaurantName) async {
+    final result =
+        await _db
+            .collection('users')
+            .where('restaurantName', isEqualTo: restaurantName)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
   }
 }
