@@ -23,15 +23,14 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController surnameController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController restaurantNameController = TextEditingController();
-
-  final bool _isPasswordSixCharacters = false;
-  final bool _isEmailWellFormatted = false;
+  final TextEditingController restaurantNameController =
+      TextEditingController();
 
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
@@ -66,7 +65,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             final screenHeight = screenSize.height;
             final aspectRatio = screenWidth / screenHeight;
 
-            final isTablet = screenWidth > 600 && aspectRatio < 1.6; // Regola il valore di aspectRatio se necessario
+            final isTablet = screenWidth > 600 && aspectRatio < 1.6;
 
             if (isTablet) {
               return _buildTabletLayout(context);
@@ -93,10 +92,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.05, horizontal: MediaQuery.of(context).size.width * 0.05),
-            child: Column(
-              children: _buildFormFields(context),
+            padding: EdgeInsets.symmetric(
+              vertical: MediaQuery.of(context).size.height * 0.05,
+              horizontal: MediaQuery.of(context).size.width * 0.05,
             ),
+            child: Column(children: _buildFormFields(context)),
           ),
         ),
       ],
@@ -105,7 +105,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildMobileLayout(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.05),
+      padding: EdgeInsets.symmetric(
+        vertical: MediaQuery.of(context).size.height * 0.05,
+      ),
       child: Column(
         children: [
           Container(
@@ -125,28 +127,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
   List<Widget> _buildFormFields(BuildContext context) {
     // Access authentication provider
     final authProvider = Provider.of<AuthProvider>(context);
-    
+
     return [
       PersonalizedTextField(
         controller: emailController,
         hintText: "Email",
         obscureText: false,
+        hasError: authProvider.hasEmailError,
       ),
       const SizedBox(height: 20),
       PasswordFieldSignup(
         textEditingController: passwordController,
         hintText: "Password",
+        hasError: authProvider.hasPasswordError,
       ),
       const SizedBox(height: 20),
       PasswordFieldSignup(
         textEditingController: confirmPasswordController,
         hintText: "Confirm Password",
+        hasError: authProvider.hasConfirmPasswordError,
       ),
       const SizedBox(height: 20),
       PersonalizedTextField(
         controller: usernameController,
         hintText: "Username",
         obscureText: false,
+        hasError: authProvider.hasUsernameError,
       ),
       const SizedBox(height: 20),
       Row(
@@ -182,6 +188,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
           controller: restaurantNameController,
           hintText: "Restaurant Name",
           obscureText: false,
+          hasError: authProvider.hasRestaurantnameError,
+        ),
+
+      if (authProvider.errorMessage != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 10.0),
+          child: Center(
+            child: Text(
+              authProvider.errorMessage!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ),
 
       const SizedBox(height: 30),
@@ -191,8 +212,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
         shakeOffset: 10,
         child: AnimatedButton(
           onTap: () async {
-            if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+            if (emailController.text.isEmpty ||
+                passwordController.text.isEmpty ||
+                confirmPasswordController.text.isEmpty ||
+                (restaurantNameController.text.isEmpty && _isChef) ||
+                passwordController.text != confirmPasswordController.text ||
+                passwordController.text.length <= 6) {
               _shakeKey.currentState?.shake();
+              authProvider.setFieldErrors(
+                emptyEmail: emailController.text.isEmpty,
+                emptyPassword: passwordController.text.isEmpty,
+                emptyConfirmPassword: confirmPasswordController.text.isEmpty,
+                emptyRestaurantname:
+                    restaurantNameController.text.isEmpty && _isChef,
+                emptyUsername: usernameController.text.isEmpty,
+                invalidConfirmPassword:
+                    passwordController.text != confirmPasswordController.text,
+                invalidPassword: passwordController.text.length <= 6,
+              );
             } else {
               // Calling the sign-up method from the provider
               await authProvider.signUp(
@@ -220,12 +257,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: PersonalizedButton(
             text: "SignUp",
             onPressed: null,
-            centralWidget: authProvider.isLoading
-                ? LoadingAnimationWidget.staggeredDotsWave(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    size: 30,
-                  )
-                : null,
+            centralWidget:
+                authProvider.isLoading
+                    ? LoadingAnimationWidget.staggeredDotsWave(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 30,
+                    )
+                    : null,
           ),
         ),
       ),
@@ -245,8 +283,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
 
       const SizedBox(height: 20),
-
     ];
   }
-
 }

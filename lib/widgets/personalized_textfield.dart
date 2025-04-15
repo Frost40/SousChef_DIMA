@@ -4,12 +4,14 @@ class PersonalizedTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final bool obscureText;
+  final bool hasError;
 
   const PersonalizedTextField({
     super.key,
     required this.controller,
     required this.hintText,
     required this.obscureText,
+    required this.hasError,
   });
 
   @override
@@ -23,23 +25,20 @@ class PersonalizedTextField extends StatelessWidget {
           hintText: hintText,
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color:
+                  hasError
+                      ? Colors.red
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(25.0),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
             borderRadius: BorderRadius.circular(25.0),
           ),
           errorBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 1,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
             borderRadius: BorderRadius.circular(25.0),
           ),
           focusedBorder: OutlineInputBorder(
