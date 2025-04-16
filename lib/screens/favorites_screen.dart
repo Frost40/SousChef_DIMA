@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../widgets/favorite_screen/slider.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -10,17 +10,8 @@ class FavoritesScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Favorites'),
         automaticallyImplyLeading: false,
-
       ),
-      body: Center(
-        child: Text(
-          'No favorites yet!',
-          style: TextStyle(
-            fontSize: 24,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
+      body: FavoritesList(),
     );
   }
 }

@@ -35,6 +35,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
 
+  void dispose() {
+    // Clean up controllers when the widget is destroyed
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    nameController.dispose();
+    surnameController.dispose();
+    usernameController.dispose();
+    phoneController.dispose();
+    restaurantNameController.dispose();
+    super.dispose();
+  }
+
   void _navigateToHome() {
     // Cleaning errors and navigating to home
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -197,6 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Center(
             child: Text(
               authProvider.errorMessage!,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
                 fontSize: 14,
@@ -245,10 +259,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 if (authProvider.errorMessage == null) {
                   _navigateToHome();
                 } else {
-                  // Registration failed
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(authProvider.errorMessage!)),
-                  );
                   _shakeKey.currentState?.shake();
                 }
               }

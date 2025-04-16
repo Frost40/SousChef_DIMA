@@ -5,11 +5,7 @@ class CustomSwitch extends StatefulWidget {
   final bool? initialValue;
   final ValueChanged<bool>? onChanged;
 
-  const CustomSwitch({
-    super.key,
-    this.initialValue,
-    this.onChanged
-  });
+  const CustomSwitch({super.key, this.initialValue, this.onChanged});
 
   @override
   State<CustomSwitch> createState() => _CustomSwitchState();
@@ -29,7 +25,7 @@ class _CustomSwitchState extends State<CustomSwitch> {
   Widget build(BuildContext context) {
     return CupertinoSwitch(
       value: _switchValue,
-      activeTrackColor: Theme.of(context).primaryColor,
+      activeTrackColor: Theme.of(context).colorScheme.primary,
       onChanged: (value) {
         setState(() {
           _switchValue = value;
