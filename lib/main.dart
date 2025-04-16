@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
 import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         Provider<AppRouter>(create: (_) => AppRouter()),
       ],
       child: Consumer2<AppRouter, ThemeProvider>(
