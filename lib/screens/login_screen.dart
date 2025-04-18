@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.clearErrors();
 
-    // Usa il navigatore root e rimuovi tutte le route precedenti
+    // Navigate to home screen
     Navigator.of(context, rootNavigator: true).pushReplacementNamed('/main');
   }
 

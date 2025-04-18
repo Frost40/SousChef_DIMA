@@ -22,6 +22,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   String? _phoneNumber;
   String? _email;
   String? _password;
+  String? _pageError;
   bool _modified = false;
 
   @override
@@ -33,14 +34,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     });
   }
 
-  @override
-  void dispose() {
+  void _clearErrors() {
+    setState(() {
+      _pageError = null;
+    });
+    //
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     userProvider.clearErrors();
-    // Dispose of any controllers or listeners if needed
-    super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -77,27 +78,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           : SafeArea(
               child: ListView(
                 children: [
-                  if (userProvider.errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        userProvider.errorMessage!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      ),
-                    ),
+
 
                   AccountSettingField(
                     fieldName: "Name",
                     initialValue: userData.name ?? "",
                     onValueChanged: (newValue, isModified) {
+                      _clearErrors();
                       setState(() {
                         _name = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
                     },
                   ),
@@ -107,9 +97,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     fieldName: "Surname",
                     initialValue: userData.surname ?? "",
                     onValueChanged: (newValue, isModified) {
+                      _clearErrors();
                       setState(() {
                         _surname = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
                     },
                   ),
@@ -120,10 +111,18 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     initialValue: userData.username ?? "",
                     asyncValidator: _validateUsername,
                     onValueChanged: (newValue, isModified) {
+                      _clearErrors();
                       setState(() {
                         _username = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
+                    },
+                    onValidationError: (error) {
+                      if (error != null) {
+                        setState(() {
+                          _pageError = error;
+                        });
+                      }
                     },
                   ),
                   const SizedBox(height: 20),
@@ -133,10 +132,18 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     initialValue: userData.phone ?? "",
                     asyncValidator: _validatePhoneNumber,
                     onValueChanged: (newValue, isModified) {
+                      _clearErrors();
                       setState(() {
                         _phoneNumber = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
+                    },
+                    onValidationError: (error) {
+                      if (error != null) {
+                        setState(() {
+                          _pageError = error;
+                        });
+                      }
                     },
                   ),
                   const SizedBox(height: 20),
@@ -147,7 +154,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     onValueChanged: (newValue, isModified) {
                       setState(() {
                         _email = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
                     },
                   ),
@@ -160,10 +167,25 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     onValueChanged: (newValue, isModified) {
                       setState(() {
                         _password = newValue;
-                        _modified = isModified ? true : false;
+                        _modified = isModified;
                       });
                     },
                   ),
+                  const SizedBox(height: 20),
+
+                  if (_pageError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Center(
+                        child: Text(
+                          _pageError!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 40),
 
                   AnimatedButton(

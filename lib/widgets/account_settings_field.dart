@@ -5,6 +5,7 @@ class AccountSettingField extends StatefulWidget {
   final String fieldName;
   final String initialValue;
   final Function(String, bool) onValueChanged; // isModified parameter added to prevent unnecessary updates
+  final Function(String?)? onValidationError;
   final bool isPassword;
   final TextInputType keyboardType;
   final Future<String?> Function(String)? asyncValidator;
@@ -14,6 +15,7 @@ class AccountSettingField extends StatefulWidget {
     required this.fieldName,
     required this.initialValue,
     required this.onValueChanged,
+    this.onValidationError,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.asyncValidator,
@@ -65,13 +67,10 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
         setState(() {
           _validationError = error;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error))
-        );
-
-        // Important: we still update the UI with the new value
-        // but we notify the parent that it shouldn't save it yet
+        // Notify the parent widget about the validation error
+        if (widget.onValidationError != null) {
+          widget.onValidationError!(error);
+        }
         widget.onValueChanged(_currentValue, false);
         return;
       }
