@@ -4,17 +4,21 @@ import 'package:sous_chef/themes/dark_mode.dart';
 class AccountSettingField extends StatefulWidget {
   final String fieldName;
   final String initialValue;
-  final Function(String) onValueChanged;
+  final Function(String, bool) onValueChanged; // isModified parameter added to prevent unnecessary updates
+  final Function(String?)? onValidationError;
   final bool isPassword;
   final TextInputType keyboardType;
+  final Future<String?> Function(String)? asyncValidator;
 
   const AccountSettingField({
     super.key,
     required this.fieldName,
     required this.initialValue,
     required this.onValueChanged,
+    this.onValidationError,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
+    this.asyncValidator,
   });
 
   @override
@@ -27,6 +31,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
   bool _isEditing = false;
   bool pwdVisibility = false;
   late FocusNode _focusNode;
+  String? _validationError;
 
   @override
   void initState() {
@@ -41,9 +46,37 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
     if (!_focusNode.hasFocus && _isEditing) {
       setState(() {
         _isEditing = false;
-        widget.onValueChanged(_currentValue);
+        _notifyValueChanged();
       });
     }
+  }
+
+  // Method to handle value changes and notify the parent widget
+  Future<void> _notifyValueChanged() async {
+    // Verify if the value has changed
+    bool isModified = _currentValue != widget.initialValue;
+    // Send the modified value to the parent widget together with the isModified flag
+    if (isModified && widget.asyncValidator != null) {
+      setState(() {
+        _validationError = null;
+      });
+
+      final error = await widget.asyncValidator!(_currentValue);
+
+      if (error != null) {
+        setState(() {
+          _validationError = error;
+        });
+        // Notify the parent widget about the validation error
+        if (widget.onValidationError != null) {
+          widget.onValidationError!(error);
+        }
+        widget.onValueChanged(_currentValue, false);
+        return;
+      }
+    }
+
+    widget.onValueChanged(_currentValue, isModified);
   }
 
   @override
@@ -63,9 +96,11 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
       height: 50,
       decoration: BoxDecoration(
         border: Border.all(
-          color: _isEditing
+          color: _validationError != null
+              ? Theme.of(context).colorScheme.error
+              : (_isEditing
               ? colorTheme.primary
-              : colorTheme.surfaceContainerHighest,
+              : colorTheme.surfaceContainerHighest),
           width: 1.0,
         ),
         borderRadius: BorderRadius.circular(25.0),
@@ -105,6 +140,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
                       Future.delayed(Duration.zero, () => _focusNode.requestFocus());
                     }
                   },
+                  behavior: HitTestBehavior.opaque,
                   child: Container(
                     height: double.infinity,
                     alignment: Alignment.centerLeft,
@@ -133,7 +169,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
                               setState(() {
                                 _isEditing = false;
                                 _currentValue = value;
-                                widget.onValueChanged(value);
+                                _notifyValueChanged();
                               });
                             },
                           )
