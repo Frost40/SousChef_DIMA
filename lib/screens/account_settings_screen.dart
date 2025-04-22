@@ -68,151 +68,153 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             ),
         ],
       ),
-      body: userProvider.isLoading || userData == null
-          ? Center(
-              child: LoadingAnimationWidget.staggeredDotsWave(
-                color: Theme.of(context).colorScheme.primary,
-                size: 40,
-              ),
-            )
-          : SafeArea(
-              child: ListView(
-                children: [
-
-
-                  AccountSettingField(
-                    fieldName: "Name",
-                    initialValue: userData.name ?? "",
-                    onValueChanged: (newValue, isModified) {
-                      _clearErrors();
-                      setState(() {
-                        _name = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  AccountSettingField(
-                    fieldName: "Surname",
-                    initialValue: userData.surname ?? "",
-                    onValueChanged: (newValue, isModified) {
-                      _clearErrors();
-                      setState(() {
-                        _surname = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  AccountSettingField(
-                    fieldName: "Username",
-                    initialValue: userData.username ?? "",
-                    asyncValidator: _validateUsername,
-                    onValueChanged: (newValue, isModified) {
-                      _clearErrors();
-                      setState(() {
-                        _username = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                    onValidationError: (error) {
-                      if (error != null) {
+      body:
+          userProvider.isLoading || userData == null
+              ? Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 40,
+                ),
+              )
+              : SafeArea(
+                child: ListView(
+                  children: [
+                    AccountSettingField(
+                      fieldName: "Name",
+                      initialValue: userData.name ?? "",
+                      onValueChanged: (newValue, isModified) {
+                        _clearErrors();
                         setState(() {
-                          _pageError = error;
+                          _name = newValue;
+                          _modified = isModified;
                         });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                  AccountSettingField(
-                    fieldName: "Phone Number",
-                    initialValue: userData.phone ?? "",
-                    asyncValidator: _validatePhoneNumber,
-                    onValueChanged: (newValue, isModified) {
-                      _clearErrors();
-                      setState(() {
-                        _phoneNumber = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                    onValidationError: (error) {
-                      if (error != null) {
+                    AccountSettingField(
+                      fieldName: "Surname",
+                      initialValue: userData.surname ?? "",
+                      onValueChanged: (newValue, isModified) {
+                        _clearErrors();
                         setState(() {
-                          _pageError = error;
+                          _surname = newValue;
+                          _modified = isModified;
                         });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                  AccountSettingField(
-                    fieldName: "Email",
-                    initialValue: userData.email,
-                    onValueChanged: (newValue, isModified) {
-                      setState(() {
-                        _email = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                    AccountSettingField(
+                      fieldName: "Username",
+                      initialValue: userData.username ?? "",
+                      asyncValidator: _validateUsername,
+                      onValueChanged: (newValue, isModified) {
+                        _clearErrors();
+                        setState(() {
+                          _username = newValue;
+                          _modified = isModified;
+                        });
+                      },
+                      onValidationError: (error) {
+                        if (error != null) {
+                          setState(() {
+                            _pageError = error;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                  AccountSettingField(
-                    fieldName: "Password",
-                    initialValue: "••••••••",
-                    isPassword: true,
-                    onValueChanged: (newValue, isModified) {
-                      setState(() {
-                        _password = newValue;
-                        _modified = isModified;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                    AccountSettingField(
+                      fieldName: "Phone Number",
+                      initialValue: userData.phone ?? "",
+                      asyncValidator: _validatePhoneNumber,
+                      onValueChanged: (newValue, isModified) {
+                        _clearErrors();
+                        setState(() {
+                          _phoneNumber = newValue;
+                          _modified = isModified;
+                        });
+                      },
+                      onValidationError: (error) {
+                        if (error != null) {
+                          setState(() {
+                            _pageError = error;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                  if (_pageError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: Center(
-                        child: Text(
-                          _pageError!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontSize: 14,
+                    AccountSettingField(
+                      fieldName: "Email",
+                      initialValue: userData.email,
+                      onValueChanged: (newValue, isModified) {
+                        setState(() {
+                          _email = newValue;
+                          _modified = isModified;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    AccountSettingField(
+                      fieldName: "Password",
+                      initialValue: "••••••••",
+                      isPassword: true,
+                      onValueChanged: (newValue, isModified) {
+                        setState(() {
+                          _password = newValue;
+                          _modified = isModified;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    if (_pageError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10.0),
+                        child: Center(
+                          child: Text(
+                            _pageError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 40),
+                    const SizedBox(height: 40),
 
-                  AnimatedButton(
-                    onTap: () async {
-                      // Sign out the user through auth provider
-                      await authProvider.signOut();
-                      // Navigate to login screen after successful logout
-                      if (context.mounted) {
-                        Navigator.of(context, rootNavigator: true)
-                            .pushReplacementNamed('/login');
-                      }
-                    },
-                    child: PersonalizedButton(
+                    AnimatedButton(
+                      onTap: () async {
+                        // Sign out the user through auth provider
+                        await authProvider.signOut();
+                        // Navigate to login screen after successful logout
+                        if (context.mounted) {
+                          Navigator.of(
+                            context,
+                            rootNavigator: true,
+                          ).pushReplacementNamed('/login');
+                        }
+                      },
+                      child: PersonalizedButton(
                         text: "Delete Account",
                         onPressed: null,
                         centralWidget:
                             authProvider.isLoading
                                 ? LoadingAnimationWidget.staggeredDotsWave(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    size: 30,
-                                  )
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  size: 30,
+                                )
                                 : null,
+                      ),
                     ),
-                  )
-                ],
-              )
-            ),
+                  ],
+                ),
+              ),
     );
   }
 
@@ -220,7 +222,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     // Update profile fields
-    if (_name != null || _surname != null || _username != null || _phoneNumber != null) {
+    if (_name != null ||
+        _surname != null ||
+        _username != null ||
+        _phoneNumber != null) {
       await userProvider.updateUserProfile(
         username: _username,
         name: _name,
@@ -280,5 +285,4 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     return null;
   }
-
 }

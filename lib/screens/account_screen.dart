@@ -68,23 +68,27 @@ class AccountScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             AccountField(
-                leftIcon: Icons.settings,
-                text: "Account Settings",
-                onTap: () {
-                  Navigator.of(context).pushNamed('/account-settings',
-                      arguments: {'transitionType': TransitionType.slideRight});
-                }
+              leftIcon: Icons.settings,
+              text: "Account Settings",
+              onTap: () {
+                Navigator.of(context).pushNamed(
+                  '/account-settings',
+                  arguments: {'transitionType': TransitionType.slideRight},
+                );
+              },
             ),
 
             const SizedBox(height: 20),
 
             AccountField(
-                leftIcon: Icons.receipt_long_rounded,
-                text: "Past Orders",
-                onTap: () {
-                  Navigator.of(context).pushNamed('/past-orders',
-                      arguments: {'transitionType': TransitionType.slideRight});
-                }
+              leftIcon: Icons.receipt_long_rounded,
+              text: "Past Orders",
+              onTap: () {
+                Navigator.of(context).pushNamed(
+                  '/past-orders',
+                  arguments: {'transitionType': TransitionType.slideRight},
+                );
+              },
             ),
 
             const SizedBox(height: 60),
@@ -96,15 +100,14 @@ class AccountScreen extends StatelessWidget {
                 await authProvider.signOut();
                 // Navigate to login screen after successful logout
                 if (context.mounted) {
-                  Navigator.of(context, rootNavigator: true)
-                      .pushReplacementNamed('/login');
+                  Navigator.of(
+                    context,
+                    rootNavigator: true,
+                  ).pushReplacementNamed('/login');
                 }
               },
-              child: PersonalizedButton(
-                text: "Logout",
-                onPressed: null
-              ),
-            )
+              child: PersonalizedButton(text: "Logout", onPressed: null),
+            ),
           ],
         ),
       ),
