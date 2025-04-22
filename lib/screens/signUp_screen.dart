@@ -35,6 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
 
+  @override
   void dispose() {
     // Clean up controllers when the widget is destroyed
     emailController.dispose();
