@@ -234,6 +234,17 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       );
     }
 
+    if (_email != null) {
+      await userProvider.updateUserEmail(_email!);
+      // Check if there was an email-specific error
+      if (userProvider.hasEmailError && userProvider.errorMessage != null) {
+        setState(() {
+          _pageError = userProvider.errorMessage;
+        });
+        return; // Return early to prevent the success message
+      }
+    }
+
     if (userProvider.errorMessage == null) {
       setState(() {
         _modified = false;
@@ -244,8 +255,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           const SnackBar(content: Text('Profile updated successfully!')),
         );
       }
-    }
-  }
+    } 
+ }
+  
 
   Future<String?> _validateUsername(String value) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);

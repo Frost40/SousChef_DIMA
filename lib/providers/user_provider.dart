@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
+import 'package:sous_chef/services/database/authentication.dart'; // Add this import
 
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
 class UserProvider with ChangeNotifier {
   // UserFirestore service instance used to interact with Firestore
   final UserFirestore _userFirestore = UserFirestore();
+  // Authentication service instance
+  final Authentication _authentication = Authentication();
 
   // Current user data
   User? _userData;
@@ -127,9 +130,14 @@ class UserProvider with ChangeNotifier {
 
     try {
       await _userFirestore.updateUserEmail(newEmail);
-
-      // Update in-memory data
-      _userData = await _userFirestore.getFullUserData();
+      
+      // Instead of fetching all user data, just update the email field
+      // This assumes the email verification happens immediately (synchronously)
+      // which it doesn't - see the notification system below
+      
+      // Set up a listener to wait for the email update to complete
+      _setupEmailUpdateListener(newEmail);
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -138,6 +146,29 @@ class UserProvider with ChangeNotifier {
       _hasEmailError = true;
       notifyListeners();
     }
+  }
+  
+  /// Sets up a listener to detect when the email update completes
+  void _setupEmailUpdateListener(String newEmail) {
+    // Create a subscription that we can cancel later
+    late final subscription;
+    subscription = 
+        Stream.periodic(const Duration(seconds: 2), (_) => _authentication.getCurrentUserEmail())
+        .listen((currentEmail) {
+          if (currentEmail == newEmail) {
+            // Email has been updated successfully
+            if (_userData != null) {
+              _userData = _userData!.copyWith(email: newEmail);
+              notifyListeners();
+            }
+            subscription.cancel(); // Stop listening once we detect the change
+          }
+        });
+    
+    // Cancel the subscription after a reasonable timeout (e.g., 2 minutes)
+    Future.delayed(const Duration(minutes: 2), () {
+      subscription.cancel();
+    });
   }
 
   /// Updates the user's password

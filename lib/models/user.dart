@@ -42,4 +42,23 @@ class User {
       if (restaurantId != null) 'restaurantId': restaurantId,
     };
   }
+
+  /// Creates a copy of this User with the given fields replaced with the new values
+  User copyWith({
+    String? id,
+    String? email,
+    String? username,
+    String? name,
+    String? surname,
+    String? phone,
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      name: name ?? this.name,
+      surname: surname ?? this.surname,
+      phone: phone ?? this.phone,
+    );
+  }
 }

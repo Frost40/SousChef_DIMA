@@ -44,7 +44,8 @@ class UserFirestore {
     }
   }
 
-  /// Function to update the user's email in both Firebase Auth and Firestore
+  /// Function to request update of the user's email in both Firebase Auth and Firestore
+  /// This sends a verification email to the new address that the user must click before the change takes effect
   Future<void> updateUserEmail(String newEmail) async {
     if (_uid == null) {
       throw Exception('No authenticated user');
@@ -54,11 +55,39 @@ class UserFirestore {
       throw Exception('User not found');
     }
 
-    // Aggiorna l'email in Firebase Auth
-    await _authUser!.updateEmail(newEmail);
-
-    // Updating the email in Firestore
-    await _userTable.doc(_uid).update({'email': newEmail});
+    // Store the current email to compare later
+    final String oldEmail = _authUser!.email!;
+    
+    // Send verification email to the new email address
+    await _authUser!.verifyBeforeUpdateEmail(newEmail);
+    
+    // Set up a listener to detect when the email has been changed
+    // This should be called somewhere that persists beyond this function
+    _setupEmailChangeListener(oldEmail, newEmail);
+    
+    debugPrint('Verification email sent to $newEmail. Please check your inbox and verify to complete the update.');
+  }
+  
+  /// Sets up a listener to detect when email verification is complete
+  /// and updates Firestore accordingly
+  void _setupEmailChangeListener(String oldEmail, String newEmail) {
+    firebase_auth.FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null && user.email != oldEmail && user.email == newEmail) {
+        // The email has been changed, update Firestore
+        _userTable.doc(user.uid).update({'email': newEmail}).then((_) {
+          debugPrint('Email updated in Firestore to $newEmail');
+        }).catchError((error) {
+          debugPrint('Failed to update email in Firestore: $error');
+        });
+        
+        // Note: Firebase automatically handles the authentication state
+        // The user remains logged in after email change
+        
+        // Optional: You might want to refresh the user's ID token
+        // This ensures all Firebase services recognize the updated user info
+        user.getIdToken(true); // Force token refresh
+      }
+    });
   }
 
   /// Function to update the user's password in Firebase Auth
@@ -74,7 +103,6 @@ class UserFirestore {
     // Update the password in Firebase Auth
     await _authUser!.updatePassword(newPassword);
   }
-
 
   /// Recover all user data from Firestore and return it as a User model
   Future<User?> getFullUserData() async {

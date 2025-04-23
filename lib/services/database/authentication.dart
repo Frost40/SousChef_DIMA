@@ -86,6 +86,12 @@ class Authentication {
     return User.fromFirestore(doc);
   }
 
+  /// Gets the current user's email directly from Firebase Auth
+  /// More efficient than fetching the entire user profile
+  String? getCurrentUserEmail() {
+    return _firebaseAuth.currentUser?.email;
+  }
+
   // Reset password
   Future<void> resetPassword(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
