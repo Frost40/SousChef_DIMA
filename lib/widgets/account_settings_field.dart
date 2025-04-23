@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sous_chef/themes/dark_mode.dart';
+import 'package:sous_chef/themes/theme_extensions.dart';  // Add this import
 
 class AccountSettingField extends StatefulWidget {
   final String fieldName;
