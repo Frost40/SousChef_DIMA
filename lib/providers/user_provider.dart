@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
@@ -82,13 +84,13 @@ class UserProvider with ChangeNotifier {
   }
 
   /// Clears all error states and messages
-  void clearErrors() {
+  void clearErrors({bool notify = true}) {
     _errorMessage = null;
     _hasEmailError = false;
     _hasPasswordError = false;
     _hasUsernameError = false;
     _hasPhoneError = false;
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   /// Updates user profile with the provided fields
@@ -151,7 +153,7 @@ class UserProvider with ChangeNotifier {
   /// Sets up a listener to detect when the email update completes
   void _setupEmailUpdateListener(String newEmail) {
     // Create a subscription that we can cancel later
-    late final subscription;
+    late final StreamSubscription<String?> subscription;
     subscription = 
         Stream.periodic(const Duration(seconds: 2), (_) => _authentication.getCurrentUserEmail())
         .listen((currentEmail) {

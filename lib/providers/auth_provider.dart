@@ -227,6 +227,23 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Checks if an email is already registered/in use
+  /// Returns true if the email is already in use, false otherwise
+  Future<bool> isEmailInUse(String email) async {
+    _isLoading = true;
+    clearErrors();
+
+    try {
+      _isLoading = false;
+      return await _auth.isEmailInUse(email);
+
+    } catch (e) {
+      _errorMessage = "Error checking email availability";
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Sets the appropriate field error flags based on the error type
   void _setErrorFieldsByErrorType(dynamic error) {
     if (error is firebase_auth.FirebaseAuthException) {

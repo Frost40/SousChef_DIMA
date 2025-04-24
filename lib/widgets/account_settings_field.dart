@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sous_chef/themes/dark_mode.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';  // Add this import
 
 class AccountSettingField extends StatefulWidget {
@@ -45,26 +44,32 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
 
   void _onFocusChange() {
     if (!_focusNode.hasFocus && _isEditing) {
-      setState(() {
-        _isEditing = false;
-        _notifyValueChanged();
-      });
+      if (mounted) {
+        setState(() {
+          _isEditing = false;
+          _notifyValueChanged();
+        });
+      }
     }
   }
 
   // Method to handle value changes and notify the parent widget
   Future<void> _notifyValueChanged() async {
+    if (!mounted) return; // Check if widget is still mounted before proceeding
+    
     // Verify if the value has changed
     bool isModified = _currentValue != widget.initialValue;
     // Send the modified value to the parent widget together with the isModified flag
     if (isModified && widget.asyncValidator != null) {
-      setState(() {
-        _validationError = null;
-      });
+      if (mounted) {
+        setState(() {
+          _validationError = null;
+        });
+      }
 
       final error = await widget.asyncValidator!(_currentValue);
 
-      if (error != null) {
+      if (error != null && mounted) {
         setState(() {
           _validationError = error;
         });

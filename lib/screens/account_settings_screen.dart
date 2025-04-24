@@ -21,7 +21,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   String? _username;
   String? _phoneNumber;
   String? _email;
-  String? _password;
   String? _pageError;
   bool _modified = false;
 
@@ -38,9 +37,18 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     setState(() {
       _pageError = null;
     });
-    //
+    
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.clearErrors();
+    userProvider.clearErrors(notify: false);
+  }
+  
+  // Add this new method to clear page error without triggering a full page rebuild
+  void _clearPageError() {
+    if (_pageError != null) {
+      setState(() {
+        _pageError = null;
+      });
+    }
   }
 
   @override
@@ -110,7 +118,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       initialValue: userData.username ?? "",
                       asyncValidator: _validateUsername,
                       onValueChanged: (newValue, isModified) {
-                        _clearErrors();
                         setState(() {
                           _username = newValue;
                           _modified = isModified;
@@ -131,7 +138,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       initialValue: userData.phone ?? "",
                       asyncValidator: _validatePhoneNumber,
                       onValueChanged: (newValue, isModified) {
-                        _clearErrors();
                         setState(() {
                           _phoneNumber = newValue;
                           _modified = isModified;
@@ -145,31 +151,76 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         }
                       },
                     ),
-                    const SizedBox(height: 20),
-
-                    AccountSettingField(
-                      fieldName: "Email",
-                      initialValue: userData.email,
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _email = newValue;
-                          _modified = isModified;
-                        });
-                      },
+                    const SizedBox(height: 40),
+                    
+                    // Email section with info tooltip
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                          child: Text(
+                            "Email Settings",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: colorTheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                          child: Divider(
+                            color: colorTheme.onSurface,
+                            thickness: 0.5,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 10),
+                        AccountSettingField(
+                          fieldName: "Email",
+                          initialValue: userData.email,
+                          asyncValidator: _validateEmail,
+                          onValueChanged: (newValue, isModified) {
+                            setState(() {
+                              _email = newValue;
+                              _modified = isModified;
+                            });
+                          },
+                          onValidationError: (error) {
+                            if (error != null) {
+                              setState(() {
+                                _pageError = error;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                          child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: colorTheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                            child: Text(
+                              "Changing your email will require you to log in again to apply the changes.",
+                              style: TextStyle(
+                              fontSize: 13,
+                              color: colorTheme.onSurfaceVariant,
+                              ),
+                            ),
+                            ),
+                          ],
+                          ),
+                        )
+                      ],
                     ),
-                    const SizedBox(height: 20),
-
-                    AccountSettingField(
-                      fieldName: "Password",
-                      initialValue: "••••••••",
-                      isPassword: true,
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _password = newValue;
-                          _modified = isModified;
-                        });
-                      },
-                    ),
+                    
                     const SizedBox(height: 20),
 
                     if (_pageError != null)
@@ -293,6 +344,30 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     // Verify format (Italian number)
     if (!RegExp(r'^(\+39)?\s?\d{10}$').hasMatch(value)) {
       return "Please enter a valid phone number (Italian format)";
+    }
+
+    return null;
+  }
+
+  Future<String?> _validateEmail(String value) async {
+    // Email is required
+    if (value.isEmpty) {
+      return "Email address is required";
+    }
+
+    // Check for valid email format
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value)) {
+      return "Please enter a valid email address";
+    }
+
+    // Check if the email is already in use
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final bool isInUse = await authProvider.isEmailInUse(value);
+    
+    if (isInUse) {
+      // Simply return error message - onValidationError will handle updating _pageError
+      return "This email is already registered with another account";
     }
 
     return null;

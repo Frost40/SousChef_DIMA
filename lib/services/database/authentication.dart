@@ -96,4 +96,17 @@ class Authentication {
   Future<void> resetPassword(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
+  
+  /// Checks if an email is already registered in Firebase Auth
+  /// Returns true if the email is already in use, false otherwise
+  Future<bool> isEmailInUse(String email) async {
+    try {
+      final methods = await _firebaseAuth.fetchSignInMethodsForEmail(email);
+      // If there are sign-in methods available for this email, it's already in use
+      return methods.isNotEmpty;
+    } catch (e) {
+      // In case of error, we return false to allow proceeding
+      return false;
+    }
+  }
 }
