@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
+import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
@@ -22,7 +23,22 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   String? _phoneNumber;
   String? _email;
   String? _pageError;
-  bool _modified = false;
+  
+  // Track modifications for each field separately
+  bool _nameModified = false;
+  bool _surnameModified = false;
+  bool _usernameModified = false;
+  bool _phoneNumberModified = false;
+  bool _emailModified = false;
+  
+  bool _hasUsernameError = false;
+  bool _hasPhoneNumberError = false;
+  bool _hasEmailError = false;
+  
+  // Helper to check if any field is modified
+  bool get _isAnyFieldModified => 
+      _nameModified || _surnameModified || _usernameModified || 
+      _phoneNumberModified || _emailModified;
 
   @override
   void initState() {
@@ -68,7 +84,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           },
         ),
         actions: [
-          if (_modified)
+          if (_isAnyFieldModified && !_hasUsernameError && 
+              !_hasPhoneNumberError && !_hasEmailError)
             IconButton(
               icon: const Icon(Icons.save),
               color: colorTheme.primary,
@@ -91,10 +108,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       fieldName: "Name",
                       initialValue: userData.name ?? "",
                       onValueChanged: (newValue, isModified) {
-                        _clearErrors();
                         setState(() {
                           _name = newValue;
-                          _modified = isModified;
+                          _nameModified = isModified;
                         });
                       },
                     ),
@@ -104,10 +120,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       fieldName: "Surname",
                       initialValue: userData.surname ?? "",
                       onValueChanged: (newValue, isModified) {
-                        _clearErrors();
                         setState(() {
+                          _pageError = null;
                           _surname = newValue;
-                          _modified = isModified;
+                          _surnameModified = isModified;
                         });
                       },
                     ),
@@ -120,14 +136,21 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       onValueChanged: (newValue, isModified) {
                         setState(() {
                           _username = newValue;
-                          _modified = isModified;
+                          _usernameModified = isModified;
                         });
                       },
+                      onTextChanged: _clearPageError,
                       onValidationError: (error) {
                         if (error != null) {
                           setState(() {
                             _pageError = error;
+                            _hasUsernameError = true;
                           });
+                        } else {
+                          setState(() {
+                            _hasUsernameError = false;
+                          });
+                          _clearPageError();
                         }
                       },
                     ),
@@ -140,14 +163,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       onValueChanged: (newValue, isModified) {
                         setState(() {
                           _phoneNumber = newValue;
-                          _modified = isModified;
+                          _phoneNumberModified = isModified;
                         });
                       },
+                      onTextChanged: _clearPageError,
                       onValidationError: (error) {
                         if (error != null) {
                           setState(() {
                             _pageError = error;
+                            _hasPhoneNumberError = true;
                           });
+                        }else {
+                          _hasPhoneNumberError = false;
+                          _clearPageError();
                         }
                       },
                     ),
@@ -184,14 +212,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                           onValueChanged: (newValue, isModified) {
                             setState(() {
                               _email = newValue;
-                              _modified = isModified;
+                              _emailModified = isModified;
                             });
                           },
+                          onTextChanged: _clearPageError,
                           onValidationError: (error) {
                             if (error != null) {
                               setState(() {
                                 _pageError = error;
+                                _hasEmailError = true;
                               });
+                            } else {
+                              _hasEmailError = false;
+                              _clearPageError();
                             }
                           },
                         ),
@@ -240,14 +273,46 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
                     AnimatedButton(
                       onTap: () async {
-                        // Sign out the user through auth provider
-                        await authProvider.signOut();
-                        // Navigate to login screen after successful logout
-                        if (context.mounted) {
-                          Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushReplacementNamed('/login');
+                        // Show confirmation dialog before deleting account
+                        final bool confirmDelete = await CustomAlertDialog.showConfirmationDialog(
+                          context: context,
+                          title: "Delete Account",
+                          message: "Are you sure you want to delete your account? This action cannot be undone.",
+                          confirmText: "Delete",
+                          cancelText: "Cancel",
+                          icon: Icon(
+                            Icons.warning_amber_rounded,
+                            color: colorTheme.primary,
+                          ),
+                        );
+                        
+                        if (confirmDelete && context.mounted) {
+                          // Implement account deletion logic here
+                          try {                            
+                            // Sign out the user through auth provider
+                            await authProvider.signOut();
+                            
+                            // Navigate to login screen after successful logout
+                            if (context.mounted) {
+                              Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pushReplacementNamed('/login');
+                            }
+                          } catch (e) {
+                            // Show error if deletion fails
+                            if (context.mounted) {
+                              CustomAlertDialog.showInfoDialog(
+                                context: context,
+                                title: "Error",
+                                message: "Failed to delete account. Please try again later.",
+                                icon: Icon(
+                                  Icons.error_outline,
+                                  color: colorTheme.error,
+                                ),
+                              );
+                            }
+                          }
                         }
                       },
                       child: PersonalizedButton(
@@ -257,7 +322,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             authProvider.isLoading
                                 ? LoadingAnimationWidget.staggeredDotsWave(
                                   color:
-                                      Theme.of(context).colorScheme.onPrimary,
+                                      colorTheme.onPrimary,
                                   size: 30,
                                 )
                                 : null,
@@ -298,7 +363,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     if (userProvider.errorMessage == null) {
       setState(() {
-        _modified = false;
+        _nameModified = false;
+        _surnameModified = false;
+        _usernameModified = false;
+        _phoneNumberModified = false;
+        _emailModified = false;
       });
 
       if (context.mounted) {

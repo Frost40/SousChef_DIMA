@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:sous_chef/themes/theme_extensions.dart';  // Add this import
+import 'package:sous_chef/themes/theme_extensions.dart';
 
 class AccountSettingField extends StatefulWidget {
   final String fieldName;
   final String initialValue;
   final Function(String, bool) onValueChanged; // isModified parameter added to prevent unnecessary updates
   final Function(String?)? onValidationError;
+  final Function()? onTextChanged; // New callback for when user types
   final bool isPassword;
   final TextInputType keyboardType;
   final Future<String?> Function(String)? asyncValidator;
@@ -16,6 +17,7 @@ class AccountSettingField extends StatefulWidget {
     required this.initialValue,
     required this.onValueChanged,
     this.onValidationError,
+    this.onTextChanged,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.asyncValidator,
@@ -31,7 +33,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
   bool _isEditing = false;
   bool pwdVisibility = false;
   late FocusNode _focusNode;
-  String? _validationError;
+  bool _hasValidationError = false;
 
   @override
   void initState() {
@@ -59,29 +61,54 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
     
     // Verify if the value has changed
     bool isModified = _currentValue != widget.initialValue;
+    
+    // If user reverts to the original value, clear all validation errors
+    if (!isModified) {
+      if (mounted) {
+        setState(() {
+          _hasValidationError = false;
+        });
+        
+        // Notify parent to clear errors
+        if (widget.onValidationError != null) {
+          widget.onValidationError!(null);
+        }
+        
+        widget.onValueChanged(_currentValue, false);
+        return;
+      }
+    }
+    
     // Send the modified value to the parent widget together with the isModified flag
     if (isModified && widget.asyncValidator != null) {
       if (mounted) {
         setState(() {
-          _validationError = null;
+          _hasValidationError = false;
         });
       }
 
       final error = await widget.asyncValidator!(_currentValue);
 
-      if (error != null && mounted) {
+      if (mounted) {
         setState(() {
-          _validationError = error;
+          _hasValidationError = error != null;
         });
-        // Notify the parent widget about the validation error
+        
+        // Always notify the parent about validation status - even if null
+        // This allows the parent to clear previous errors
         if (widget.onValidationError != null) {
           widget.onValidationError!(error);
         }
-        widget.onValueChanged(_currentValue, false);
+        
+        // Always notify the parent about the modification, regardless of validation
+        // This ensures we don't lose track of modified fields
+        widget.onValueChanged(_currentValue, isModified);
         return;
       }
     }
 
+    // If there's no async validator or if we're going back to the initial value
+    // Just update with the current value and modification state
     widget.onValueChanged(_currentValue, isModified);
   }
 
@@ -102,7 +129,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
       height: 50,
       decoration: BoxDecoration(
         border: Border.all(
-          color: _validationError != null
+          color: _hasValidationError
               ? Theme.of(context).colorScheme.error
               : (_isEditing
               ? colorTheme.primary
@@ -171,6 +198,13 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
                               color: colorTheme.onSurface,
                               height: 1.0,
                             ),
+                            onChanged: (value) {
+                              _currentValue = value;
+                              // Call onTextChanged to clear page error as user types
+                              if (widget.onTextChanged != null) {
+                                widget.onTextChanged!();
+                              }
+                            },
                             onSubmitted: (value) {
                               setState(() {
                                 _isEditing = false;
