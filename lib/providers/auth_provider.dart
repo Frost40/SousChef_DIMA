@@ -149,7 +149,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final usernameTaken = false;
+      final usernameTaken = await _firestore.isUsernameTaken(username);
       final restaurantTaken =
           restaurantName != null
               ? await _firestore.isRestaurantNameTaken(restaurantName)
