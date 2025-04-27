@@ -57,7 +57,7 @@ class _MainLayoutState extends State<MainLayout> {
               transitionType = TransitionType.spotify;
               break;
             case '/restaurant':
-              page = const RestaurantScreen();
+              page = RestaurantScreen(restaurantId: userProvider.userData!.restaurantId!);
               transitionType = TransitionType.spotify;
               break;
             case '/favorites':

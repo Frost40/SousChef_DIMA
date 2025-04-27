@@ -37,8 +37,9 @@ import 'package:sous_chef/screens/past_orders_screen.dart';
             );
           case '/restaurant':
             final args = settings.arguments as Map<String, dynamic>?;
+            final String restaurantId = args?['restaurantId'];
             return CustomPageRoute(
-              page: RestaurantScreen(),
+              page: RestaurantScreen(restaurantId: restaurantId,),
               transitionType: transitionType ?? TransitionType.fade,
             );
           case '/cart':

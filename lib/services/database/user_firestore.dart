@@ -212,4 +212,13 @@ class UserFirestore {
       throw Exception('Error deleting data: $e');
     }
   }
+
+  updateUserRestaurant(String id) {
+    if (_uid == null) {
+      throw Exception('No authenticated user');
+    }
+
+    // Update the restaurant ID in the user's document
+    _userTable.doc(_uid).update({'restaurantId': id,});
+  }
 }
