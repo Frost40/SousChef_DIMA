@@ -176,7 +176,7 @@ class AuthProvider with ChangeNotifier {
         email: email,
         password: password,
         username: username,
-        restaurantName: restaurantName,
+        restaurantId: restaurantName,
       );
       _isLoading = false;
       notifyListeners();

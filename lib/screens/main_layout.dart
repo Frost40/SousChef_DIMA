@@ -1,7 +1,10 @@
 // lib/screens/main_layout.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sous_chef/screens/home_screen.dart';
 import 'package:sous_chef/screens/past_orders_screen.dart';
+import 'package:sous_chef/screens/restaurant_screen.dart';
+import '../providers/user_provider.dart';
 import '../widgets/custom_navigation_bar.dart';
 import 'account_screen.dart';
 import 'account_settings_screen.dart';
@@ -20,15 +23,27 @@ class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
   final navigatorKey = GlobalKey<NavigatorState>();
 
+  @override
+  void initState() {
+    super.initState();
+    // Making sure the user data is fetched when the app starts
+    Future.microtask(() =>
+      Provider.of<UserProvider>(context, listen: false).fetchUserData()
+    );
+  }
+
   // lib/screens/main_layout.dart
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final bool isRestaurantOwner = userProvider.userData?.restaurantId != null;
+
     return Scaffold(
       body: Navigator(
         key: navigatorKey,
         onGenerateRoute: (settings) {
           Widget page;
-          // Imposta la transizione predefinita per le pagine interne come slideRight
+          // Set default transition type
           TransitionType transitionType = TransitionType.slideRight;
 
           switch (settings.name) {
@@ -39,6 +54,10 @@ class _MainLayoutState extends State<MainLayout> {
               break;
             case '/orders':
               page = const OrdersScreen();
+              transitionType = TransitionType.spotify;
+              break;
+            case '/restaurant':
+              page = const RestaurantScreen();
               transitionType = TransitionType.spotify;
               break;
             case '/favorites':
@@ -78,14 +97,21 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       bottomNavigationBar: CustomNavBar(
         initialIndex: _currentIndex,
+        restaurantOwner: isRestaurantOwner, // Passing the flag to the nav bar
         onTap: (index) {
           if (index != _currentIndex) {
             setState(() {
               _currentIndex = index;
             });
 
-            // Usa sempre la transizione Spotify per le schede principali
-            final routes = ['/home', '/orders', '/favorites', '/account'];
+            // Defining the routes based on the user type
+            final List<String> routes;
+            if (isRestaurantOwner) {
+              routes = ['/home', '/orders', '/restaurant', '/favorites', '/account'];
+            } else {
+              routes = ['/home', '/orders', '/favorites', '/account'];
+            }
+
             navigatorKey.currentState?.pushReplacementNamed(
               routes[index],
               arguments: {'transitionType': TransitionType.spotify},

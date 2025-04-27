@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 
 class RestaurantScreen extends StatelessWidget {
-  final String restaurantId;
 
-  const RestaurantScreen({super.key, required this.restaurantId});
+  const RestaurantScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Restaurant $restaurantId'),
+        title: Text('Restaurant'),
       ),
       body: Center(
         child: Text(
-          'Details for Restaurant $restaurantId',
+          'Details for Restaurant',
           style: TextStyle(
             fontSize: 24,
             color: Theme.of(context).colorScheme.onSurface,

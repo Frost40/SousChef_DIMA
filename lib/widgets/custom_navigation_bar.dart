@@ -3,11 +3,13 @@ import 'package:stylish_bottom_bar/stylish_bottom_bar.dart';
 
 class CustomNavBar extends StatefulWidget {
   final int initialIndex;
+  final bool restaurantOwner;
   final Function(int) onTap;
 
   const CustomNavBar({
     super.key,
     this.initialIndex = 0,
+    required this.restaurantOwner,
     required this.onTap,
   });
 
@@ -26,6 +28,8 @@ class _CustomNavBarState extends State<CustomNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final colorTheme = Theme.of(context).colorScheme;
+
     return StylishBottomBar(
       option: AnimatedBarOptions(
         barAnimation: BarAnimation.fade,
@@ -34,27 +38,34 @@ class _CustomNavBarState extends State<CustomNavBar> {
       items: [
         BottomBarItem(
           icon: const Icon(Icons.home_rounded),
-          title: Text('Home', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-          selectedIcon: Icon(Icons.home_rounded, color: Theme.of(context).colorScheme.primary),
+          title: Text('Home', style: TextStyle(color: colorTheme.primary)),
+          backgroundColor: colorTheme.surfaceContainerHighest,
+          selectedIcon: Icon(Icons.home_rounded, color:colorTheme.primary),
         ),
         BottomBarItem(
           icon: const Icon(Icons.receipt_long_rounded),
-          title: Text('Orders', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-          selectedIcon: Icon(Icons.receipt_long_rounded, color: Theme.of(context).colorScheme.primary),
+          title: Text('Orders', style: TextStyle(color: colorTheme.primary)),
+          backgroundColor: colorTheme.surfaceContainerHighest,
+          selectedIcon: Icon(Icons.receipt_long_rounded, color: colorTheme.primary),
         ),
+        if (widget.restaurantOwner)
+          BottomBarItem(
+            icon: const Icon(Icons.restaurant_menu_rounded),
+            title: Text('Restaurant', style: TextStyle(color: colorTheme.primary)),
+            backgroundColor: colorTheme.surfaceContainerHighest,
+            selectedIcon: Icon(Icons.restaurant_menu_rounded, color: colorTheme.primary),
+          ),
         BottomBarItem(
           icon: const Icon(Icons.favorite_rounded),
-          title: Text('Favorites', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-          selectedIcon: Icon(Icons.favorite_rounded, color: Theme.of(context).colorScheme.primary),
+          title: Text('Favorites', style: TextStyle(color: colorTheme.primary)),
+          backgroundColor: colorTheme.surfaceContainerHighest,
+          selectedIcon: Icon(Icons.favorite_rounded, color: colorTheme.primary),
         ),
         BottomBarItem(
           icon: const Icon(Icons.person_rounded),
-          title: Text('Account', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-          selectedIcon: Icon(Icons.person_rounded, color: Theme.of(context).colorScheme.primary),
+          title: Text('Account', style: TextStyle(color: colorTheme.primary)),
+          backgroundColor: colorTheme.surfaceContainerHighest,
+          selectedIcon: Icon(Icons.person_rounded, color: colorTheme.primary),
         ),
       ],
       currentIndex: _selectedIndex,

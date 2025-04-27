@@ -45,7 +45,7 @@ class Authentication {
     required String email,
     required String password,
     required String username,
-    String? restaurantName,
+    String? restaurantId,
   }) async {
     // Create user in Firebase Authentication
     firebase_auth.UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -57,7 +57,7 @@ class Authentication {
     final userData = {
       'email': email,
       'username': username,
-      if (restaurantName == null) 'restaurantId': null, // Placeholder for future restaurant ID
+      'restaurantId': restaurantId, // Placeholder for future restaurant ID
     };
 
     await _firestore.collection('users').doc(userCredential.user!.uid).set(userData);
