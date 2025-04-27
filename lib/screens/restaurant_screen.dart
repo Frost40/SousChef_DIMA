@@ -9,6 +9,7 @@ class RestaurantScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Restaurant'),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Text(
