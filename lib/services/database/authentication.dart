@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -96,7 +97,7 @@ class Authentication {
   Future<void> resetPassword(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
-  
+
   /// Checks if an email is already registered in Firebase Auth
   /// Returns true if the email is already in use, false otherwise
   Future<bool> isEmailInUse(String email) async {
@@ -108,5 +109,31 @@ class Authentication {
       // In case of error, we return false to allow proceeding
       return false;
     }
+  }
+
+  /// Deletes the current user from Firebase Authentication
+  Future<void> deleteUserAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user to delete');
+    }
+
+    await user.delete();
+  }
+
+  Future<bool> hasRecentLogin() async {
+    // Get the current user
+    firebase_auth.User? currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) return false;
+
+
+    // Recovering the last sign-in time
+    final lastSignInTime = currentUser.metadata.lastSignInTime;
+    debugPrint("Last sign-in time: $lastSignInTime");
+    if (lastSignInTime == null) return false;
+
+    // Checks whether the last sign-in time is within the threshold
+    const recentLoginThresholdMinutes = 5;
+    return DateTime.now().difference(lastSignInTime).inMinutes < recentLoginThresholdMinutes;
   }
 }

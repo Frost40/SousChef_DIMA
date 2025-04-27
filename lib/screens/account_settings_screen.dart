@@ -3,7 +3,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
 import 'package:sous_chef/widgets/custom_alert_dialog.dart';
-
+import 'package:sous_chef/services/database/authentication.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/auth/animated_button.dart';
@@ -56,6 +56,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     userProvider.clearErrors(notify: false);
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearErrors();
   }
   
   // Add this new method to clear page error without triggering a full page rebuild
@@ -65,6 +68,17 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         _pageError = null;
       });
     }
+  }
+
+  void _navigateToLogin() {
+    // Cleaning errors
+    _clearErrors();
+
+    // Navigate to login screen
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushReplacementNamed('/login');
   }
 
   @override
@@ -273,7 +287,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
                     AnimatedButton(
                       onTap: () async {
-                        // Show confirmation dialog before deleting account
+                        // Show confirmation dialog
                         final bool confirmDelete = await CustomAlertDialog.showConfirmationDialog(
                           context: context,
                           title: "Delete Account",
@@ -285,27 +299,53 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             color: colorTheme.primary,
                           ),
                         );
-                        
+
                         if (confirmDelete && context.mounted) {
-                          // Implement account deletion logic here
-                          try {                            
-                            // Sign out the user through auth provider
-                            await authProvider.signOut();
-                            
-                            // Navigate to login screen after successful logout
-                            if (context.mounted) {
-                              Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pushReplacementNamed('/login');
+                          try {
+                            final userProvider = Provider.of<UserProvider>(context, listen: false);
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+                            debugPrint("Starting account deletion process...");
+
+                            if(!await authProvider.hasRecentLogin()){
+                              debugPrint("Not recently logged in");
+                              throw ("For security reasons, please log in again to delete your account.");
                             }
+
+                            // Step 1: Delete all user data from Firestore
+                            debugPrint("Step 1: Deleting user data from Firestore...");
+                            await userProvider.deleteUserData();
+                            if (userProvider.errorMessage != null) {
+                              debugPrint("Error in Step 1: ${userProvider.errorMessage}");
+                              throw Exception(userProvider.errorMessage);
+                            }
+                            debugPrint("Step 1 completed successfully");
+
+                            // Step 2: Delete user account from Firebase Auth
+                            debugPrint("Step 2: Deleting user account from Firebase Auth...");
+                            await authProvider.deleteUserAccount();
+                            if (authProvider.errorMessage != null) {
+                              debugPrint("Error in Step 2: ${authProvider.errorMessage}");
+                              throw Exception(authProvider.errorMessage);
+                            }
+                            debugPrint("Step 2 completed successfully");
+
+                            // Step 3: Sign out the user
+                            debugPrint("Step 3: Signing out user...");
+                            await authProvider.signOut();
+                            debugPrint("Account deletion completed successfully");
+
+                            // Step 4: Navigate to login screen
+                            _navigateToLogin();
+
                           } catch (e) {
-                            // Show error if deletion fails
+                            debugPrint("Account deletion failed with error: $e");
+                            // Show specific error message
                             if (context.mounted) {
                               CustomAlertDialog.showInfoDialog(
                                 context: context,
-                                title: "Error",
-                                message: "Failed to delete account. Please try again later.",
+                                title: "Account Deletion Failed",
+                                message: e.toString(),
                                 icon: Icon(
                                   Icons.error_outline,
                                   color: colorTheme.error,
@@ -319,12 +359,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         text: "Delete Account",
                         onPressed: null,
                         centralWidget:
-                            authProvider.isLoading
+                            authProvider.isLoading || userProvider.isLoading
                                 ? LoadingAnimationWidget.staggeredDotsWave(
-                                  color:
-                                      colorTheme.onPrimary,
-                                  size: 30,
-                                )
+                                    color: colorTheme.onPrimary,
+                                    size: 30,
+                                  )
                                 : null,
                       ),
                     ),
@@ -397,7 +436,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       return "The username can only contain letters, numbers, and underscores";
     }
 
-    // Verify uniqueness - senza notificare i listener
+    // Verify uniqueness
     final isTaken = await userProvider.isUsernameTaken(value, notify: false);
     if (isTaken) {
       return userProvider.errorMessage ?? "Username taken";

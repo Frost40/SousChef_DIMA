@@ -230,6 +230,26 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  /// Deletes all user data from Firestore
+  Future<void> deleteUserData() async {
+    clearErrors();
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _userFirestore.deleteUserData();
+
+      // Clear local user data
+      _userData = null;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
   /// Sets the appropriate field error flags based on the error type
   void _setErrorFieldsByErrorType(dynamic error) {
     final errorMsg = error.toString().toLowerCase();

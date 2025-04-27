@@ -96,7 +96,7 @@ class AuthProvider with ChangeNotifier {
 
     // Aggiungi altri errori non legati al fatto che siano vuoti
     if (invalidEmail) errors.add('Invalid email format');
-    if (invalidPassword) errors.add('Password must have at least 6 characters');
+    if (invalidPassword) errors.add('Password must have at least 7 characters');
     if (invalidConfirmPassword) {
       errors.add('Confirm Password is different from the password chosen');
     }
@@ -149,7 +149,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final usernameTaken = await _firestore.isUsernameTaken(username);
+      final usernameTaken = false;
       final restaurantTaken =
           restaurantName != null
               ? await _firestore.isRestaurantNameTaken(restaurantName)
@@ -244,6 +244,45 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// Completely deletes the user account including Firebase Authentication and all Firestore data
+  Future<void> deleteUserAccount() async {
+    clearErrors();
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Then delete the user from Firebase Authentication
+      await _auth.deleteUserAccount();
+
+      // Clear local user data
+      _user = null;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Checks if the user has logged in recently
+  /// It is used before performing sensitive operations
+  Future<bool> hasRecentLogin() async {
+    _isLoading = true;
+    clearErrors();
+
+    try{
+      _isLoading = false;
+      return await _auth.hasRecentLogin();
+
+    } catch (e){
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Sets the appropriate field error flags based on the error type
   void _setErrorFieldsByErrorType(dynamic error) {
     if (error is firebase_auth.FirebaseAuthException) {
@@ -285,6 +324,8 @@ class AuthProvider with ChangeNotifier {
           return 'Invalid email format';
         case 'invalid-credential':
           return 'Invalid credentials';
+        case'requires-recent-login':
+          return 'This operation requires a recent login. Please sign out and sign in again.';
         default:
           return 'Error: ${error.message}';
       }

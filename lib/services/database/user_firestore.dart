@@ -129,4 +129,87 @@ class UserFirestore {
         .get();
     return result.docs.isNotEmpty;
   }
+
+  /// Deletes all user data from Firestore across all related collections
+  Future<void> deleteUserData() async {
+    if (_uid == null) {
+      throw Exception('No authenticated user');
+    }
+
+    final String userId = _uid!;
+    final FirebaseFirestore db = FirebaseFirestore.instance;
+    final WriteBatch batch = db.batch();
+
+    try {
+      // 1. Check if user owns a restaurant
+      final restaurantQuery = await db.collection('restaurants')
+          .where('ownerId', isEqualTo: userId)
+          .get();
+
+      // 2. For each restaurant (should be at most 1 per user)
+      for (var restaurantDoc in restaurantQuery.docs) {
+        final String restaurantId = restaurantDoc.id;
+
+        // 2.1 Delete all dishes in the restaurant
+        final dishesQuery = await db.collection('restaurants')
+            .doc(restaurantId)
+            .collection('dishes')
+            .get();
+
+        for (var dishDoc in dishesQuery.docs) {
+          batch.delete(dishDoc.reference);
+        }
+
+        // 2.2 Delete the restaurant
+        batch.delete(restaurantDoc.reference);
+      }
+
+      // 3. Delete special dishes created by the user in other restaurants
+      final specialDishesQuery = await db.collectionGroup('dishes')
+          .where('userId', isEqualTo: userId)
+          .where('is_special', isEqualTo: true)
+          .get();
+
+      for (var dishDoc in specialDishesQuery.docs) {
+        batch.delete(dishDoc.reference);
+      }
+
+      // 4. Delete user's orders
+      final ordersQuery = await db.collection('orders')
+          .where('user_id', isEqualTo: userId)
+          .get();
+
+      for (var orderDoc in ordersQuery.docs) {
+        batch.delete(orderDoc.reference);
+      }
+
+      // 5. Delete messages sent or received by the user
+      final sentMessagesQuery = await db.collection('messages')
+          .where('sender_id', isEqualTo: userId)
+          .get();
+
+      for (var messageDoc in sentMessagesQuery.docs) {
+        batch.delete(messageDoc.reference);
+      }
+
+      final receivedMessagesQuery = await db.collection('messages')
+          .where('receiver_id', isEqualTo: userId)
+          .get();
+
+      for (var messageDoc in receivedMessagesQuery.docs) {
+        batch.delete(messageDoc.reference);
+      }
+
+      // 6. Finally, delete the user document
+      batch.delete(_userTable.doc(userId));
+
+      // Execute all delete operations in a single transaction
+      await batch.commit();
+
+      debugPrint('All user data successfully deleted from Firestore');
+    } catch (e) {
+      debugPrint('Error deleting user data: $e');
+      throw Exception('Error deleting data: $e');
+    }
+  }
 }
