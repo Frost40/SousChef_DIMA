@@ -28,6 +28,9 @@ class UserProvider with ChangeNotifier {
   bool _hasUsernameError = false;
   bool _hasPhoneError = false;
 
+  // Map to manage cancellation timers
+  final Map<String, Timer> _pendingRemovals = {};
+
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -41,6 +44,13 @@ class UserProvider with ChangeNotifier {
   Future<void> init() async {
     _userData = await _userFirestore.getFullUserData();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+  // Cancel all timers when the provider is destroyed
+  _pendingRemovals.forEach((_, timer) => timer.cancel());
+  super.dispose();
   }
 
   /// Manually sets error flags for specific fields
@@ -266,6 +276,56 @@ class UserProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Method for toggling favorites with undo capability
+  void toggleFavorite(BuildContext context, String restaurantId, String restaurantName) {
+    if (_userData == null) return;
+    
+    // Remove from local favorites
+    _userData!.favourites.remove(restaurantId);
+    notifyListeners();
+    
+    // Cancel existing timers
+    _pendingRemovals[restaurantId]?.cancel();
+    
+    // Create a new timer
+    _pendingRemovals[restaurantId] = Timer(Duration(seconds: 3), () async {
+      // Remove from Firestore after 3 seconds
+      await _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
+      _pendingRemovals.remove(restaurantId);
+    });
+    
+    // Show Snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$restaurantName removed from favorites'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            // Cancel removal
+            _pendingRemovals[restaurantId]?.cancel();
+            _pendingRemovals.remove(restaurantId);
+            
+            // Restore to favorites
+            if (!_userData!.favourites.contains(restaurantId)) {
+              _userData!.favourites.add(restaurantId);
+              notifyListeners();
+            }
+          },
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Synchronize pending changes when user leaves the screen
+  void syncPendingChanges() {
+  _pendingRemovals.forEach((restaurantId, timer) {
+    timer.cancel();
+    _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
+  });
+  _pendingRemovals.clear();
   }
 
   /// Sets the appropriate field error flags based on the error type

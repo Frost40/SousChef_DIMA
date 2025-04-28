@@ -46,7 +46,7 @@ class RestaurantProvider with ChangeNotifier {
         }
       }
       _isLoading = false;
-      _errorMessage = null; // Clear the error message on success
+      _errorMessage = null;
       notifyListeners();
       return restaurants;
     } catch (e) {

@@ -19,12 +19,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).fetchUserData().then((_) async {
+      Provider.of<UserProvider>(context, listen: false).fetchUserData().then((
+        _,
+      ) async {
         final userProvider = Provider.of<UserProvider>(context, listen: false);
-        final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+        final restaurantProvider = Provider.of<RestaurantProvider>(
+          context,
+          listen: false,
+        );
         if (!mounted) return;
 
-        _favouriteRestaurants = await restaurantProvider.fetchFavoriteRestaurantsByIds(userProvider.userData!.favourites);
+        _favouriteRestaurants = await restaurantProvider
+            .fetchFavoriteRestaurantsByIds(userProvider.userData!.favourites);
 
         if (userProvider.userData != null &&
             userProvider.userData!.favourites.isNotEmpty) {
@@ -37,7 +43,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
   }
 
-
+  @override
+  void deactivate() {
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  userProvider.syncPendingChanges();
+  super.deactivate();
+  } 
+  
   void _clearErrors() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     userProvider.clearErrors();
@@ -67,7 +79,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Text('Error: ${restaurantProvider.errorMessage}'),
             );
           } else if (_favouriteRestaurants.isEmpty) {
-            return const Center(child: Text("You have no favorite yet"));
+            return const Center(
+              child: Text("No favorite yet!", style: TextStyle(fontSize: 25)),
+            );
           } else {
             return ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -76,12 +90,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 final restaurant = _favouriteRestaurants[index];
                 // Mock data for now, replace with actual data
                 final mockRestaurantData = {
-                  'immagine': "https://i.pravatar.cc/150?img=5",
-                  'nomeRistorante': restaurant.name,
-                  'modalitaOrdini': 'Aperto',
-                  'preferito': true,
+                  'id': restaurant.id,
+                  'imagine': "https://i.pravatar.cc/150?img=5",
+                  'restaurantName': restaurant.name,
+                  'available': restaurant.isAvailable,
+                  'favorite': true,
                 };
-                return RestaurantTile(ristorante: mockRestaurantData);
+                return RestaurantTile(restaurant: mockRestaurantData);
               },
               separatorBuilder:
                   (context, index) =>

@@ -1,35 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 
 class RestaurantTile extends StatelessWidget {
-  final Map<String, dynamic> ristorante;
+  final Map<String, dynamic> restaurant;
 
-  const RestaurantTile({Key? key, required this.ristorante}) : super(key: key);
+  const RestaurantTile({Key? key, required this.restaurant}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
     return ListTile(
       leading: CircleAvatar(
-        backgroundImage: NetworkImage(ristorante['immagine']),
+        backgroundImage: NetworkImage(restaurant['imagine']),
         radius: 30.0,
       ),
-      title: Text(ristorante['nomeRistorante']),
+      title: Text(restaurant['restaurantName']),
       subtitle: Text(
-        ristorante['modalitaOrdini'],
+        restaurant['available'] ? "Open" : "Closed",
         style: TextStyle(
-          color: ristorante['modalitaOrdini'] == 'Aperto'
-              ? Colors.green
-              : Colors.red,
+          color: restaurant['available'] == "Open" ? Colors.green : Colors.red,
         ),
       ),
       trailing: IconButton(
         icon: Icon(
-          ristorante['preferito'] ? Icons.favorite : Icons.favorite_border,
+          restaurant['favorite'] ? Icons.favorite : Icons.favorite_border,
           color: Colors.red,
         ),
         onPressed: () {
-          // setState(() { // Removed setState as this is now a StatelessWidget
-          //   ristorante['preferito'] = !ristorante['preferito'];
-          // });
+          userProvider.toggleFavorite(
+            context, 
+            restaurant['id'],
+            restaurant['restaurantName'],
+          );
         },
       ),
     );

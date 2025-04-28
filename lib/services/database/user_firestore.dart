@@ -246,4 +246,15 @@ class UserFirestore {
     }
   }
 
+  Future<void> removeFromFavorites(String userId, String restaurantId) async {
+  try {
+    await _userTable.doc(userId).update({
+      'favourites': FieldValue.arrayRemove([restaurantId])
+    });
+  } catch (e) {
+    debugPrint('Error while removing restaurant from favorites: $e');
+    throw e;
+  }
+}
+
 }
