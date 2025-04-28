@@ -162,9 +162,6 @@ class UserFirestore {
       return [];
     }
   }
-  
-}
-
 
   /// Deletes all user data from Firestore across all related collections
   Future<void> deleteUserData() async {
@@ -248,4 +245,5 @@ class UserFirestore {
       throw Exception('Error deleting data: $e');
     }
   }
+
 }
