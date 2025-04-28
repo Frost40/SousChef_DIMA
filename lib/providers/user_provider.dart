@@ -197,6 +197,24 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  /// Get all favorite restaurant IDs for the current user
+  Future<void> getFavoriteRestaurantIds() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final List<String> favourites;
+      favourites = await _userFirestore.getFavoriteRestaurantIds();
+      if (favourites.isNotEmpty) _userData!.copyWith(favourites: favourites);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error retrieving favorite restaurants: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Sets the appropriate field error flags based on the error type
   void _setErrorFieldsByErrorType(dynamic error) {
     final errorMsg = error.toString().toLowerCase();

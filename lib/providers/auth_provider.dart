@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:sous_chef/services/database/authentication.dart';
 import 'package:sous_chef/models/user.dart';
-import 'package:sous_chef/services/database/firestore_services.dart';
+import 'package:sous_chef/services/database/user_firestore.dart';
 
 /// Provider that manages user authentication using the Authentication service.
 /// Implements ChangeNotifier to notify dependent widgets when authentication state changes.
@@ -10,7 +10,7 @@ class AuthProvider with ChangeNotifier {
   // Authentication service instance used to interact with Firebase
   final Authentication _auth = Authentication();
 
-  final FirestoreServices _firestore = FirestoreServices();
+  final UserFirestore _userFirestore = UserFirestore();
 
   // Current authenticated user
   User? _user;
@@ -149,10 +149,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final usernameTaken = await _firestore.isUsernameTaken(username);
+      final usernameTaken = await _userFirestore.isUsernameTaken(username);
       final restaurantTaken =
           restaurantName != null
-              ? await _firestore.isRestaurantNameTaken(restaurantName)
+              ? await _userFirestore.isRestaurantNameTaken(restaurantName)
               : false;
 
       if (usernameTaken || restaurantTaken) {

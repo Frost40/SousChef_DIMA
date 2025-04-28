@@ -106,10 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              vertical: MediaQuery.of(context).size.height * 0.05,
-              horizontal: MediaQuery.of(context).size.width * 0.05,
-            ),
+            padding: EdgeInsets.all(20.0),
             child: Column(children: _buildFormFields(context)),
           ),
         ),
@@ -119,9 +116,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildMobileLayout(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        vertical: MediaQuery.of(context).size.height * 0.05,
-      ),
+      padding: EdgeInsets.all(20.0),
       child: Column(
         children: [
           Container(
