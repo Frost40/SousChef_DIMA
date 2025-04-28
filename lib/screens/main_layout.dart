@@ -88,10 +88,7 @@ class _MainLayoutState extends State<MainLayout> {
             }
           }
 
-          return CustomPageRoute(
-            page: page,
-            transitionType: transitionType,
-          );
+          return CustomPageRoute(page: page, transitionType: transitionType);
         },
         initialRoute: '/home',
       ),

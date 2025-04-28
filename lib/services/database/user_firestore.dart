@@ -9,11 +9,13 @@ class UserFirestore {
   String? get _uid => firebase_auth.FirebaseAuth.instance.currentUser?.uid;
 
   // Get current authenticated user
-  firebase_auth.User? get _authUser => firebase_auth.FirebaseAuth.instance.currentUser;
+  firebase_auth.User? get _authUser =>
+      firebase_auth.FirebaseAuth.instance.currentUser;
 
   // Firestore collection reference
-  final CollectionReference _userTable =
-      FirebaseFirestore.instance.collection('users');
+  final CollectionReference _userTable = FirebaseFirestore.instance.collection(
+    'users',
+  );
 
   /// Updates multiple user profile fields at once
   /// This is more efficient when updating several fields
@@ -109,9 +111,9 @@ class UserFirestore {
     if (_uid == null) return null;
 
     try {
-      final docSnapshot = await _userTable.doc(_uid).get(
-          GetOptions(source: Source.server)
-      );
+      final docSnapshot = await _userTable
+          .doc(_uid)
+          .get(GetOptions(source: Source.server));
       if (!docSnapshot.exists) return null;
       return User.fromFirestore(docSnapshot);
     } catch (e) {
@@ -123,12 +125,46 @@ class UserFirestore {
   //Function to check in the database if an other user with that username already exists
   Future<bool> isUsernameTaken(String username) async {
     final result =
-    await _userTable
-        .where('username', isEqualTo: username)
-        .limit(1)
-        .get();
+        await _userTable.where('username', isEqualTo: username).limit(1).get();
     return result.docs.isNotEmpty;
   }
+
+  //Function to check in the database if an other user with that Restaurant name already exists
+  Future<bool> isRestaurantNameTaken(String restaurantName) async {
+    final result =
+        await _userTable
+            .where('restaurantName', isEqualTo: restaurantName)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
+  }
+
+  /// Get all favorite restaurant IDs for the current user
+  Future<List<String>> getFavoriteRestaurantIds() async {
+    if (_uid == null) return [];
+
+    try {
+      final docSnapshot = await _userTable
+          .doc(_uid)
+          .get(GetOptions(source: Source.server));
+      if (!docSnapshot.exists) return [];
+
+      // Check if the 'favourites' field exists
+      final data = docSnapshot.data() as Map<String, dynamic>?;
+      if (data == null || !data.containsKey('favourites')) return [];
+
+      List<String>.from(data['favourites']);
+
+      // Cast the list to List<String>
+      return List<String>.from(data['favourites']);
+    } catch (e) {
+      debugPrint('Error retrieving favorite restaurants: $e');
+      return [];
+    }
+  }
+  
+}
+
 
   /// Deletes all user data from Firestore across all related collections
   Future<void> deleteUserData() async {

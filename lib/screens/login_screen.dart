@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               final isTablet =
                   screenWidth > 600 &&
-                  aspectRatio < 1.6; // Adjust aspectRatio value if needed
+                  aspectRatio < 1.6; 
 
               if (isTablet) {
                 return _buildTabletLayout(context);

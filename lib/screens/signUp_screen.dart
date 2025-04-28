@@ -35,6 +35,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final GlobalKey<ShakeWidgetState> _shakeKey = GlobalKey<ShakeWidgetState>();
   bool _isChef = false;
 
+  @override
+  void dispose() {
+    // Clean up controllers when the widget is destroyed
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    nameController.dispose();
+    surnameController.dispose();
+    usernameController.dispose();
+    phoneController.dispose();
+    restaurantNameController.dispose();
+    super.dispose();
+  }
+
   void _navigateToHome() {
     // Cleaning errors and navigating to home
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -92,10 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              vertical: MediaQuery.of(context).size.height * 0.05,
-              horizontal: MediaQuery.of(context).size.width * 0.05,
-            ),
+            padding: EdgeInsets.all(20.0),
             child: Column(children: _buildFormFields(context)),
           ),
         ),
@@ -105,9 +116,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget _buildMobileLayout(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        vertical: MediaQuery.of(context).size.height * 0.05,
-      ),
+      padding: EdgeInsets.all(20.0),
       child: Column(
         children: [
           Container(
@@ -197,6 +206,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Center(
             child: Text(
               authProvider.errorMessage!,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
                 fontSize: 14,
@@ -245,10 +255,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 if (authProvider.errorMessage == null) {
                   _navigateToHome();
                 } else {
-                  // Registration failed
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(authProvider.errorMessage!)),
-                  );
                   _shakeKey.currentState?.shake();
                 }
               }
