@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sous_chef/widgets/restaurant_screen/address_field.dart';
+import 'package:sous_chef/widgets/restaurant_screen/open_close_button.dart';
 
 class RestaurantInfo extends StatelessWidget {
   final String restaurantImageUrl;
@@ -15,51 +17,66 @@ class RestaurantInfo extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.only(left: 25.0, right: 25.0, bottom: 25.0, top: 15.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left side - Restaurant image with circular border
-          ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                ),
+                child: restaurantImageUrl.isNotEmpty
+                    ? Image.network(
+                  restaurantImageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.restaurant,
+                    size: 50,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                )
+                    : Icon(
+                  Icons.restaurant,
+                  size: 50,
+                  color: colorScheme.primary,
+                ),
               ),
-              child: restaurantImageUrl.isNotEmpty
-                  ? Image.network(
-                      restaurantImageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.restaurant,
-                        size: 50,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  : Icon(
-                      Icons.restaurant,
-                      size: 50,
-                      color: colorScheme.primary,
-                    ),
-            ),
+
+              const SizedBox(height: 10),
+
+              OpenCloseButton(
+                initialValue: true,
+                isEditable: true,
+                onToggle: (newValue) {
+
+                  // restaurantProvider.updateOpenStatus(newValue);
+                },
+              ),
+            ],
           ),
 
-          const SizedBox(width: 16),
+
+          const SizedBox(width: 25),
 
           // Right side - Restaurant name and working slots
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                Text(
-                  'Working Slots',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.primary,
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: Text(
+                    'Offered Services:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.surfaceContainerHighest,
+                    ),
                   ),
                 ),
 
@@ -68,30 +85,30 @@ class RestaurantInfo extends StatelessWidget {
                   color: colorScheme.surfaceContainerHighest,
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: 10),
 
-                // Working slots list
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: workingSlots.isNotEmpty
-                      ? workingSlots.map((slot) => Text(
-                          slot,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        )).toList()
-                      : [
-                          Text(
-                            'No working slots available',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, bottom: 2.0),
+                  child: Text(
+                    'Address:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                 ),
+
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: colorScheme.onSurface,
+                ),
+
+                const SizedBox(height: 10),
+
+                AddressField(isEditable: true),
+
               ],
             ),
           ),
