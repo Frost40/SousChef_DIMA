@@ -38,6 +38,11 @@ class _MainLayoutState extends State<MainLayout> {
     final userProvider = Provider.of<UserProvider>(context);
     final bool isRestaurantOwner = userProvider.userData?.restaurantId != null;
 
+    // Make sure the _currentIndex is within the bounds of the available screens
+    if (!isRestaurantOwner && _currentIndex >= 4) {
+      _currentIndex = 0; // Resets the index to 0 if the user is not a restaurant owner anymore
+    }
+
     return Scaffold(
       body: Navigator(
         key: navigatorKey,

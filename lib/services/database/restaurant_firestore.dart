@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/restaurant.dart';
+
 class RestaurantFirestore {
   // Firestore collection reference
   final CollectionReference _restaurantTable =
@@ -22,5 +24,17 @@ class RestaurantFirestore {
 
     // Return the ID of the newly created restaurant
     return restaurantDoc.id;
+  }
+
+  /// Retrieves restaurant information from Firestore given the restaurant ID
+  /// Returns a Restaurant object with all the restaurant data
+  Future<Restaurant> getRestaurant(String restaurantId) async {
+    final DocumentSnapshot restaurantDoc = await _restaurantTable.doc(restaurantId).get();
+
+    if (!restaurantDoc.exists) {
+      throw Exception('Restaurant not found');
+    }
+
+    return Restaurant.fromFirestore(restaurantDoc);
   }
 }

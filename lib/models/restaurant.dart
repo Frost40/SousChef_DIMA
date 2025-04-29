@@ -1,94 +1,57 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-class TimeSlot {
-  final String from;
-  final String to;
-
-  TimeSlot({required this.from, required this.to});
-
-  factory TimeSlot.fromMap(Map<String, dynamic> map) {
-    return TimeSlot(
-      from: map['from'] ?? '',
-      to: map['to'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'from': from,
-      'to': to,
-    };
-  }
-}
-
-class Holiday {
-  final DateTime from;
-  final DateTime to;
-
-  Holiday({required this.from, required this.to});
-
-  factory Holiday.fromMap(Map<String, dynamic> map) {
-    return Holiday(
-      from: (map['from'] as Timestamp).toDate(),
-      to: (map['to'] as Timestamp).toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'from': Timestamp.fromDate(from),
-      'to': Timestamp.fromDate(to),
-    };
-  }
-}
+import 'package:sous_chef/models/dish.dart';
 
 class Restaurant {
   final String id;
   final String name;
   final String address;
-  final List<TimeSlot> timeSlots;
-  final Holiday? holidays;
+  final bool isOpen;
   final RestaurantType restaurantType;
   final double rating;
   final int numRatings;
   final String ownerId;
   final GeoPoint location;
+  final List<Dish> dishes;
 
   Restaurant({
     required this.id,
     required this.name,
     required this.address,
-    required this.timeSlots,
-    this.holidays,
+    required this.isOpen,
     required this.restaurantType,
     required this.rating,
     required this.numRatings,
     required this.ownerId,
     required this.location,
+    this.dishes = const [],
   });
 
   factory Restaurant.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-    List<TimeSlot> timeSlots = [];
-    if (data['time_slots'] != null) {
-      timeSlots = List<Map<String, dynamic>>.from(data['time_slots'])
-          .map((slot) => TimeSlot.fromMap(slot))
-          .toList();
-    }
-
-    Holiday? holidays;
-    if (data['holidays'] != null) {
-      holidays = Holiday.fromMap(data['holidays']);
+    // Convert restaurant_type from string to enum
+    RestaurantType restaurantType;
+    final String? typeString = data['restaurant_type'] as String?;
+    switch(typeString) {
+      case 'menuOnly':
+        restaurantType = RestaurantType.menuOnly;
+        break;
+      case 'personalizedOnly':
+        restaurantType = RestaurantType.personalizedOnly;
+        break;
+      case 'menuAndPersonalized':
+        restaurantType = RestaurantType.menuAndPersonalized;
+        break;
+      default:
+        restaurantType = RestaurantType.menuOnly; // default value
     }
 
     return Restaurant(
       id: doc.id,
       name: data['name'] ?? '',
       address: data['address'] ?? '',
-      timeSlots: timeSlots,
-      holidays: holidays,
-      restaurantType: data['restaurant_type'] ?? '',
+      isOpen: data['isOpen'] ?? false,
+      restaurantType: restaurantType,
       rating: (data['rating'] ?? 0.0).toDouble(),
       numRatings: data['numRatings'] ?? 0,
       ownerId: data['ownerId'] ?? '',
@@ -100,14 +63,29 @@ class Restaurant {
     return {
       'name': name,
       'address': address,
-      'time_slots': timeSlots.map((slot) => slot.toMap()).toList(),
-      if (holidays != null) 'holidays': holidays!.toMap(),
+      'isOpen': isOpen,
       'restaurant_type': restaurantType,
       'rating': rating,
       'numRatings': numRatings,
       'ownerId': ownerId,
       'location': location,
     };
+  }
+
+  // Creates a new Restaurant instance with updated dishes
+  Restaurant copyWithDishes(List<Dish> dishes) {
+    return Restaurant(
+      id: this.id,
+      name: this.name,
+      address: this.address,
+      isOpen: this.isOpen,
+      restaurantType: this.restaurantType,
+      rating: this.rating,
+      numRatings: this.numRatings,
+      ownerId: this.ownerId,
+      location: this.location,
+      dishes: dishes,
+    );
   }
 }
 

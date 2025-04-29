@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:sous_chef/widgets/restaurant_screen/restaurant_info.dart';
+import 'package:provider/provider.dart';
+import '../providers/restaurant_provider.dart';
+import '../widgets/restaurant_screen/restaurant_info.dart';
 
 class RestaurantScreen extends StatefulWidget {
   final String restaurantId;
@@ -14,8 +16,19 @@ class RestaurantScreen extends StatefulWidget {
 }
 
 class _RestaurantScreenState extends State<RestaurantScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Load user data when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<RestaurantProvider>(context, listen: false).fetchCompleteRestaurantData(widget.restaurantId);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
