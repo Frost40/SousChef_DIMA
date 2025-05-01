@@ -5,6 +5,6 @@ extension CustomColorScheme on ColorScheme {
     // Return different colors based on the brightness
     return brightness == Brightness.dark
         ? const Color(0xFF252525)                // Dark mode color
-        : const Color.fromARGB(255, 171, 171, 171); // Light mode color
+        : const Color.fromARGB(255, 247, 246, 244); // Light mode color - slightly darker white
   }
 }

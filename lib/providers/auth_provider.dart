@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:sous_chef/services/authentication.dart';
@@ -56,6 +58,36 @@ class AuthProvider with ChangeNotifier {
 
   // Checks if the user is currently authenticated
   bool get isAuthenticated => _user != null;
+
+  StreamSubscription<firebase_auth.User?>? _authSubscription;
+
+  // Modifica il costruttore per inizializzare automaticamente
+  AuthProvider() {
+    _initializeCurrentUser();
+
+    // Sottoscrizione ai cambiamenti di autenticazione
+    _authSubscription = _auth.authStateChanges.listen(_onAuthStateChanged);
+  }
+
+  Future<void> _initializeCurrentUser() async {
+    _user = await _auth.getCurrentUser();
+    notifyListeners();
+  }
+
+  void _onAuthStateChanged(firebase_auth.User? firebaseUser) async {
+    if (firebaseUser != null) {
+      _user = await _auth.getCurrentUser();
+    } else {
+      _user = null;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    //_authSubscription?.cancel();
+    super.dispose();
+  }
 
   // Initialize provider by loading current user (call in app initialization)
   Future<void> init() async {

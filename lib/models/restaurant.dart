@@ -6,7 +6,7 @@ class Restaurant {
   final String name;
   final String address;
   final bool isOpen;
-  final RestaurantType restaurantType;
+  final List<RestaurantType> restaurantTypes;
   final double rating;
   final int numRatings;
   final String ownerId;
@@ -18,7 +18,7 @@ class Restaurant {
     required this.name,
     required this.address,
     required this.isOpen,
-    required this.restaurantType,
+    required this.restaurantTypes,
     required this.rating,
     required this.numRatings,
     required this.ownerId,
@@ -30,20 +30,17 @@ class Restaurant {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
     // Convert restaurant_type from string to enum
-    RestaurantType restaurantType;
-    final String? typeString = data['restaurant_type'] as String?;
-    switch(typeString) {
-      case 'menuOnly':
-        restaurantType = RestaurantType.menuOnly;
-        break;
-      case 'personalizedOnly':
-        restaurantType = RestaurantType.personalizedOnly;
-        break;
-      case 'menuAndPersonalized':
-        restaurantType = RestaurantType.menuAndPersonalized;
-        break;
-      default:
-        restaurantType = RestaurantType.menuOnly; // default value
+    List<RestaurantType> restaurantTypes = [];
+    final List<dynamic>? typesArray = data['restaurant_types'] as List<dynamic>?;
+
+    if (typesArray != null && typesArray.isNotEmpty) {
+      for (String type in typesArray.cast<String>()) {
+        if (type == 'fixedMenu') {
+          restaurantTypes.add(RestaurantType.fixedMenu);
+        } else if (type == 'onRequest') {
+          restaurantTypes.add(RestaurantType.onRequest);
+        }
+      }
     }
 
     return Restaurant(
@@ -51,7 +48,7 @@ class Restaurant {
       name: data['name'] ?? '',
       address: data['address'] ?? '',
       isOpen: data['isOpen'] ?? false,
-      restaurantType: restaurantType,
+      restaurantTypes: restaurantTypes,
       rating: (data['rating'] ?? 0.0).toDouble(),
       numRatings: data['numRatings'] ?? 0,
       ownerId: data['ownerId'] ?? '',
@@ -60,11 +57,17 @@ class Restaurant {
   }
 
   Map<String, dynamic> toFirestore() {
+
+    // Convert restaurant_type from enum to string for Firestore
+    List<String> restaurantTypesStrings = restaurantTypes.map((type) {
+      return type == RestaurantType.fixedMenu ? 'fixedMenu' : 'onRequest';
+    }).toList();
+
     return {
       'name': name,
       'address': address,
       'isOpen': isOpen,
-      'restaurant_type': restaurantType,
+      'restaurant_types': restaurantTypesStrings,
       'rating': rating,
       'numRatings': numRatings,
       'ownerId': ownerId,
@@ -79,7 +82,7 @@ class Restaurant {
       name: this.name,
       address: this.address,
       isOpen: this.isOpen,
-      restaurantType: this.restaurantType,
+      restaurantTypes: this.restaurantTypes,
       rating: this.rating,
       numRatings: this.numRatings,
       ownerId: this.ownerId,
@@ -87,6 +90,39 @@ class Restaurant {
       dishes: dishes,
     );
   }
+
+  /// Helping methods for restaurant types
+  // Verify if the restaurant has a specific type
+  bool hasRestaurantType(RestaurantType type) {
+    return restaurantTypes.contains(type);
+  }
+
+  // Add or remove a restaurant type
+  Restaurant toggleRestaurantType(RestaurantType type) {
+    List<RestaurantType> newTypes = List.from(restaurantTypes);
+
+    if (newTypes.contains(type)) {
+      newTypes.remove(type);
+    } else {
+      // Add the type only if there are less than 2 types
+      if (newTypes.length < 2) {
+        newTypes.add(type);
+      }
+    }
+
+    return Restaurant(
+      id: this.id,
+      name: this.name,
+      address: this.address,
+      isOpen: this.isOpen,
+      restaurantTypes: newTypes,
+      rating: this.rating,
+      numRatings: this.numRatings,
+      ownerId: this.ownerId,
+      location: this.location,
+      dishes: this.dishes,
+    );
+  }
 }
 
-enum RestaurantType { menuOnly, personalizedOnly, menuAndPersonalized }
+enum RestaurantType { fixedMenu, onRequest }

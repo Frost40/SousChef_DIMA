@@ -8,7 +8,7 @@ class OpenCloseButton extends StatefulWidget {
   const OpenCloseButton({
     super.key,
     required this.initialValue,
-    this.isEditable = true,
+    this.isEditable = false,
     this.onToggle,
   });
 

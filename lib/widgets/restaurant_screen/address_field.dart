@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
       const AddressField({
         super.key,
         this.address,
-        this.isEditable = true,
+        this.isEditable = false,
         this.onAddressChanged,
         this.emptyMessage = 'No current address',
       });
