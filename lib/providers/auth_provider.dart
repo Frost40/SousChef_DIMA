@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
-import 'package:sous_chef/services/database/authentication.dart';
+import 'package:sous_chef/services/authentication.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
+
+import '../services/database/restaurant_firestore.dart';
 
 /// Provider that manages user authentication using the Authentication service.
 /// Implements ChangeNotifier to notify dependent widgets when authentication state changes.
@@ -54,6 +58,36 @@ class AuthProvider with ChangeNotifier {
 
   // Checks if the user is currently authenticated
   bool get isAuthenticated => _user != null;
+
+  StreamSubscription<firebase_auth.User?>? _authSubscription;
+
+  // Modifica il costruttore per inizializzare automaticamente
+  AuthProvider() {
+    _initializeCurrentUser();
+
+    // Sottoscrizione ai cambiamenti di autenticazione
+    _authSubscription = _auth.authStateChanges.listen(_onAuthStateChanged);
+  }
+
+  Future<void> _initializeCurrentUser() async {
+    _user = await _auth.getCurrentUser();
+    notifyListeners();
+  }
+
+  void _onAuthStateChanged(firebase_auth.User? firebaseUser) async {
+    if (firebaseUser != null) {
+      _user = await _auth.getCurrentUser();
+    } else {
+      _user = null;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    //_authSubscription?.cancel();
+    super.dispose();
+  }
 
   // Initialize provider by loading current user (call in app initialization)
   Future<void> init() async {
@@ -150,34 +184,56 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final usernameTaken = await _userFirestore.isUsernameTaken(username);
-      final restaurantTaken =
-          restaurantName != null
-              ? await _userFirestore.isRestaurantNameTaken(restaurantName)
-              : false;
 
-      if (usernameTaken || restaurantTaken) {
-        if (usernameTaken) {
-          _hasUsernameError = true;
-          _errorMessage = 'Username is already taken';
-        }
-        if (restaurantTaken) {
-          _hasRestaurantnameError = true;
-          _errorMessage =
-              restaurantTaken && usernameTaken
-                  ? 'Username and restaurant name already taken'
-                  : 'Restaurant name is already taken';
-        }
+      // Check if the username is already taken
+      if (usernameTaken) {
+        _hasUsernameError = true;
+        _errorMessage = 'Username is already taken';
+
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      _user = await _auth.signUp(
-        email: email,
-        password: password,
-        username: username,
-        restaurantId: restaurantName,
-      );
+      // In case a name is provided for the restaurant, we create entries for both user and restaurant
+      if (restaurantName != null) {
+        // First create the user without notifying the caller
+        User? tempUser = await _auth.signUp(
+          email: email,
+          password: password,
+          username: username,
+          restaurantId: null, // At the beginning the restaurant ID is not associated
+        );
+
+        debugPrint("Temp user created: ${tempUser.id}");
+        try {
+          // Try to create the restaurant
+          final RestaurantFirestore restaurantFirestore = RestaurantFirestore();
+          final String restaurantId = await restaurantFirestore.createRestaurant(
+            restaurantName: restaurantName,
+            ownerId: tempUser.id,
+          );
+
+          // In case of success, update the user with the restaurant ID
+          await _userFirestore.updateUserRestaurant(restaurantId);
+
+          // If everything is successful, set the user
+          _user = tempUser;
+        } catch (e) {
+          // In case of failure, delete the user account
+          await _auth.deleteUserAccount();
+          rethrow;
+        }
+      } else {
+        // User creation without restaurant
+        _user = await _auth.signUp(
+          email: email,
+          password: password,
+          username: username,
+          restaurantId: null,
+        );
+      }
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {

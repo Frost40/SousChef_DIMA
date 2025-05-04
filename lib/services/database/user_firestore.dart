@@ -9,13 +9,11 @@ class UserFirestore {
   String? get _uid => firebase_auth.FirebaseAuth.instance.currentUser?.uid;
 
   // Get current authenticated user
-  firebase_auth.User? get _authUser =>
-      firebase_auth.FirebaseAuth.instance.currentUser;
+  firebase_auth.User? get _authUser => firebase_auth.FirebaseAuth.instance.currentUser;
 
   // Firestore collection reference
-  final CollectionReference _userTable = FirebaseFirestore.instance.collection(
-    'users',
-  );
+  final CollectionReference _userTable =
+      FirebaseFirestore.instance.collection('users');
 
   /// Updates multiple user profile fields at once
   /// This is more efficient when updating several fields
@@ -111,9 +109,9 @@ class UserFirestore {
     if (_uid == null) return null;
 
     try {
-      final docSnapshot = await _userTable
-          .doc(_uid)
-          .get(GetOptions(source: Source.server));
+      final docSnapshot = await _userTable.doc(_uid).get(
+          GetOptions(source: Source.server)
+      );
       if (!docSnapshot.exists) return null;
       return User.fromFirestore(docSnapshot);
     } catch (e) {
@@ -125,17 +123,10 @@ class UserFirestore {
   //Function to check in the database if an other user with that username already exists
   Future<bool> isUsernameTaken(String username) async {
     final result =
-        await _userTable.where('username', isEqualTo: username).limit(1).get();
-    return result.docs.isNotEmpty;
-  }
-
-  //Function to check in the database if an other user with that Restaurant name already exists
-  Future<bool> isRestaurantNameTaken(String restaurantName) async {
-    final result =
-        await _userTable
-            .where('restaurantName', isEqualTo: restaurantName)
-            .limit(1)
-            .get();
+    await _userTable
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .get();
     return result.docs.isNotEmpty;
   }
 
@@ -247,14 +238,23 @@ class UserFirestore {
   }
 
   Future<void> removeFromFavorites(String userId, String restaurantId) async {
-  try {
-    await _userTable.doc(userId).update({
-      'favourites': FieldValue.arrayRemove([restaurantId])
-    });
-  } catch (e) {
-    debugPrint('Error while removing restaurant from favorites: $e');
-    throw e;
+    try {
+      await _userTable.doc(userId).update({
+        'favourites': FieldValue.arrayRemove([restaurantId])
+      });
+    } catch (e) {
+      debugPrint('Error while removing restaurant from favorites: $e');
+      throw e;
+    }
   }
-}
+
+  updateUserRestaurant(String id) {
+    if (_uid == null) {
+      throw Exception('No authenticated user');
+    }
+
+    // Update the restaurant ID in the user's document
+    _userTable.doc(_uid).update({'restaurantId': id,});
+  }
 
 }

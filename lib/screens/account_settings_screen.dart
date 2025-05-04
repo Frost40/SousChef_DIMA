@@ -3,7 +3,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
 import 'package:sous_chef/widgets/custom_alert_dialog.dart';
-import 'package:sous_chef/services/database/authentication.dart';
+import 'package:sous_chef/services/authentication.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/auth/animated_button.dart';

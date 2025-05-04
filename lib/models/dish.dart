@@ -41,6 +41,32 @@ class Dish {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     bool isSpecial = data['is_special'] ?? false;
 
+    // Convert course from string to enum
+    Course? dishCourse;
+    if (!isSpecial && data['course'] != null) {
+      final String courseStr = data['course'] as String;
+      try {
+        dishCourse = Course.values.firstWhere(
+                (e) => e.toString() == 'Course.$courseStr'
+        );
+      } catch (_) {
+        dishCourse = Course.other; // Default value
+      }
+    }
+
+    // Convert cuisine from string to enum
+    Cuisine? dishCuisine;
+    if (!isSpecial && data['cuisine'] != null) {
+      final String cuisineStr = data['cuisine'] as String;
+      try {
+        dishCuisine = Cuisine.values.firstWhere(
+                (e) => e.toString() == 'Cuisine.$cuisineStr'
+        );
+      } catch (_) {
+        dishCuisine = Cuisine.other; // Default value
+      }
+    }
+
     return Dish(
       id: doc.id,
       name: data['name'] ?? '',
@@ -50,8 +76,8 @@ class Dish {
 
       // Regular dish attributes
       isAvailable: isSpecial ? null : data['is_available'],
-      course: isSpecial ? null : data['course'],
-      cuisine: isSpecial ? null : data['cuisine'],
+      course: dishCourse,
+      cuisine: dishCuisine,
       minForewarningDays: isSpecial ? null : data['min_forewarning_days'],
       image: isSpecial ? null : data['image'],
 
