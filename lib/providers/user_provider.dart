@@ -48,9 +48,9 @@ class UserProvider with ChangeNotifier {
 
   @override
   void dispose() {
-  // Cancel all timers when the provider is destroyed
-  _pendingRemovals.forEach((_, timer) => timer.cancel());
-  super.dispose();
+    // Cancel all timers when the provider is destroyed
+    _pendingRemovals.forEach((_, timer) => timer.cancel());
+    super.dispose();
   }
 
   /// Manually sets error flags for specific fields

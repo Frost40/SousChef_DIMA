@@ -36,7 +36,9 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final bool isRestaurantOwner = userProvider.userData?.restaurantId != null;
+    final bool isRestaurantOwner = userProvider.userData?.restaurantId != null &&
+            userProvider.userData!.restaurantId!.isNotEmpty;
+        debugPrint('ID del ristorante: ${userProvider.userData?.restaurantId}');
 
     // Make sure the _currentIndex is within the bounds of the available screens
     if (!isRestaurantOwner && _currentIndex >= 4) {
