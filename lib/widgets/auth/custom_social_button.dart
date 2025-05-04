@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:sous_chef/widgets/auth/animated_button.dart';
+import 'package:sous_chef/widgets/animated_button.dart';
 
 class CustomSocialButton extends StatelessWidget {
   final VoidCallback onTap;

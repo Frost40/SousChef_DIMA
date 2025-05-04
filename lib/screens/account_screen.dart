@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/account_screen/account_field.dart';
-import 'package:sous_chef/widgets/auth/animated_button.dart';
+import 'package:sous_chef/widgets/animated_button.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/themes/theme_provider.dart';

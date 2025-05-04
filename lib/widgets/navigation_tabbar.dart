@@ -134,7 +134,7 @@ class PrimaryContainer extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0), // assicura che l'ombra non sia nascosta
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Material(
         elevation: 2,
         color: color ?? colorScheme.darkGrayBackground,

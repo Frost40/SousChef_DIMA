@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../auth/animated_button.dart';
+import '../animated_button.dart';
 
 class AccountField extends StatelessWidget {
   final IconData leftIcon;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sous_chef/themes/theme_extensions.dart';
 
 class ServiceType extends StatefulWidget {
   final String serviceType;
@@ -59,7 +60,7 @@ class _OpenCloseButtonState extends State<ServiceType> {
         decoration: BoxDecoration(
           color: _isSelected
               ? colorScheme.tertiary.withOpacity(0.15)
-              : colorScheme.surface.withOpacity(0.15),
+              : colorScheme.darkGrayBackground,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: _isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,

@@ -6,7 +6,7 @@ import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 import 'package:sous_chef/services/authentication.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
-import '../widgets/auth/animated_button.dart';
+import '../widgets/animated_button.dart';
 import '../widgets/personalized_button.dart';
 
 class AccountSettingsScreen extends StatefulWidget {

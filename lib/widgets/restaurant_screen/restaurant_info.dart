@@ -102,7 +102,7 @@ class RestaurantInfo extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: colorScheme.surfaceContainerHighest,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -110,7 +110,7 @@ class RestaurantInfo extends StatelessWidget {
                 Divider(
                   height: 1,
                   thickness: 1,
-                  color: colorScheme.surfaceContainerHighest,
+                  color: colorScheme.onSurface,
                 ),
 
                 const SizedBox(height: 10),

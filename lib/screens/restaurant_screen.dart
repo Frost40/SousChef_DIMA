@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
+import '../models/dish.dart';
 import '../providers/restaurant_provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/animated_button.dart';
+import '../widgets/circular_button.dart';
 import '../widgets/restaurant_screen/menu_item.dart';
 import '../widgets/restaurant_screen/restaurant_info.dart';
 // Import commented out as firebase_auth is not directly used in the build method shown
@@ -28,93 +31,110 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   // Fixed menu items (unchanged)
   final List<Map<String, dynamic>> _fixedMenuItems = [
     {
-      'name': 'Spaghetti Carbonara',
-      'description': 'Traditional pasta with eggs, guanciale, pecorino cheese and black pepper',
-      'imageUrl': 'https://example.com/carbonara.jpg',
-    },
-    {
-      'name': 'Porcini Mushroom Risotto',
-      'description': 'Creamy risotto with fresh porcini mushrooms and parmesan cheese',
-      'imageUrl': '',
-    },
-    {
-      'name': 'Florentine T-bone Steak',
-      'description': 'Grilled T-bone beef steak, served rare',
-      'imageUrl': 'https://example.com/bistecca.jpg',
-    },
-    {
-      'name': 'Tiramisu',
-      'description': 'Classic Italian dessert with mascarpone, coffee and ladyfingers',
-      'imageUrl': 'https://example.com/tiramisu.jpg',
+      'name': 'Beef Carpaccio',
+      'description': 'Thinly sliced raw beef with arugula, capers and parmesan shavings',
+      'imageUrl': 'https://example.com/carpaccio.jpg',
+      'course': Course.appetizer,
     },
     {
       'name': 'Caprese Salad',
       'description': 'Tomatoes, buffalo mozzarella, fresh basil and olive oil',
       'imageUrl': '',
-    },
-    {
-      'name': 'Truffle Linguine',
-      'description': 'Handmade linguine with black truffle cream and aged parmesan',
-      'imageUrl': 'https://example.com/truffle.jpg',
-    },
-    {
-      'name': 'Mediterranean Sea Bass',
-      'description': 'Fresh sea bass fillet with herbs, lemon and roasted vegetables',
-      'imageUrl': '',
-    },
-    {
-      'name': 'Beef Carpaccio',
-      'description': 'Thinly sliced raw beef with arugula, capers and parmesan shavings',
-      'imageUrl': 'https://example.com/carpaccio.jpg',
-    },
-    {
-      'name': 'Wild Mushroom Ravioli',
-      'description': 'Homemade ravioli filled with wild mushrooms in a sage butter sauce',
-      'imageUrl': '',
-    },
-    {
-      'name': 'Osso Buco',
-      'description': 'Slow-cooked veal shanks with vegetables and gremolata',
-      'imageUrl': 'https://example.com/ossobuco.jpg',
-    },
-    {
-      'name': 'Panna Cotta',
-      'description': 'Silky vanilla cream dessert with fresh berry compote',
-      'imageUrl': 'https://example.com/pannacotta.jpg',
+      'course': Course.appetizer,
     },
     {
       'name': 'Tuscan Bean Soup',
       'description': 'Hearty soup with cannellini beans, vegetables and Tuscan herbs',
       'imageUrl': '',
+      'course': Course.appetizer,
     },
     {
-      'name': 'Grilled Octopus',
-      'description': 'Tender octopus with potatoes, olives and cherry tomatoes',
-      'imageUrl': 'https://example.com/octopus.jpg',
+      'name': 'Spaghetti Carbonara',
+      'description': 'Traditional pasta with eggs, guanciale, pecorino cheese and black pepper',
+      'imageUrl': 'https://example.com/carbonara.jpg',
+      'course': Course.pastaDish,
     },
     {
-      'name': 'Pistachio Cheesecake',
-      'description': 'Creamy cheesecake with pistachio crust and white chocolate ganache',
+      'name': 'Truffle Linguine',
+      'description': 'Handmade linguine with black truffle cream and aged parmesan',
+      'imageUrl': 'https://example.com/truffle.jpg',
+      'course': Course.pastaDish,
+    },
+    {
+      'name': 'Wild Mushroom Ravioli',
+      'description': 'Homemade ravioli filled with wild mushrooms in a sage butter sauce',
       'imageUrl': '',
+      'course': Course.pastaDish,
+    },
+    {
+      'name': 'Porcini Mushroom Risotto',
+      'description': 'Creamy risotto with fresh porcini mushrooms and parmesan cheese',
+      'imageUrl': '',
+      'course': Course.pastaDish,
+    },
+    {
+      'name': 'Florentine T-bone Steak',
+      'description': 'Grilled T-bone beef steak, served rare',
+      'imageUrl': 'https://example.com/bistecca.jpg',
+      'course': Course.mainDish,
+    },
+    {
+      'name': 'Mediterranean Sea Bass',
+      'description': 'Fresh sea bass fillet with herbs, lemon and roasted vegetables',
+      'imageUrl': '',
+      'course': Course.mainDish,
+    },
+    {
+      'name': 'Osso Buco',
+      'description': 'Slow-cooked veal shanks with vegetables and gremolata',
+      'imageUrl': 'https://example.com/ossobuco.jpg',
+      'course': Course.mainDish,
     },
     {
       'name': 'Veal Saltimbocca',
       'description': 'Thin veal cutlets with prosciutto and sage in wine sauce',
       'imageUrl': 'https://example.com/saltimbocca.jpg',
+      'course': Course.mainDish,
+    },
+    {
+      'name': 'Grilled Octopus',
+      'description': 'Tender octopus with potatoes, olives and cherry tomatoes',
+      'imageUrl': 'https://example.com/octopus.jpg',
+      'course': Course.mainDish,
+    },
+    {
+      'name': 'Tiramisu',
+      'description': 'Classic Italian dessert with mascarpone, coffee and ladyfingers',
+      'imageUrl': 'https://example.com/tiramisu.jpg',
+      'course': Course.dessert,
+    },
+    {
+      'name': 'Panna Cotta',
+      'description': 'Silky vanilla cream dessert with fresh berry compote',
+      'imageUrl': 'https://example.com/pannacotta.jpg',
+      'course': Course.dessert,
+    },
+    {
+      'name': 'Pistachio Cheesecake',
+      'description': 'Creamy cheesecake with pistachio crust and white chocolate ganache',
+      'imageUrl': '',
+      'course': Course.dessert,
     },
   ];
 
-  // On-request menu items (unchanged)
+  // Modificare _onRequestMenuItems per includere il campo course
   final List<Map<String, dynamic>> _onRequestMenuItems = [
     {
-      'name': 'Chef\'s Tasting Menu', // Changed to English
-      'description': 'Custom culinary experience based on guest preferences', // Changed to English
+      'name': 'Chef\'s Tasting Menu',
+      'description': 'Custom culinary experience based on guest preferences',
       'imageUrl': '',
+      'course': Course.other,
     },
     {
-      'name': 'Seasonal Special Dish', // Changed to English
-      'description': 'Dish prepared with fresh seasonal ingredients', // Changed to English
+      'name': 'Seasonal Special Dish',
+      'description': 'Dish prepared with fresh seasonal ingredients',
       'imageUrl': 'https://example.com/seasonal.jpg',
+      'course': Course.other,
     },
   ];
 
@@ -236,7 +256,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   tabCount: 2,
                   tabLabels: const ['Fixed menu', 'On Request'],
                   height: 40.0, // Adjust height as needed
-                  margin: const EdgeInsets.symmetric(horizontal: 45.0, vertical: 10.0), // Added vertical margin
+                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0), // Added vertical margin
                   radius: 25.0,
                   initialIndex: _selectedTabIndex, // Pass current index
                   onTabSelected: (index) {
@@ -248,7 +268,10 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   },
                 ),
                 backgroundColor: colorScheme.surface, // Background for the tab bar area
-              ),
+                padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 8.0),
+                isOwner: isOwner,
+                actionButton: CircularButton(icon: Icons.add,),
+              )
             ),
 
             // --- 5. Menu List ---
@@ -257,6 +280,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               _selectedTabIndex == 0 ? _fixedMenuItems : _onRequestMenuItems,
               isOwner,
             ),
+
+
           ],
         ),
       ),
@@ -264,46 +289,135 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   // Modified function to return a SliverList
+  // Helper method to get course name in a readable format
+  String _getCourseDisplayName(Course course) {
+    switch (course) {
+      case Course.appetizer:
+        return 'Appetizers';
+      case Course.pastaDish:
+        return 'Pasta Dishes';
+      case Course.mainDish:
+        return 'Main Courses';
+      case Course.side:
+        return 'Side Dishes';
+      case Course.dessert:
+        return 'Desserts';
+      case Course.drink:
+        return 'Drinks';
+      case Course.other:
+      default:
+        return 'Other Dishes';
+    }
+  }
+
+  // Modified function to return a SliverList grouped by course
   Widget _buildSliverMenuList(List<Map<String, dynamic>> menuItems, bool isEditable) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (menuItems.isEmpty) {
-      return SliverFillRemaining( // Use SliverFillRemaining to center content when list is empty
+      return SliverFillRemaining(
         child: Center(
           child: Text(
-            'No dishes available', // Changed to English
+            'No dishes available',
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ),
       );
     }
 
+    // Group menu items by course
+    Map<Course, List<Map<String, dynamic>>> groupedItems = {};
+
+    // Initialize all course types to ensure consistent order
+    for (var course in Course.values) {
+      groupedItems[course] = [];
+    }
+
+    // Group items by their course
+    for (var item in menuItems) {
+      Course course = item['course'] ?? Course.other;
+      groupedItems[course]!.add(item);
+    }
+
+    // Remove empty course groups
+    groupedItems.removeWhere((key, value) => value.isEmpty);
+
+    // Convert to a flat list with headers for SliverList
+    List<Widget> sliverItems = [];
+
+    groupedItems.forEach((course, items) {
+      // Add section header
+      sliverItems.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 25, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getCourseDisplayName(course),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colorScheme.primary,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Add items for this section
+      for (var item in items) {
+        sliverItems.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
+            child: MenuItem(
+              dishName: item['name'],
+              description: item['description'],
+              imageUrl: item['imageUrl'],
+              isEditable: isEditable,
+              onDelete: isEditable
+                  ? () {
+                debugPrint('Delete dish: ${item['name']}');
+                // Add deletion logic here
+              }
+                  : null,
+              actionWidget: _buildPriceWidget(item['name'], menuItems.indexOf(item)),
+            ),
+          ),
+        );
+      }
+
+      // Add divider after each section (except the last one)
+      if (course != groupedItems.keys.last) {
+        sliverItems.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.surfaceVariant,
+            ),
+          ),
+        );
+      }
+    });
+
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0), // Padding for the list itself
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) {
-            final item = menuItems[index];
-            // Add padding around each MenuItem if desired
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
-              child: MenuItem(
-                dishName: item['name'],
-                description: item['description'],
-                imageUrl: item['imageUrl'],
-                isEditable: isEditable,
-                onDelete: isEditable
-                    ? () {
-                  debugPrint('Delete dish: ${item['name']}');
-                  // Add deletion logic here
-                }
-                    : null,
-                actionWidget: _buildPriceWidget(item['name'], index), // Pass item name for potential keying
-              ),
-            );
+          (BuildContext context, int index) {
+            return sliverItems[index];
           },
-          childCount: menuItems.length,
+          childCount: sliverItems.length,
         ),
       ),
     );
@@ -335,29 +449,80 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 }
 
 // --- Custom Delegate for the Sticky TabBar ---
+// --- Custom Delegate for the Sticky TabBar ---
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _StickyTabBarDelegate({required this.tabBar, required this.backgroundColor});
-
+  // The tab bar widget itself
   final NavigationTabbar tabBar;
-  final Color backgroundColor; // Add background color
+  // Background color for the delegate area
+  final Color backgroundColor;
+  // Padding around the content (tab bar and button)
+  final EdgeInsets padding;
+  // Flag indicating if the current user is the owner
+  final bool isOwner;
+  // Optional action button (e.g., add button)
+  final CircularButton? actionButton;
+
+  const _StickyTabBarDelegate({
+    required this.tabBar,
+    required this.backgroundColor,
+    required this.padding,
+    required this.isOwner,
+    this.actionButton,
+  });
+
+  // Calculate minimum extent based on tab bar height and vertical padding
+  @override
+  double get minExtent => tabBar.height + padding.vertical;
+  // Calculate maximum extent based on tab bar height and vertical padding
+  @override
+  double get maxExtent => tabBar.height + padding.vertical;
 
   @override
-  double get minExtent => tabBar.height + (tabBar.margin?.vertical ?? 0); // Include vertical margin
-  @override
-  double get maxExtent => tabBar.height + (tabBar.margin?.vertical ?? 0); // Include vertical margin
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Provide a background color for the area behind the tab bar
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // Provide a background color for the area behind the tab bar and button
     return Container(
       color: backgroundColor, // Use the passed background color
-      child: tabBar,
+      padding: padding, // Apply the specified padding
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center, // Center items vertically
+        children: [
+          // TabBar takes up available space
+          Expanded(
+            child: NavigationTabbar(
+              // Rebuild tab bar without margin, as padding is handled by the delegate
+              key: tabBar.key,
+              tabCount: tabBar.tabCount,
+              tabLabels: tabBar.tabLabels,
+              height: tabBar.height,
+              margin: EdgeInsets.zero, // Margin is handled by delegate's padding
+              radius: tabBar.radius,
+              onTabSelected: tabBar.onTabSelected,
+              initialIndex: tabBar.initialIndex,
+            ),
+          ),
+          // Conditionally display the button next to the tab bar if the user is the owner
+          if (isOwner && actionButton != null) ...[
+            const SizedBox(width: 10), // Spacing between tab bar and button
+            AnimatedButton(
+              onTap: actionButton!.onPressed ?? () {
+                debugPrint('Button pressed');
+              },
+              child: actionButton!,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   @override
   bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
-    // Rebuild if the tab bar instance itself changes
-    return tabBar != oldDelegate.tabBar || backgroundColor != oldDelegate.backgroundColor;
+    // Rebuild if any of the properties change
+    return tabBar != oldDelegate.tabBar ||
+           backgroundColor != oldDelegate.backgroundColor ||
+           padding != oldDelegate.padding ||
+           isOwner != oldDelegate.isOwner ||
+           actionButton != oldDelegate.actionButton;
   }
 }

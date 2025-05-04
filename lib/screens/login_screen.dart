@@ -4,7 +4,7 @@ import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-import '../widgets/auth/animated_button.dart';
+import '../widgets/animated_button.dart';
 import '../widgets/auth/custom_social_button.dart';
 import '../widgets/auth/or_divider.dart';
 import '../widgets/auth/auth_input_field.dart';
