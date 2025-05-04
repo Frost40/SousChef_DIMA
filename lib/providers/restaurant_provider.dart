@@ -16,8 +16,11 @@ class RestaurantProvider with ChangeNotifier {
 
   // Getters
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
+
   Restaurant? get restaurant => _restaurant;
+
   bool get hasError => _errorMessage != null;
 
   /// Retrieves restaurant information and dishes for a given restaurant ID
@@ -29,7 +32,8 @@ class RestaurantProvider with ChangeNotifier {
 
     try {
       // Get restaurant data
-      final restaurantData = await _restaurantFirestore.getRestaurant(restaurantId);
+      final restaurantData = await _restaurantFirestore.getRestaurant(
+          restaurantId);
 
       try {
         // Get dishes data for the restaurant

@@ -12,7 +12,7 @@ class UserFirestore {
   firebase_auth.User? get _authUser => firebase_auth.FirebaseAuth.instance.currentUser;
 
   // Firestore collection reference
-  final CollectionReference _userTable =
+  final CollectionReference _usersTable =
       FirebaseFirestore.instance.collection('users');
 
   /// Updates multiple user profile fields at once
@@ -36,7 +36,7 @@ class UserFirestore {
     if (updates.isEmpty) return;
 
     // Update data in Firestore
-    await _userTable.doc(_uid).update(updates);
+    await _usersTable.doc(_uid).update(updates);
 
     // Update relevant data in Firebase Auth
     if (_authUser != null) {
@@ -74,7 +74,7 @@ class UserFirestore {
     firebase_auth.FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null && user.email != oldEmail && user.email == newEmail) {
         // The email has been changed, update Firestore
-        _userTable.doc(user.uid).update({'email': newEmail}).then((_) {
+        _usersTable.doc(user.uid).update({'email': newEmail}).then((_) {
           debugPrint('Email updated in Firestore to $newEmail');
         }).catchError((error) {
           debugPrint('Failed to update email in Firestore: $error');
@@ -109,7 +109,7 @@ class UserFirestore {
     if (_uid == null) return null;
 
     try {
-      final docSnapshot = await _userTable.doc(_uid).get(
+      final docSnapshot = await _usersTable.doc(_uid).get(
           GetOptions(source: Source.server)
       );
       if (!docSnapshot.exists) return null;
@@ -123,7 +123,7 @@ class UserFirestore {
   //Function to check in the database if an other user with that username already exists
   Future<bool> isUsernameTaken(String username) async {
     final result =
-    await _userTable
+    await _usersTable
         .where('username', isEqualTo: username)
         .limit(1)
         .get();
@@ -135,7 +135,7 @@ class UserFirestore {
     if (_uid == null) return [];
 
     try {
-      final docSnapshot = await _userTable
+      final docSnapshot = await _usersTable
           .doc(_uid)
           .get(GetOptions(source: Source.server));
       if (!docSnapshot.exists) return [];
@@ -225,7 +225,7 @@ class UserFirestore {
       }
 
       // 6. Finally, delete the user document
-      batch.delete(_userTable.doc(userId));
+      batch.delete(_usersTable.doc(userId));
 
       // Execute all delete operations in a single transaction
       await batch.commit();
@@ -239,7 +239,7 @@ class UserFirestore {
 
   Future<void> removeFromFavorites(String userId, String restaurantId) async {
     try {
-      await _userTable.doc(userId).update({
+      await _usersTable.doc(userId).update({
         'favourites': FieldValue.arrayRemove([restaurantId])
       });
     } catch (e) {
@@ -254,7 +254,7 @@ class UserFirestore {
     }
 
     // Update the restaurant ID in the user's document
-    _userTable.doc(_uid).update({'restaurantId': id,});
+    _usersTable.doc(_uid).update({'restaurantId': id,});
   }
 
 }

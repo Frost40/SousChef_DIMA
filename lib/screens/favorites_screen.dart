@@ -6,7 +6,7 @@ import '../providers/user_provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
 
 class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({Key? key}) : super(key: key);
+  const FavoritesScreen({super.key});
 
   @override
   _FavoritesScreenState createState() => _FavoritesScreenState();
@@ -93,7 +93,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   'id': restaurant.id,
                   'imagine': "https://i.pravatar.cc/150?img=5",
                   'restaurantName': restaurant.name,
-                  'available': restaurant.isAvailable,
+                  'available': restaurant.isOpen,
                   'favorite': true,
                 };
                 return RestaurantTile(restaurant: mockRestaurantData);

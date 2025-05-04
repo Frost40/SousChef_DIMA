@@ -6,7 +6,7 @@ import '../../models/restaurant.dart';
 class RestaurantFirestore {
 
   // Restaurants collection reference
-  final CollectionReference _restaurantTable = FirebaseFirestore.instance
+  final CollectionReference _restaurantsTable = FirebaseFirestore.instance
       .collection('restaurants');
 
   /// Function to add a restaurant to Firestore
@@ -18,7 +18,7 @@ class RestaurantFirestore {
     required String ownerId,
   }) async {
     // Create a new restaurant document
-    final DocumentReference restaurantDoc = await _restaurantTable.add({
+    final DocumentReference restaurantDoc = await _restaurantsTable.add({
       'restaurantName': restaurantName,
       'ownerId': ownerId,
     });
@@ -30,7 +30,7 @@ class RestaurantFirestore {
   /// Retrieves restaurant information from Firestore given the restaurant ID
   /// Returns a Restaurant object with all the restaurant data
   Future<Restaurant> getRestaurant(String restaurantId) async {
-    final DocumentSnapshot restaurantDoc = await _restaurantTable.doc(restaurantId).get();
+    final DocumentSnapshot restaurantDoc = await _restaurantsTable.doc(restaurantId).get();
 
     if (!restaurantDoc.exists) {
       throw Exception('Restaurant not found');
@@ -42,7 +42,7 @@ class RestaurantFirestore {
   /// Recover all user data from Firestore and return it as a User model
   Future<Restaurant?> getFavouriteInfo(String restaurantId) async {
     try {
-      final docSnapshot = await _restaurantTable
+      final docSnapshot = await _restaurantsTable
           .doc(restaurantId)
           .get(GetOptions(source: Source.server));
       if (!docSnapshot.exists) return null;
