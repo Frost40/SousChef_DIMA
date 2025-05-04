@@ -37,7 +37,7 @@ class RestaurantProvider with ChangeNotifier {
         _restaurant = restaurantData.copyWithDishes(dishes);
       } catch (dishError) {
         // Specific separate error handling for dish retrieval
-        _errorMessage = "Impossible to retieve the dishes: ${_getErrorMessage(dishError)}";
+        _errorMessage = "Impossible to retrieve the dishes: ${_getErrorMessage(dishError)}";
       }
 
       _isLoading = false;

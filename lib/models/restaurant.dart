@@ -7,8 +7,6 @@ class Restaurant {
   final String address;
   final bool isOpen;
   final List<RestaurantType> restaurantTypes;
-  final double rating;
-  final int numRatings;
   final String ownerId;
   final GeoPoint location;
   final List<Dish> dishes;
@@ -19,8 +17,6 @@ class Restaurant {
     required this.address,
     required this.isOpen,
     required this.restaurantTypes,
-    required this.rating,
-    required this.numRatings,
     required this.ownerId,
     required this.location,
     this.dishes = const [],
@@ -49,8 +45,6 @@ class Restaurant {
       address: data['address'] ?? '',
       isOpen: data['isOpen'] ?? false,
       restaurantTypes: restaurantTypes,
-      rating: (data['rating'] ?? 0.0).toDouble(),
-      numRatings: data['numRatings'] ?? 0,
       ownerId: data['ownerId'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
     );
@@ -68,8 +62,6 @@ class Restaurant {
       'address': address,
       'isOpen': isOpen,
       'restaurant_types': restaurantTypesStrings,
-      'rating': rating,
-      'numRatings': numRatings,
       'ownerId': ownerId,
       'location': location,
     };
@@ -83,8 +75,6 @@ class Restaurant {
       address: this.address,
       isOpen: this.isOpen,
       restaurantTypes: this.restaurantTypes,
-      rating: this.rating,
-      numRatings: this.numRatings,
       ownerId: this.ownerId,
       location: this.location,
       dishes: dishes,
@@ -116,8 +106,6 @@ class Restaurant {
       address: this.address,
       isOpen: this.isOpen,
       restaurantTypes: newTypes,
-      rating: this.rating,
-      numRatings: this.numRatings,
       ownerId: this.ownerId,
       location: this.location,
       dishes: this.dishes,
