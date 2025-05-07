@@ -35,109 +35,141 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       'description': 'Thinly sliced raw beef with arugula, capers and parmesan shavings',
       'imageUrl': 'https://example.com/carpaccio.jpg',
       'course': Course.appetizer,
+      'price': 12.99,
+      'isAvailable': true,
     },
     {
       'name': 'Caprese Salad',
       'description': 'Tomatoes, buffalo mozzarella, fresh basil and olive oil',
       'imageUrl': '',
       'course': Course.appetizer,
+      'price': 15.50,
+      'isAvailable': true,
     },
     {
       'name': 'Tuscan Bean Soup',
       'description': 'Hearty soup with cannellini beans, vegetables and Tuscan herbs',
       'imageUrl': '',
       'course': Course.appetizer,
+      'price': 24.00,
+      'isAvailable': true,
     },
     {
       'name': 'Spaghetti Carbonara',
       'description': 'Traditional pasta with eggs, guanciale, pecorino cheese and black pepper',
       'imageUrl': 'https://example.com/carbonara.jpg',
       'course': Course.pastaDish,
+      'price': 8.50,
+      'isAvailable': true,
     },
     {
       'name': 'Truffle Linguine',
       'description': 'Handmade linguine with black truffle cream and aged parmesan',
       'imageUrl': 'https://example.com/truffle.jpg',
       'course': Course.pastaDish,
+      'price': 10.00,
+      'isAvailable': true,
     },
     {
       'name': 'Wild Mushroom Ravioli',
       'description': 'Homemade ravioli filled with wild mushrooms in a sage butter sauce',
       'imageUrl': '',
       'course': Course.pastaDish,
+      'price': 35.00,
+      'isAvailable': true,
     },
     {
       'name': 'Porcini Mushroom Risotto',
       'description': 'Creamy risotto with fresh porcini mushrooms and parmesan cheese',
       'imageUrl': '',
       'course': Course.pastaDish,
+      'price': 18.75,
+      'isAvailable': true,
     },
     {
       'name': 'Florentine T-bone Steak',
       'description': 'Grilled T-bone beef steak, served rare',
       'imageUrl': 'https://example.com/bistecca.jpg',
       'course': Course.mainDish,
+      'price': 22.50,
+      'isAvailable': true,
     },
     {
       'name': 'Mediterranean Sea Bass',
       'description': 'Fresh sea bass fillet with herbs, lemon and roasted vegetables',
       'imageUrl': '',
       'course': Course.mainDish,
+      'price': 16.00,
+      'isAvailable': true,
     },
     {
       'name': 'Osso Buco',
       'description': 'Slow-cooked veal shanks with vegetables and gremolata',
       'imageUrl': 'https://example.com/ossobuco.jpg',
       'course': Course.mainDish,
+      'price': 28.00,
+      'isAvailable': true,
     },
     {
       'name': 'Veal Saltimbocca',
       'description': 'Thin veal cutlets with prosciutto and sage in wine sauce',
       'imageUrl': 'https://example.com/saltimbocca.jpg',
       'course': Course.mainDish,
+      'price': 9.50,
+      'isAvailable': true,
     },
     {
       'name': 'Grilled Octopus',
       'description': 'Tender octopus with potatoes, olives and cherry tomatoes',
       'imageUrl': 'https://example.com/octopus.jpg',
       'course': Course.mainDish,
+      'price': 11.00,
+      'isAvailable': true,
     },
     {
       'name': 'Tiramisu',
       'description': 'Classic Italian dessert with mascarpone, coffee and ladyfingers',
       'imageUrl': 'https://example.com/tiramisu.jpg',
       'course': Course.dessert,
+      'price': 26.50,
+      'isAvailable': true,
     },
     {
       'name': 'Panna Cotta',
       'description': 'Silky vanilla cream dessert with fresh berry compote',
       'imageUrl': 'https://example.com/pannacotta.jpg',
       'course': Course.dessert,
+      'price': 14.00,
+      'isAvailable': true,
     },
     {
       'name': 'Pistachio Cheesecake',
       'description': 'Creamy cheesecake with pistachio crust and white chocolate ganache',
       'imageUrl': '',
       'course': Course.dessert,
+      'price': 19.50,
+      'isAvailable': true,
     },
   ];
 
-  // Modificare _onRequestMenuItems per includere il campo course
   final List<Map<String, dynamic>> _onRequestMenuItems = [
     {
       'name': 'Chef\'s Tasting Menu',
       'description': 'Custom culinary experience based on guest preferences',
       'imageUrl': '',
       'course': Course.other,
+      'price': 38.99,
+      'isAvailable': true,
     },
     {
       'name': 'Seasonal Special Dish',
       'description': 'Dish prepared with fresh seasonal ingredients',
       'imageUrl': 'https://example.com/seasonal.jpg',
       'course': Course.other,
+      'price': 42.50,
+      'isAvailable': true,
     },
   ];
-
   @override
   void initState() {
     super.initState();
@@ -383,13 +415,61 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               description: item['description'],
               imageUrl: item['imageUrl'],
               isEditable: isEditable,
+              price: item['price'],
+              isAvailable: item['isAvailable'],
               onDelete: isEditable
                   ? () {
-                debugPrint('Delete dish: ${item['name']}');
-                // Add deletion logic here
-              }
+                      debugPrint('Delete dish: ${item['name']}');
+                      /*
+                      restaurantProvider.deleteDish(
+                          widget.restaurantId,
+                          item['id']
+                      );
+
+                       */
+                    }
                   : null,
-              actionWidget: _buildPriceWidget(item['name'], menuItems.indexOf(item)),
+              onEdit: isEditable
+                ? (newName, newDescription, newPrice, {imageFile, imageUrl}) {
+                  debugPrint('Edit dish: ${item['name']}');
+                  setState(() {
+                    item['name'] = newName;
+                    item['description'] = newDescription;
+                    item['price'] = newPrice;
+                    if (imageUrl != null) {
+                      item['imageUrl'] = imageUrl;
+                    }
+                  });
+                  /*
+                  restaurantProvider.updateDish(
+                      widget.restaurantId,
+                      item['id'],
+                      newName,
+                      newDescription,
+                      newPrice,
+                      imageFile: imageFile,
+                      imageUrl: imageUrl
+                  );
+
+                   */
+                  }
+                : null,
+              onAvailabilityChanged: isEditable
+                ? (newAvailability) {
+                setState(() {
+                  item['isAvailable'] = newAvailability;
+                });
+                  debugPrint('Change availability for dish: ${item['name']}');
+                  /*
+                  restaurantProvider.updateDishAvailability(
+                      widget.restaurantId,
+                      item['id'],
+                      newAvailability
+                  );
+
+                   */
+                  }
+                : null,
             ),
           ),
         );
@@ -422,33 +502,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       ),
     );
   }
-
-  // Helper for price widget (slightly modified for context)
-  Widget _buildPriceWidget(String itemName, int index) {
-    // Using a fixed list for demo, consider linking price to actual item data
-    final prices = [12.99, 15.50, 24.00, 8.50, 10.00, 35.00, 18.75, 22.50, 16.00, 28.00, 9.50, 11.00, 26.50, 14.00, 19.50]; // Added more prices
-    // Use modulo to cycle through prices if menuItems > prices.length
-    final price = prices[index % prices.length];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text(
-        // Using € symbol - ensure your font supports it
-        '€${price.toStringAsFixed(2)}',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-  }
 }
 
-// --- Custom Delegate for the Sticky TabBar ---
 // --- Custom Delegate for the Sticky TabBar ---
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   // The tab bar widget itself

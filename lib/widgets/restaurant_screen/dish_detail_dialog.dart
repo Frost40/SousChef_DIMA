@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
+import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
+import '../image_upload_button.dart';
 import 'dish_availability_button.dart';
 
 class DishDetailDialog extends StatefulWidget {
@@ -12,7 +16,10 @@ class DishDetailDialog extends StatefulWidget {
   final bool isEditable;
   final VoidCallback? onDelete;
   final double? price;
-  final Function(String, String, double)? onSave;
+  final bool initialAvailability;
+  final Function(String, String, double, {String? imageUrl, File? imageFile})? onSave;
+  final Function(bool)? onAvailabilityChanged;
+
 
   const DishDetailDialog({
     super.key,
@@ -23,7 +30,9 @@ class DishDetailDialog extends StatefulWidget {
     required this.isEditable,
     this.onDelete,
     this.price,
+    this.initialAvailability = false,
     required this.onSave,
+    this.onAvailabilityChanged,
   });
 
   @override
@@ -40,6 +49,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   late String _initialDescription;
   late double? _initialPrice;
   late String? _initialImageUrl;
+  late bool _availabilityStatus;
 
   bool _hasChanges = false;
   bool _hasValidationErrors = false;
@@ -47,9 +57,9 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   String? _descriptionError;
   String? _priceError;
   String? _imageUrlError;
-  bool availabilityStatus = true;
+  File? _imageFile;
 
-  String? _currentFocus; // può essere 'name', 'description', 'price', 'image'
+  String? _currentFocus;
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _descriptionFocus = FocusNode();
   final FocusNode _priceFocus = FocusNode();
@@ -61,6 +71,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     _initialDescription = widget.description;
     _initialPrice = widget.price;
     _initialImageUrl = widget.imageUrl;
+    _availabilityStatus = widget.initialAvailability;
 
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
@@ -96,6 +107,16 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         setState(() => _currentFocus = null);
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(DishDetailDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialAvailability != oldWidget.initialAvailability) {
+      setState(() {
+        _availabilityStatus = widget.initialAvailability;
+      });
+    }
   }
 
   @override
@@ -177,10 +198,10 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       }
     }
 
-    // Validazione URL immagine (opzionale)
+    // Image URL validation (optional)
     if (_imageUrlController.text.isNotEmpty &&
         !_imageUrlController.text.startsWith('http')) {
-      imageUrlError = 'URL immagine non valido';
+      imageUrlError = 'Image URL not valid';
     }
 
     setState(() {
@@ -202,7 +223,13 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     final description = _descriptionController.text;
     final price = _parsePrice() ?? 0.0;
 
-    widget.onSave?.call(name, description, price);
+    widget.onSave?.call(
+        name,
+        description,
+        price,
+        imageUrl: _imageFile == null ? _imageUrlController.text : null,
+        imageFile: _imageFile
+    );
     Navigator.of(context).pop();
   }
 
@@ -267,8 +294,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                                   children: [
                                     ElevatedButton.icon(
                                       onPressed: () {
-                                        Navigator.of(context).pop();
-                                        if (widget.onDelete != null) widget.onDelete!();
+                                        Navigator.of(context).pop(); // Chiudi il dialog
+                                        widget.onDelete?.call();    // Chiama il callback
                                       },
                                       icon: Icon(Icons.delete, color: colorScheme.error),
                                       label: Text(
@@ -287,12 +314,15 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                                   const Text('Availability'),
                                   const SizedBox(height: 4),
                                   DishAvailabilityButton(
-                                    initialValue: availabilityStatus,
+                                    initialValue: _availabilityStatus,
                                     isEditable: widget.isEditable,
                                     onToggle: (value) {
                                       setState(() {
-                                        availabilityStatus = value;
+                                        _availabilityStatus = value;
                                       });
+
+                                      // Immediately call the father to notify the change without triggering the save button
+                                      widget.onAvailabilityChanged?.call(value);
                                     },
                                   ),
                                 ],
@@ -359,77 +389,64 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   }
 
   Widget _buildEditableImage(ColorScheme colorScheme) {
-    return GestureDetector(
-      onTap: () {
-        // Qui potresti aprire un picker per l'immagine
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Inserisci URL immagine'),
-            content: TextField(
-              controller: _imageUrlController,
-              decoration: InputDecoration(
-                labelText: 'URL Immagine',
-                errorText: _imageUrlError,
-              ),
-              onChanged: (_) => _checkForChanges(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Annulla'),
-              ),
-              TextButton(
-                onPressed: () {
-                  _checkForChanges();
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Conferma'),
-              ),
-            ],
-          ),
-        );
-      },
-      child: Stack(
-        children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundColor: colorScheme.surfaceVariant,
-            child: _imageUrlController.text.isNotEmpty
-                ? ClipOval(
-                    child: Image.network(
-                      _imageUrlController.text,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.restaurant_menu,
-                        size: 60,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : Icon(
-                    Icons.restaurant_menu,
-                    size: 60,
-                    color: colorScheme.primary,
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 60,
+          backgroundColor: colorScheme.surfaceVariant,
+          child: _imageFile != null
+              ? ClipOval(
+                  child: Image.file(
+                    _imageFile!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
                   ),
+                )
+              : _imageUrlController.text.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        _imageUrlController.text,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.restaurant_menu,
+                          size: 60,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.restaurant_menu,
+                      size: 60,
+                      color: colorScheme.primary,
+                    ),
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: ImageUploadButton(
+            size: 40,
+            onImageSelected: (File? file) {
+              setState(() {
+                _imageFile = file;
+                if (file != null) {
+                  _imageUrlController.text = '';
+                }
+                _checkForChanges();
+              });
+            },
+            onUrlSelected: (String url) {
+              setState(() {
+                _imageUrlController.text = url;
+                _checkForChanges();
+              });
+            },
+            currentImageUrl: _imageUrlController.text,
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: colorScheme.primary,
-              child: Icon(
-                Icons.camera_alt,
-                color: colorScheme.onPrimary,
-                size: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -473,6 +490,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
               ),
               border: InputBorder.none,
             ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _nameFocus.unfocus(),
           ),
         ),
         if (_nameError != null)
@@ -517,6 +536,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
               ),
               border: InputBorder.none,
             ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _descriptionFocus.unfocus(),
           ),
         ),
         if (_descriptionError != null)
@@ -537,10 +558,12 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
-            color: _currentFocus == 'price'
-                ? colorScheme.primary.withOpacity(0.2)
-                : colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: _currentFocus == 'price' ? colorScheme.primary : Colors.transparent,
+              width: 2,
+            ),
+            color: colorScheme.primary.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(25),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -558,7 +581,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                 child: TextField(
                   controller: _priceController,
                   focusNode: _priceFocus,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
@@ -578,6 +601,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                   ],
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _priceFocus.unfocus(),
                 ),
               ),
             ],
@@ -624,22 +649,6 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text(
-        '€${widget.price!.toStringAsFixed(2)}',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.primary,
-        ),
-      ),
-    );
+    return PriceTag(price: widget.price!);
   }
-
-
 }

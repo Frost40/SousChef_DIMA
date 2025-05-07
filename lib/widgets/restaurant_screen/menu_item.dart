@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
+import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 import 'dish_availability_button.dart';
 import 'dish_detail_dialog.dart';
@@ -10,8 +13,10 @@ class MenuItem extends StatelessWidget {
   final String? imageUrl;
   final bool isEditable;
   final VoidCallback? onDelete;
-  final Widget? actionWidget;
-  final double? price; // Aggiunto prezzo come parametro
+  final double price;
+  final bool isAvailable;
+  final Function(String, String, double, {File? imageFile, String? imageUrl})? onEdit;
+  final Function(bool)? onAvailabilityChanged;
 
   const MenuItem({
     super.key,
@@ -20,8 +25,10 @@ class MenuItem extends StatelessWidget {
     this.imageUrl,
     this.isEditable = false,
     this.onDelete,
-    this.actionWidget,
-    this.price,
+    required this.price,
+    this.isAvailable = false,
+    this.onEdit,
+    this.onAvailabilityChanged,
   });
 
   @override
@@ -76,8 +83,11 @@ class MenuItem extends StatelessWidget {
                       width: 24,
                       height: 24,
                       child: DishAvailabilityButton(
-                        initialValue: true,
+                        initialValue: isAvailable,
                         isEditable: isEditable,
+                        onToggle: isEditable ? (value) {
+                          onAvailabilityChanged?.call(value);
+                        } : null,
                       ),
                     ),
                   ),
@@ -115,7 +125,7 @@ class MenuItem extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              if (actionWidget != null) actionWidget!,
+              PriceTag(price: price, fontSize: 14,),
 
               if (isEditable)
                 IconButton(
@@ -144,10 +154,12 @@ class MenuItem extends StatelessWidget {
         dishName: dishName,
         description: description,
         imageUrl: imageUrl,
-        isEditable: false,
+        isEditable: isEditable,
+        initialAvailability: isAvailable,
         onDelete: onDelete,
-        price: 12.99,
-        onSave: (name , description , price ) {  },
+        price: price,
+        onSave: onEdit,
+        onAvailabilityChanged: onAvailabilityChanged,
       ),
     );
   }

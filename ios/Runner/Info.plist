@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app wants to access your gallary to select images for the dishes</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app wants to access your camera to take picture of your dishes</string>
+
 	<key>GIDClientID</key>
 	<!-- Copied from GoogleService-Info.plist key CLIENT_ID -->
 	<string>22755112532-ut73aoppho16qok218bbtj9l3ui47vk3.apps.googleusercontent.com</string>
