@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
@@ -233,7 +235,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             SliverToBoxAdapter(
               child: RestaurantInfo(
                 // Assume restaurant is non-null based on the check above
-                restaurantImageUrl: "", // Provide actual URL if available
+                restaurantImageUrl: restaurant.imageUrl ?? '', // Provide actual URL if available
                 isOpen: restaurant.isOpen,
                 isFixedMenu: restaurant.hasRestaurantType(RestaurantType.fixedMenu),
                 isOnRequest: restaurant.hasRestaurantType(RestaurantType.onRequest),
@@ -243,31 +245,35 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 // Callbacks (unchanged)
                 onOpenStatusChanged: isOwner ? (isOpen) {
                   debugPrint("New open status: $isOpen");
-                  // restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
+                  restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
                 } : null,
                 onFixedMenuToggled: isOwner ? (isEnabled) {
                   debugPrint("New fixed menu status: $isEnabled");
-                  /*
                   restaurantProvider.updateRestaurantType(
                       widget.restaurantId,
-                      RestaurantType.fixedMenu,
-                      isEnabled
+                      RestaurantType.fixedMenu
                   );
-                  */
                 } : null,
                 onOnRequestToggled: isOwner ? (isEnabled) {
                   debugPrint("New on request status: $isEnabled");
-                  /*
                    restaurantProvider.updateRestaurantType(
                        widget.restaurantId,
-                       RestaurantType.onRequest,
-                       isEnabled
+                       RestaurantType.onRequest
                    );
-                   */
                 } : null,
                 onAddressChanged: isOwner ? (newAddress) {
                   debugPrint("New address: $newAddress");
-                  // restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
+                  restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
+                } : null,
+                onImageUploadPressed: isOwner ? (File? imageFile) {
+                  if (imageFile != null) {
+                    debugPrint("New image file: ${imageFile.path}");
+                      restaurantProvider.updateRestaurantImage(
+                          widget.restaurantId,
+                          imageFile
+                      );
+
+                  }
                 } : null,
               ),
             ),

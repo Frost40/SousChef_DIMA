@@ -52,4 +52,44 @@ class RestaurantFirestore {
       return null;
     }
   }
+
+  // Method to update restaurant's open status
+  Future<void> updateRestaurantOpenStatus(String restaurantId, bool isOpen) async {
+    await _restaurantsTable.doc(restaurantId).update({
+      'isOpen': isOpen
+    });
+  }
+
+  // Method to update restaurant's name
+  Future<void> updateRestaurantName(String restaurantId, String name) async {
+    await _restaurantsTable.doc(restaurantId).update({
+      'name': name
+    });
+  }
+
+  // Method to update restaurant's address
+  Future<void> updateRestaurantAddress(String restaurantId, String address) async {
+    await _restaurantsTable.doc(restaurantId).update({
+      'address': address
+    });
+  }
+
+  // Method to update restaurant's types
+  Future<void> updateRestaurantType(String restaurantId, List<RestaurantType> restaurantTypes) async {
+    // Convert restaurant types from enum to strings
+    List<String> restaurantTypesStrings = restaurantTypes.map((type) {
+      return type == RestaurantType.fixedMenu ? 'fixedMenu' : 'onRequest';
+    }).toList();
+
+    await _restaurantsTable.doc(restaurantId).update({
+      'restaurant_types': restaurantTypesStrings
+    });
+  }
+
+  // Method to update restaurant's image URL
+  Future<void> updateRestaurantImage(String restaurantId, String imageUrl) async {
+    await _restaurantsTable.doc(restaurantId).update({
+      'imageUrl': imageUrl
+    });
+  }
 }

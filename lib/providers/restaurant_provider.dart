@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import '../services/firebase_storage.dart';
 import '../models/restaurant.dart';
 import '../services/database/dish_firestore.dart';
 import '../services/database/restaurant_firestore.dart';
@@ -8,6 +11,8 @@ import '../services/database/restaurant_firestore.dart';
 class RestaurantProvider with ChangeNotifier {
   final RestaurantFirestore _restaurantFirestore = RestaurantFirestore();
   final DishFirestore _dishFirestore = DishFirestore();
+
+  final FirebaseStorage _firebaseStorage = FirebaseStorage();
 
   // State variables
   bool _isLoading = false;
@@ -149,5 +154,190 @@ class RestaurantProvider with ChangeNotifier {
     }
 
     return 'An error occurred: $errorMessage';
+  }
+
+  /// Updates the restaurant's open status
+  Future<void> updateRestaurantOpenStatus(String restaurantId, bool isOpen) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      await _restaurantFirestore.updateRestaurantOpenStatus(restaurantId, isOpen);
+
+      // Update local restaurant model
+      if (_restaurant != null && _restaurant!.id == restaurantId) {
+        _restaurant = Restaurant(
+          id: _restaurant!.id,
+          name: _restaurant!.name,
+          address: _restaurant!.address,
+          isOpen: isOpen,
+          restaurantTypes: _restaurant!.restaurantTypes,
+          ownerId: _restaurant!.ownerId,
+          location: _restaurant!.location,
+          imageUrl: _restaurant!.imageUrl,
+          dishes: _restaurant!.dishes,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Updates the restaurant's name
+  Future<void> updateRestaurantName(String restaurantId, String name) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      await _restaurantFirestore.updateRestaurantName(restaurantId, name);
+
+      // Update local restaurant model
+      if (_restaurant != null && _restaurant!.id == restaurantId) {
+        _restaurant = Restaurant(
+          id: _restaurant!.id,
+          name: name,
+          address: _restaurant!.address,
+          isOpen: _restaurant!.isOpen,
+          restaurantTypes: _restaurant!.restaurantTypes,
+          ownerId: _restaurant!.ownerId,
+          location: _restaurant!.location,
+          imageUrl: _restaurant!.imageUrl,
+          dishes: _restaurant!.dishes,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Updates the restaurant's address
+  Future<void> updateRestaurantAddress(String restaurantId, String address) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      await _restaurantFirestore.updateRestaurantAddress(restaurantId, address);
+
+      // Update local restaurant model
+      if (_restaurant != null && _restaurant!.id == restaurantId) {
+        _restaurant = Restaurant(
+          id: _restaurant!.id,
+          name: _restaurant!.name,
+          address: address,
+          isOpen: _restaurant!.isOpen,
+          restaurantTypes: _restaurant!.restaurantTypes,
+          ownerId: _restaurant!.ownerId,
+          location: _restaurant!.location,
+          imageUrl: _restaurant!.imageUrl,
+          dishes: _restaurant!.dishes,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Updates the restaurant's type
+  Future<void> updateRestaurantType(String restaurantId, RestaurantType type) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      // Check if restaurant is loaded and matches the ID
+      if (_restaurant != null && _restaurant!.id == restaurantId) {
+        // Get updated restaurant with toggled type
+        Restaurant updatedRestaurant = _restaurant!.toggleRestaurantType(type);
+
+        // Update in Firestore
+        await _restaurantFirestore.updateRestaurantType(
+          restaurantId,
+          updatedRestaurant.restaurantTypes
+        );
+
+        // Update local model
+        _restaurant = updatedRestaurant;
+      } else {
+        // If restaurant isn't loaded, fetch it first
+        final restaurant = await _restaurantFirestore.getRestaurant(restaurantId);
+        Restaurant updatedRestaurant = restaurant.toggleRestaurantType(type);
+
+        await _restaurantFirestore.updateRestaurantType(
+          restaurantId,
+          updatedRestaurant.restaurantTypes
+        );
+
+        _restaurant = updatedRestaurant;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Updates the restaurant's image
+  Future<void> updateRestaurantImage(String restaurantId, File imageFile) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      // Update the image in Firebase Storage and retrieve the URL
+      final String? imageUrl = await _firebaseStorage.uploadRestaurantImage(
+          restaurantId,
+          imageFile
+      );
+
+      if (imageUrl != null) {
+        // Update the image URL in Firestore
+        await _restaurantFirestore.updateRestaurantImage(restaurantId, imageUrl);
+
+        // Updating local restaurant model
+        if (_restaurant != null && _restaurant!.id == restaurantId) {
+          _restaurant = Restaurant(
+            id: _restaurant!.id,
+            name: _restaurant!.name,
+            address: _restaurant!.address,
+            isOpen: _restaurant!.isOpen,
+            restaurantTypes: _restaurant!.restaurantTypes,
+            ownerId: _restaurant!.ownerId,
+            location: _restaurant!.location,
+            imageUrl: imageUrl,
+            dishes: _restaurant!.dishes,
+          );
+        }
+      } else {
+        _errorMessage = "Impossible to upload the image. Please try again.";
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
   }
 }

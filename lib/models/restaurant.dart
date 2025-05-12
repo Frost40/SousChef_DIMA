@@ -9,6 +9,7 @@ class Restaurant {
   final List<RestaurantType> restaurantTypes;
   final String ownerId;
   final GeoPoint location;
+  final String? imageUrl;
   final List<Dish> dishes;
 
   Restaurant({
@@ -19,6 +20,7 @@ class Restaurant {
     required this.restaurantTypes,
     required this.ownerId,
     required this.location,
+    required this.imageUrl,
     this.dishes = const [],
   });
 
@@ -47,11 +49,11 @@ class Restaurant {
       restaurantTypes: restaurantTypes,
       ownerId: data['ownerId'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
+      imageUrl: data['imageUrl'] ?? '',
     );
   }
 
   Map<String, dynamic> toFirestore() {
-
     // Convert restaurant_type from enum to string for Firestore
     List<String> restaurantTypesStrings = restaurantTypes.map((type) {
       return type == RestaurantType.fixedMenu ? 'fixedMenu' : 'onRequest';
@@ -77,6 +79,7 @@ class Restaurant {
       restaurantTypes: this.restaurantTypes,
       ownerId: this.ownerId,
       location: this.location,
+      imageUrl: this.imageUrl,
       dishes: dishes,
     );
   }
@@ -108,6 +111,7 @@ class Restaurant {
       restaurantTypes: newTypes,
       ownerId: this.ownerId,
       location: this.location,
+      imageUrl: this.imageUrl,
       dishes: this.dishes,
     );
   }
