@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
+import 'package:sous_chef/widgets/circular_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 import '../image_upload_button.dart';
 import 'dish_availability_button.dart';
 
 class DishDetailDialog extends StatefulWidget {
-  final String heroTag;
+  final String? heroTag;
   final String dishName;
   final String description;
   final String? imageUrl;
@@ -17,15 +18,16 @@ class DishDetailDialog extends StatefulWidget {
   final VoidCallback? onDelete;
   final double? price;
   final bool initialAvailability;
+  final bool isNew;
   final Function(String, String, double, {String? imageUrl, File? imageFile})? onSave;
   final Function(bool)? onAvailabilityChanged;
 
 
   const DishDetailDialog({
     super.key,
-    required this.heroTag,
-    required this.dishName,
-    required this.description,
+    this.heroTag,
+    this.dishName = '',
+    this.description = '',
     this.imageUrl,
     required this.isEditable,
     this.onDelete,
@@ -33,6 +35,7 @@ class DishDetailDialog extends StatefulWidget {
     this.initialAvailability = false,
     required this.onSave,
     this.onAvailabilityChanged,
+    this.isNew = false,
   });
 
   @override
@@ -67,11 +70,22 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   @override
   void initState() {
     super.initState();
-    _initialName = widget.dishName;
-    _initialDescription = widget.description;
-    _initialPrice = widget.price;
-    _initialImageUrl = widget.imageUrl;
-    _availabilityStatus = widget.initialAvailability;
+
+    if (widget.isNew) {
+      // Set default values for a new dish
+      _initialName = '';
+      _initialDescription = '';
+      _initialPrice = 0.0;
+      _initialImageUrl = null;
+      _availabilityStatus = false;
+    } else {
+      // Use passed values for an existing dish
+      _initialName = widget.dishName;
+      _initialDescription = widget.description;
+      _initialPrice = widget.price;
+      _initialImageUrl = widget.imageUrl;
+      _availabilityStatus = widget.initialAvailability;
+    }
 
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
@@ -236,6 +250,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final String uniqueHeroTag = widget.heroTag ?? 'new_dish_${DateTime.now().millisecondsSinceEpoch}';
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -261,12 +276,16 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                       color: colorScheme.surfaceContainerHighest,
                       padding: const EdgeInsets.symmetric(vertical: 25),
                       child: Center(
-                        child: Hero(
-                          tag: widget.heroTag,
-                          child: widget.isEditable
+                        child: widget.heroTag != null
+                            ? Hero(
+                                tag: uniqueHeroTag,
+                                child: widget.isEditable
+                                    ? _buildEditableImage(colorScheme)
+                                    : _buildImage(colorScheme),
+                              )
+                            : widget.isEditable
                               ? _buildEditableImage(colorScheme)
                               : _buildImage(colorScheme),
-                        ),
                       ),
                     ),
                     Padding(
@@ -289,26 +308,35 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              if (widget.isEditable)
-                                Row(
-                                  children: [
-                                    ElevatedButton.icon(
+                              widget.isEditable
+                                  ? CircularButton(
+                                      icon: Icons.delete,
+                                      iconColor: colorScheme.error,
+                                      backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
+                                      size: 50,
+                                      bottomPadding: 0,
                                       onPressed: () {
-                                        Navigator.of(context).pop(); // Chiudi il dialog
-                                        widget.onDelete?.call();    // Chiama il callback
+                                        Navigator.of(context).pop();
+                                        widget.onDelete?.call();
                                       },
-                                      icon: Icon(Icons.delete, color: colorScheme.error),
-                                      label: Text(
-                                        'Delete',
-                                        style: TextStyle(color: colorScheme.error),
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
-                                      ),
+                                    )
+                                  : CircularButton(
+                                      icon: Icons.add,
+                                      iconColor: colorScheme.primary,
+                                      backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
+                                      size: 50,
+                                      bottomPadding: 0,
+                                      onPressed: () {
+
+                                      },
                                     ),
-                                    const SizedBox(width: 16),
-                                  ],
-                                ),
+
+                              const SizedBox(width: 20),
+
+                              widget.isEditable
+                                  ? _buildEditablePrice(colorScheme)
+                                  : _buildPrice(colorScheme),
+                              /*
                               Column(
                                 children: [
                                   const Text('Availability'),
@@ -327,6 +355,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                                   ),
                                 ],
                               ),
+
+                               */
                             ],
                           ),
                         ],
@@ -363,28 +393,45 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   }
 
   Widget _buildImage(ColorScheme colorScheme) {
-    return CircleAvatar(
-      radius: 60,
-      backgroundColor: colorScheme.surface,
-      child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
-          ? ClipOval(
-              child: Image.network(
-                widget.imageUrl!,
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 60,
+          backgroundColor: colorScheme.surface,
+          child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    widget.imageUrl!,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.restaurant_menu,
+                      size: 60,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : Icon(
                   Icons.restaurant_menu,
                   size: 60,
-                  color: colorScheme.onSurfaceVariant,
+                  color: colorScheme.primary,
                 ),
-              ),
-            )
-          : Icon(
-              Icons.restaurant_menu,
-              size: 60,
-              color: colorScheme.primary,
-            ),
+        ),
+
+        // Availability button on the bottom-left corner
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: false, // Readonly in non-editable mode
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: null, // No toggle in non-editable mode
+          ),
+        ),
+      ],
     );
   }
 
@@ -396,33 +443,35 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
           backgroundColor: colorScheme.surfaceVariant,
           child: _imageFile != null
               ? ClipOval(
-                  child: Image.file(
-                    _imageFile!,
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
-                  ),
-                )
+            child: Image.file(
+              _imageFile!,
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+            ),
+          )
               : _imageUrlController.text.isNotEmpty
-                  ? ClipOval(
-                      child: Image.network(
-                        _imageUrlController.text,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.restaurant_menu,
-                          size: 60,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.restaurant_menu,
-                      size: 60,
-                      color: colorScheme.primary,
-                    ),
+              ? ClipOval(
+            child: Image.network(
+              _imageUrlController.text,
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.restaurant_menu,
+                size: 60,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+              : Icon(
+            Icons.restaurant_menu,
+            size: 60,
+            color: colorScheme.primary,
+          ),
         ),
+
+        // Image upload button on the bottom-right corner
         Positioned(
           bottom: 0,
           right: 0,
@@ -444,6 +493,26 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
               });
             },
             currentImageUrl: _imageUrlController.text,
+          ),
+        ),
+
+        // Availability button on the bottom-left corner
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: widget.isEditable,
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: (value) {
+              setState(() {
+                _availabilityStatus = value;
+              });
+
+              // Immediately call the father to notify the change without triggering the save button
+              widget.onAvailabilityChanged?.call(value);
+            },
           ),
         ),
       ],

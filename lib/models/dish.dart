@@ -12,7 +12,7 @@ class Dish {
   final Course? course;
   final Cuisine? cuisine;
   final int? minForewarningDays;
-  final String? image;
+  final String? imageUrl;
 
   // Special dish attributes
   final String? userId;
@@ -30,7 +30,7 @@ class Dish {
     this.course,
     this.cuisine,
     this.minForewarningDays,
-    this.image,
+    this.imageUrl,
     this.userId,
     this.creationTime,
     this.duration,
@@ -79,7 +79,7 @@ class Dish {
       course: dishCourse,
       cuisine: dishCuisine,
       minForewarningDays: isSpecial ? null : data['min_forewarning_days'],
-      image: isSpecial ? null : data['image'],
+      imageUrl: isSpecial ? null : data['image'],
 
       // Special dish attributes
       userId: isSpecial ? data['userId'] : null,
@@ -108,7 +108,7 @@ class Dish {
         'course': course,
         'cuisine': cuisine,
         'min_forewarning_days': minForewarningDays,
-        'image': image,
+        'image': imageUrl,
       });
     }
 
@@ -123,6 +123,41 @@ class Dish {
     }
 
     return data;
+  }
+
+  /// Creates a copy of this Dish with the given fields replaced with the new values
+  Dish copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? price,
+    bool? isSpecial,
+    bool? isAvailable,
+    Course? course,
+    Cuisine? cuisine,
+    int? minForewarningDays,
+    String? imageUrl,
+    String? userId,
+    DateTime? creationTime,
+    int? duration,
+    DateTime? pickupDateTime,
+  }) {
+    return Dish(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      isSpecial: isSpecial ?? this.isSpecial,
+      isAvailable: isAvailable ?? this.isAvailable,
+      course: course ?? this.course,
+      cuisine: cuisine ?? this.cuisine,
+      minForewarningDays: minForewarningDays ?? this.minForewarningDays,
+      imageUrl: imageUrl ?? this.imageUrl,
+      userId: userId ?? this.userId,
+      creationTime: creationTime ?? this.creationTime,
+      duration: duration ?? this.duration,
+      pickupDateTime: pickupDateTime ?? this.pickupDateTime,
+    );
   }
 }
 

@@ -10,8 +10,6 @@ import '../services/database/restaurant_firestore.dart';
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
 class RestaurantProvider with ChangeNotifier {
   final RestaurantFirestore _restaurantFirestore = RestaurantFirestore();
-  final DishFirestore _dishFirestore = DishFirestore();
-
   final FirebaseStorage _firebaseStorage = FirebaseStorage();
 
   // State variables
@@ -37,19 +35,7 @@ class RestaurantProvider with ChangeNotifier {
 
     try {
       // Get restaurant data
-      final restaurantData = await _restaurantFirestore.getRestaurant(
-          restaurantId);
-
-      try {
-        // Get dishes data for the restaurant
-        final dishes = await _dishFirestore.getRestaurantDishes(restaurantId);
-
-        // Combine restaurant with dishes using the copyWithDishes method
-        _restaurant = restaurantData.copyWithDishes(dishes);
-      } catch (dishError) {
-        // Specific separate error handling for dish retrieval
-        _errorMessage = "Impossible to retrieve the dishes: ${_getErrorMessage(dishError)}";
-      }
+      _restaurant = await _restaurantFirestore.getRestaurant(restaurantId);
 
       _isLoading = false;
       notifyListeners();
@@ -176,7 +162,6 @@ class RestaurantProvider with ChangeNotifier {
           ownerId: _restaurant!.ownerId,
           location: _restaurant!.location,
           imageUrl: _restaurant!.imageUrl,
-          dishes: _restaurant!.dishes,
         );
       }
 
@@ -209,7 +194,6 @@ class RestaurantProvider with ChangeNotifier {
           ownerId: _restaurant!.ownerId,
           location: _restaurant!.location,
           imageUrl: _restaurant!.imageUrl,
-          dishes: _restaurant!.dishes,
         );
       }
 
@@ -242,7 +226,6 @@ class RestaurantProvider with ChangeNotifier {
           ownerId: _restaurant!.ownerId,
           location: _restaurant!.location,
           imageUrl: _restaurant!.imageUrl,
-          dishes: _restaurant!.dishes,
         );
       }
 
@@ -325,7 +308,6 @@ class RestaurantProvider with ChangeNotifier {
             ownerId: _restaurant!.ownerId,
             location: _restaurant!.location,
             imageUrl: imageUrl,
-            dishes: _restaurant!.dishes,
           );
         }
       } else {

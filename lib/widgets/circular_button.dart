@@ -7,6 +7,7 @@ class CircularButton extends StatelessWidget {
   final double size;
   final VoidCallback? onPressed;
   final double? elevation;
+  final double? bottomPadding;
 
   const CircularButton({
     super.key,
@@ -16,6 +17,7 @@ class CircularButton extends StatelessWidget {
     this.size = 40.0,
     this.onPressed,
     this.elevation = 2,
+    this.bottomPadding = 8.0,
   });
 
   @override
@@ -27,7 +29,7 @@ class CircularButton extends StatelessWidget {
     final Color effectiveBackgroundColor = backgroundColor ?? colorScheme.primary;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: EdgeInsets.only(bottom: bottomPadding!),
       child: Material(
         elevation: elevation ?? 2,
         color: Colors.transparent,

@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sous_chef/models/dish.dart';
 
 class Restaurant {
   final String id;
@@ -10,7 +9,6 @@ class Restaurant {
   final String ownerId;
   final GeoPoint location;
   final String? imageUrl;
-  final List<Dish> dishes;
 
   Restaurant({
     required this.id,
@@ -21,7 +19,6 @@ class Restaurant {
     required this.ownerId,
     required this.location,
     required this.imageUrl,
-    this.dishes = const [],
   });
 
   factory Restaurant.fromFirestore(DocumentSnapshot doc) {
@@ -70,19 +67,6 @@ class Restaurant {
   }
 
   // Creates a new Restaurant instance with updated dishes
-  Restaurant copyWithDishes(List<Dish> dishes) {
-    return Restaurant(
-      id: this.id,
-      name: this.name,
-      address: this.address,
-      isOpen: this.isOpen,
-      restaurantTypes: this.restaurantTypes,
-      ownerId: this.ownerId,
-      location: this.location,
-      imageUrl: this.imageUrl,
-      dishes: dishes,
-    );
-  }
 
   /// Helping methods for restaurant types
   // Verify if the restaurant has a specific type
@@ -112,7 +96,6 @@ class Restaurant {
       ownerId: this.ownerId,
       location: this.location,
       imageUrl: this.imageUrl,
-      dishes: this.dishes,
     );
   }
 }

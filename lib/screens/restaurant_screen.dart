@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
+import 'package:sous_chef/widgets/restaurant_screen/dish_detail_dialog.dart';
 import '../models/dish.dart';
+import '../providers/dish_provider.dart';
 import '../providers/restaurant_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/animated_button.dart';
@@ -181,6 +183,10 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         Provider.of<RestaurantProvider>(context, listen: false)
             .fetchCompleteRestaurantData(widget.restaurantId);
       }
+
+      // Separatly fetch restaurant menu
+      Provider.of<DishProvider>(context, listen: false)
+          .fetchDishes(widget.restaurantId);
     });
   }
 
@@ -308,7 +314,21 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 backgroundColor: colorScheme.surface, // Background for the tab bar area
                 padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 8.0),
                 isOwner: isOwner,
-                actionButton: CircularButton(icon: Icons.add,),
+                actionButton: CircularButton(
+                  icon: Icons.add,
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => DishDetailDialog(
+                        isNew: true,
+                        isEditable: isOwner,
+                        onSave: (name, description, price, {imageFile, imageUrl}) {
+                          debugPrint('New dish saved');
+                        },
+                      ),
+                    );
+                  },
+                ),
               )
             ),
 
