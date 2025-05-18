@@ -27,7 +27,7 @@ class FirebaseStorage {
     }
   }
 
-  Future<String?> uploadDishImage(String restaurantId, File imageFile) async {
+  Future<String?> uploadDishImage(String restaurantId, String dishId, File imageFile) async {
     try {
       // File type validation
       final String extension = imageFile.path.split('.').last.toLowerCase();
@@ -38,7 +38,7 @@ class FirebaseStorage {
       }
 
       // Call Firebase Storage to upload the image
-      final firebase_storage.Reference ref = _storage.ref().child('images/restaurants/$restaurantId/profile_image.png');
+      final firebase_storage.Reference ref = _storage.ref().child('images/restaurants/$restaurantId/dishes/$dishId.png');
       final firebase_storage.UploadTask uploadTask = ref.putFile(imageFile);
       final firebase_storage.TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();

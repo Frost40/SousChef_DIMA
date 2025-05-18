@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:sous_chef/models/dish.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
@@ -15,7 +16,9 @@ class MenuItem extends StatelessWidget {
   final VoidCallback? onDelete;
   final double price;
   final bool isAvailable;
-  final Function(String, String, double, {File? imageFile, String? imageUrl})? onEdit;
+  final Course course;
+  final Cuisine cuisine;
+  final Function(String, String, double, Course, Cuisine, {File? imageFile, String? imageUrl, bool? isAvailable})? onEdit;
   final Function(bool)? onAvailabilityChanged;
 
   const MenuItem({
@@ -26,6 +29,8 @@ class MenuItem extends StatelessWidget {
     this.isEditable = false,
     this.onDelete,
     required this.price,
+    required this.course,
+    required this.cuisine,
     this.isAvailable = false,
     this.onEdit,
     this.onAvailabilityChanged,
@@ -158,6 +163,8 @@ class MenuItem extends StatelessWidget {
         initialAvailability: isAvailable,
         onDelete: onDelete,
         price: price,
+        course: course,
+        cuisine: cuisine,
         onSave: onEdit,
         onAvailabilityChanged: onAvailabilityChanged,
       ),

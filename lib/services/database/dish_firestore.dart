@@ -51,7 +51,7 @@ class DishFirestore {
     required bool isSpecial,
     required bool isAvailable,
     required Course course,
-    Cuisine? cuisine,
+    required Cuisine cuisine,
     int? minForewarningDays,
     String? imageUrl,
   }) async {

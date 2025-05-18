@@ -105,8 +105,8 @@ class Dish {
     if (!isSpecial) {
       data.addAll({
         'is_available': isAvailable,
-        'course': course,
-        'cuisine': cuisine,
+        'course': course?.toString().split('.').last,
+        'cuisine': cuisine?.toString().split('.').last,
         'min_forewarning_days': minForewarningDays,
         'image': imageUrl,
       });

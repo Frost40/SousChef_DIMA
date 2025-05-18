@@ -1,9 +1,12 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sous_chef/models/dish.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/circular_button.dart';
+import 'package:sous_chef/widgets/custom_dropdown_menu.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 import '../image_upload_button.dart';
@@ -18,8 +21,10 @@ class DishDetailDialog extends StatefulWidget {
   final VoidCallback? onDelete;
   final double? price;
   final bool initialAvailability;
+  final Course? course;
+  final Cuisine? cuisine;
   final bool isNew;
-  final Function(String, String, double, {String? imageUrl, File? imageFile})? onSave;
+  final Function(String, String, double, Course, Cuisine, {String? imageUrl, File? imageFile, bool? isAvailable})? onSave;
   final Function(bool)? onAvailabilityChanged;
 
 
@@ -36,6 +41,8 @@ class DishDetailDialog extends StatefulWidget {
     required this.onSave,
     this.onAvailabilityChanged,
     this.isNew = false,
+    this.course,
+    this.cuisine,
   });
 
   @override
@@ -47,12 +54,16 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
   late TextEditingController _imageUrlController;
+  Course? _selectedCourse;
+  Cuisine? _selectedCuisine;
 
   late String _initialName;
   late String _initialDescription;
   late double? _initialPrice;
   late String? _initialImageUrl;
   late bool _availabilityStatus;
+  Course? _initialCourse;
+  Cuisine? _initialCuisine;
 
   bool _hasChanges = false;
   bool _hasValidationErrors = false;
@@ -60,6 +71,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   String? _descriptionError;
   String? _priceError;
   String? _imageUrlError;
+  String? _courseError;
+  String? _cuisineError;
   File? _imageFile;
 
   String? _currentFocus;
@@ -78,6 +91,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _initialPrice = 0.0;
       _initialImageUrl = null;
       _availabilityStatus = false;
+      _initialCourse = null;
+      _initialCuisine = null;
     } else {
       // Use passed values for an existing dish
       _initialName = widget.dishName;
@@ -85,6 +100,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _initialPrice = widget.price;
       _initialImageUrl = widget.imageUrl;
       _availabilityStatus = widget.initialAvailability;
+      _initialCourse = widget.course;
+      _initialCuisine = widget.cuisine;
     }
 
     _nameController = TextEditingController(text: _initialName);
@@ -97,6 +114,9 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     _descriptionController.addListener(_checkForChanges);
     _priceController.addListener(_checkForChanges);
     _imageUrlController.addListener(_checkForChanges);
+
+    _selectedCourse = _initialCourse;
+    _selectedCuisine = _initialCuisine;
 
     _nameFocus.addListener(() {
       if (_nameFocus.hasFocus) {
@@ -171,9 +191,17 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     final descriptionChanged = _descriptionController.text != _initialDescription;
     final priceChanged = _parsePrice() != _initialPrice;
     final imageUrlChanged = _imageUrlController.text != _initialImageUrl;
+    final courseChanged = _selectedCourse != _initialCourse;
+    final cuisineChanged = _selectedCuisine != _initialCuisine;
 
     setState(() {
-      _hasChanges = (nameChanged || descriptionChanged || priceChanged || imageUrlChanged) && !_hasValidationErrors;
+      _hasChanges = (nameChanged ||
+          descriptionChanged ||
+          priceChanged ||
+          imageUrlChanged ||
+          courseChanged ||
+          cuisineChanged) &&
+          !_hasValidationErrors;
     });
   }
 
@@ -191,6 +219,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     String? descriptionError;
     String? priceError;
     String? imageUrlError;
+    String? courseError;
+    String? cuisineError;
 
     // Name validation
     if (_nameController.text.trim().isEmpty) {
@@ -218,15 +248,27 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       imageUrlError = 'Image URL not valid';
     }
 
+    if (widget.isNew && _selectedCourse == null) {
+      courseError = 'Please select a course';
+    }
+
+    if (widget.isNew && _selectedCuisine == null) {
+      cuisineError = 'Please select a cuisine';
+    }
+
     setState(() {
       _nameError = nameError;
       _descriptionError = descriptionError;
       _priceError = priceError;
       _imageUrlError = imageUrlError;
+      _courseError = courseError;
+      _cuisineError = cuisineError;
       _hasValidationErrors = nameError != null ||
                             descriptionError != null ||
                             priceError != null ||
-                            imageUrlError != null;
+                            imageUrlError != null ||
+                            courseError != null ||
+                            cuisineError != null;
     });
   }
 
@@ -236,14 +278,34 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     final name = _nameController.text;
     final description = _descriptionController.text;
     final price = _parsePrice() ?? 0.0;
+    final course = _selectedCourse ?? Course.other;
+    final cuisine = _selectedCuisine ?? Cuisine.other;
 
-    widget.onSave?.call(
+    if (widget.isNew) {
+      // Passa isAvailable solo se il piatto è nuovo
+      widget.onSave?.call(
         name,
         description,
         price,
+        course,
+        cuisine,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
-        imageFile: _imageFile
-    );
+        imageFile: _imageFile,
+        isAvailable: _availabilityStatus,
+      );
+    } else {
+      // Per i piatti esistenti, non passare isAvailable
+      widget.onSave?.call(
+        name,
+        description,
+        price,
+        course,
+        cuisine,
+        imageUrl: _imageFile == null ? _imageUrlController.text : null,
+        imageFile: _imageFile,
+      );
+    }
+
     Navigator.of(context).pop();
   }
 
@@ -301,10 +363,74 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                               ? _buildEditableDescription(colorScheme)
                               : _buildDescription(colorScheme),
                           const SizedBox(height: 20),
-                          widget.isEditable
-                              ? _buildEditablePrice(colorScheme)
-                              : _buildPrice(colorScheme),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CustomDropdownMenu<Course>(
+                                      items: Course.values,
+                                      selectedItem: _selectedCourse,
+                                      isEditable: widget.isEditable,
+                                      hint: "Select a course",
+                                      onChanged: (item) {
+                                        setState(() {
+                                          _selectedCourse = item;
+                                          _checkForChanges();
+                                        });
+                                      },
+                                    ),
+                                    if (_courseError != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4, left: 8),
+                                        child: Text(
+                                          _courseError!,
+                                          style: TextStyle(
+                                            color: colorScheme.error,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CustomDropdownMenu<Cuisine>(
+                                      items: Cuisine.values,
+                                      selectedItem: _selectedCuisine,
+                                      isEditable: widget.isEditable,
+                                      hint: "Select a cuisine",
+                                      onChanged: (item) {
+                                        setState(() {
+                                          _selectedCuisine = item;
+                                          _checkForChanges();
+                                        });
+                                      },
+                                    ),
+                                    if (_cuisineError != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4, left: 8),
+                                        child: Text(
+                                          _cuisineError!,
+                                          style: TextStyle(
+                                            color: colorScheme.error,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
                           const SizedBox(height: 20),
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

@@ -184,7 +184,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             .fetchCompleteRestaurantData(widget.restaurantId);
       }
 
-      // Separatly fetch restaurant menu
+      // Separately fetch restaurant menu
       Provider.of<DishProvider>(context, listen: false)
           .fetchDishes(widget.restaurantId);
     });
@@ -200,6 +200,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   Widget build(BuildContext context) {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dishProvider = Provider.of<DishProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
     final bool isOwner = restaurantProvider.restaurant != null &&
         authProvider.user?.id == restaurantProvider.restaurant!.ownerId;
@@ -322,8 +323,26 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       builder: (context) => DishDetailDialog(
                         isNew: true,
                         isEditable: isOwner,
-                        onSave: (name, description, price, {imageFile, imageUrl}) {
+                        onSave: (name, description, price, course, cuisine, {imageFile, imageUrl, isAvailable}) {
                           debugPrint('New dish saved');
+                          debugPrint(name);
+                          debugPrint(description);
+                          debugPrint(price.toString());
+                          debugPrint(course.toString());
+                          debugPrint(cuisine.toString());
+                          debugPrint(imageFile?.path ?? 'No image file');
+                          debugPrint(imageUrl ?? 'No image URL');
+                          debugPrint(isAvailable.toString());
+                          dishProvider.createDish(
+                            restaurantId: dishProvider.currentRestaurantId!,
+                            name: name,
+                            description: description,
+                            price: price,
+                            course: course,
+                            cuisine: cuisine,
+                            imageFile: imageFile,
+                            isAvailable: isAvailable ?? false,
+                          );
                         },
                       ),
                     );
@@ -335,7 +354,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             // --- 5. Menu List ---
             // This is the main scrollable content area below the sticky tab bar
             _buildSliverMenuList(
-              _selectedTabIndex == 0 ? _fixedMenuItems : _onRequestMenuItems,
+              _selectedTabIndex == 0,
               isOwner,
             ),
 
@@ -369,13 +388,40 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   // Modified function to return a SliverList grouped by course
-  Widget _buildSliverMenuList(List<Map<String, dynamic>> menuItems, bool isEditable) {
+  Widget _buildSliverMenuList(bool isFixedMenu, bool isEditable) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (menuItems.isEmpty) {
+    final dishProvider = Provider.of<DishProvider>(context);
+
+    // Verifica se i dati sono in caricamento
+    if (dishProvider.isLoading) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Verifica se c'è un errore
+    if (dishProvider.errorMessage != null) {
       return SliverFillRemaining(
         child: Center(
           child: Text(
-            'No dishes available',
+            'Errore nel caricamento dei piatti: ${dishProvider.errorMessage}',
+            style: TextStyle(color: colorScheme.error),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    // Filtra i piatti in base al tipo di menu (fisso o su richiesta)
+    final dishes = dishProvider.dishes.where((dish) =>
+      !dish.isSpecial == isFixedMenu // isFixedMenu = true per menu fisso, false per menu su richiesta
+    ).toList();
+
+    if (dishes.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Text(
+            'Nessun piatto disponibile',
             style: TextStyle(
               fontSize: 16,
               color: colorScheme.onSurface.withOpacity(0.6),
@@ -385,28 +431,28 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       );
     }
 
-    // Group menu items by course
-    Map<Course, List<Map<String, dynamic>>> groupedItems = {};
+    // Raggruppa i piatti per categoria
+    Map<Course, List<Dish>> groupedItems = {};
 
-    // Initialize all course types to ensure consistent order
+    // Inizializza tutte le categorie per assicurare un ordine coerente
     for (var course in Course.values) {
       groupedItems[course] = [];
     }
 
-    // Group items by their course
-    for (var item in menuItems) {
-      Course course = item['course'] ?? Course.other;
-      groupedItems[course]!.add(item);
+    // Raggruppa i piatti per categoria
+    for (var dish in dishes) {
+      Course course = dish.course ?? Course.other;
+      groupedItems[course]!.add(dish);
     }
 
-    // Remove empty course groups
+    // Rimuovi le categorie vuote
     groupedItems.removeWhere((key, value) => value.isEmpty);
 
-    // Convert to a flat list with headers for SliverList
+    // Converti in una lista piatta con intestazioni per SliverList
     List<Widget> sliverItems = [];
 
     groupedItems.forEach((course, items) {
-      // Add section header
+      // Aggiungi intestazione di sezione
       sliverItems.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 25, 16, 8),
@@ -420,7 +466,6 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-
               Divider(
                 height: 1,
                 thickness: 1,
@@ -431,77 +476,60 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         ),
       );
 
-      // Add items for this section
-      for (var item in items) {
+      // Aggiungi elementi per questa sezione
+      for (var dish in items) {
         sliverItems.add(
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
             child: MenuItem(
-              dishName: item['name'],
-              description: item['description'],
-              imageUrl: item['imageUrl'],
+              dishName: dish.name,
+              description: dish.description,
+              imageUrl: dish.imageUrl ?? '',
               isEditable: isEditable,
-              price: item['price'],
-              isAvailable: item['isAvailable'],
+              price: dish.price,
+              isAvailable: dish.isAvailable ?? true,
+              course: dish.course ?? Course.other,
+              cuisine: dish.cuisine ?? Cuisine.other,
               onDelete: isEditable
                   ? () {
-                      debugPrint('Delete dish: ${item['name']}');
-                      /*
-                      restaurantProvider.deleteDish(
-                          widget.restaurantId,
-                          item['id']
+                      debugPrint('Delete dish: ${dish.name}');
+                      dishProvider.deleteDish(
+                          dishProvider.currentRestaurantId!,
+                          dish.id
                       );
-
-                       */
                     }
                   : null,
               onEdit: isEditable
-                ? (newName, newDescription, newPrice, {imageFile, imageUrl}) {
-                  debugPrint('Edit dish: ${item['name']}');
-                  setState(() {
-                    item['name'] = newName;
-                    item['description'] = newDescription;
-                    item['price'] = newPrice;
-                    if (imageUrl != null) {
-                      item['imageUrl'] = imageUrl;
-                    }
-                  });
-                  /*
-                  restaurantProvider.updateDish(
-                      widget.restaurantId,
-                      item['id'],
-                      newName,
-                      newDescription,
-                      newPrice,
+                ? (newName, newDescription, newPrice, newCourse, newCuisine, {imageFile, imageUrl, isAvailable}) {
+                  debugPrint('Edit dish: ${dish.name}');
+                  dishProvider.updateDish(
+                      restaurantId: dishProvider.currentRestaurantId!,
+                      dishId: dish.id,
+                      name: newName,
+                      description: newDescription,
+                      price: newPrice,
+                      course: newCourse,
+                      cuisine: newCuisine,
                       imageFile: imageFile,
-                      imageUrl: imageUrl
                   );
-
-                   */
-                  }
+                }
                 : null,
               onAvailabilityChanged: isEditable
                 ? (newAvailability) {
-                setState(() {
-                  item['isAvailable'] = newAvailability;
-                });
-                  debugPrint('Change availability for dish: ${item['name']}');
-                  /*
-                  restaurantProvider.updateDishAvailability(
-                      widget.restaurantId,
-                      item['id'],
+                  debugPrint('Change availability for dish: ${dish.name}');
+                  dishProvider.updateDishAvailability(
+                      dishProvider.currentRestaurantId!,
+                      dish.id,
                       newAvailability
                   );
-
-                   */
-                  }
+                }
                 : null,
             ),
           ),
         );
       }
 
-      // Add divider after each section (except the last one)
+      // Aggiungi divisore dopo ogni sezione (tranne l'ultima)
       if (course != groupedItems.keys.last) {
         sliverItems.add(
           Padding(

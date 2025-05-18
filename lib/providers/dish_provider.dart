@@ -104,7 +104,7 @@ class DishProvider with ChangeNotifier {
     required double price,
     required Course course,
     required bool isAvailable,
-    Cuisine? cuisine,
+    required Cuisine cuisine,
     int? minForewarningDays,
     File? imageFile,
   }) async {
@@ -115,29 +115,9 @@ class DishProvider with ChangeNotifier {
     try {
       String? imageUrl;
 
-      // Carica l'immagine se fornita
-      if (imageFile != null) {
-        final FirebaseStorage _firebaseStorage = FirebaseStorage();
-        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, imageFile);
-      }
-
-      // Crea un nuovo piatto sul database
-      final String dishId = await _dishFirestore.createDish(
-        restaurantId: restaurantId,
-        name: name,
-        description: description,
-        price: price,
-        isSpecial: false, // Assumi che i piatti normali del ristorante non siano "speciali"
-        isAvailable: isAvailable,
-        course: course,
-        cuisine: cuisine,
-        minForewarningDays: minForewarningDays,
-        imageUrl: imageUrl,
-      );
-
       // Crea l'oggetto Dish con i dati
-      final newDish = Dish(
-        id: dishId,
+      Dish newDish = Dish(
+        id: 'temp-id',
         name: name,
         description: description,
         price: price,
@@ -146,8 +126,33 @@ class DishProvider with ChangeNotifier {
         course: course,
         cuisine: cuisine,
         minForewarningDays: minForewarningDays,
-        imageUrl: imageUrl,
+        imageUrl: '',
       );
+
+      // Crea un nuovo piatto sul database
+      final String dishId = await _dishFirestore.createDish(
+        restaurantId: restaurantId,
+        name: name,
+        description: description,
+        price: price,
+        isSpecial: false,
+        isAvailable: isAvailable,
+        course: course,
+        cuisine: cuisine,
+        minForewarningDays: minForewarningDays,
+      );
+
+      if (imageFile != null) {
+        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
+        // Aggiorna il piatto con l'URL dell'immagine
+        await _dishFirestore.updateDish(
+          restaurantId: restaurantId,
+          dishId: dishId,
+          imageUrl: imageUrl,
+        );
+      }
+
+      newDish = newDish.copyWith(id: dishId, imageUrl: imageUrl);
 
       // Aggiorna lo stato locale
       _dishes.add(newDish);
@@ -189,8 +194,7 @@ class DishProvider with ChangeNotifier {
 
       // Carica una nuova immagine se fornita
       if (imageFile != null) {
-        final FirebaseStorage _firebaseStorage = FirebaseStorage();
-        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, imageFile);
+        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
       }
 
       // Aggiorna il documento nel database
