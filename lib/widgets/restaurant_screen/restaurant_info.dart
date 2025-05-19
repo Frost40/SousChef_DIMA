@@ -22,6 +22,7 @@ class RestaurantInfo extends StatelessWidget {
   final Function(bool)? onOnRequestToggled;
   final Function(String)? onAddressChanged;
   final Function(File)? onImageUploadPressed;
+  final Function(String?)? onImageUrlChanged;
 
   const RestaurantInfo({
     super.key,
@@ -37,13 +38,14 @@ class RestaurantInfo extends StatelessWidget {
     this.onOnRequestToggled,
     this.onAddressChanged,
     this.onImageUploadPressed,
+    this.onImageUrlChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Notifier locali per gestire temporaneamente lo stato dell'immagine
+    // Local notifier to temporarily manage image state
     final tempImageFile = ValueNotifier<File?>(null);
     final tempImageUrl = ValueNotifier<String?>(null);
 
@@ -67,30 +69,32 @@ class RestaurantInfo extends StatelessWidget {
                   children: [
                     Container(
                       width: 100,
-                      height: 80,
+                      height: 100,
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
                       ),
+                      clipBehavior: Clip.antiAlias,
                       child: ValueListenableBuilder<File?>(
                         valueListenable: tempImageFile,
                         builder: (context, fileValue, _) {
                           return ValueListenableBuilder<String?>(
                             valueListenable: tempImageUrl,
                             builder: (context, urlValue, _) {
-                              // Priorità: file temporaneo > URL temporaneo > URL originale
+                              // Priority: temp file > temp URL > original URL
                               if (fileValue != null) {
                                 return Image.file(
                                   fileValue,
                                   fit: BoxFit.cover,
                                   width: 100,
-                                  height: 80,
+                                  height: 100,
                                 );
                               } else if (urlValue != null && urlValue.isNotEmpty) {
                                 return Image.network(
                                   urlValue,
                                   fit: BoxFit.cover,
                                   width: 100,
-                                  height: 80,
+                                  height: 100,
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Center(
@@ -114,7 +118,7 @@ class RestaurantInfo extends StatelessWidget {
                                   restaurantImageUrl,
                                   fit: BoxFit.cover,
                                   width: 100,
-                                  height: 80,
+                                  height: 100,
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Center(
@@ -146,7 +150,7 @@ class RestaurantInfo extends StatelessWidget {
                       ),
                     ),
 
-                    // Rimosso onImageUploadPressed != null per mostrare sempre il pulsante quando isEditable
+                    // Removed onImageUploadPressed != null check to always show the button when isEditable
                     if (isEditable)
                       Positioned(
                         right: 0,
@@ -155,10 +159,10 @@ class RestaurantInfo extends StatelessWidget {
                           size: 40,
                           onImageSelected: (File? file) {
                             if (file != null) {
-                              // Aggiorna immediatamente l'UI con l'immagine caricata
+                              // Immediately update the UI with the uploaded image
                               tempImageFile.value = file;
 
-                              // Avvia la sincronizzazione con Firebase in background
+                              // Start background synchronization with Firebase
                               if (onImageUploadPressed != null) {
                                 onImageUploadPressed!(file);
                               }
@@ -166,11 +170,10 @@ class RestaurantInfo extends StatelessWidget {
                           },
                           onUrlSelected: (String url) {
                             if (url.isNotEmpty) {
-                              // Aggiorna immediatamente l'UI con il nuovo URL
+                              // Immediately update the UI with the new URL
                               tempImageUrl.value = url;
 
-                              // Qui potresti aggiungere la logica per gestire l'URL
-                              // se necessario
+                              // Here you could add logic to handle the URL
                             }
                           },
                           currentImageUrl: tempImageUrl.value ?? restaurantImageUrl,

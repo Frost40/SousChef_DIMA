@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 
 import '../../models/dish.dart';
 
@@ -42,33 +41,11 @@ class DishFirestore {
         .update({'isAvailable': isAvailable});
   }
 
-  /// Crea un nuovo piatto per un ristorante
+  /// Create a new dish for a restaurant
   Future<String> createDish({
     required String restaurantId,
-    required String name,
-    required String description,
-    required double price,
-    required bool isSpecial,
-    required bool isAvailable,
-    required Course course,
-    required Cuisine cuisine,
-    int? minForewarningDays,
-    String? imageUrl,
+    required Dish dish,
   }) async {
-    // Crea un oggetto Dish temporaneo con un ID temporaneo
-    final dish = Dish(
-      id: 'temp-id', // Sarà sostituito dall'ID generato da Firestore
-      name: name,
-      description: description,
-      price: price,
-      isSpecial: isSpecial,
-      isAvailable: isAvailable,
-      course: course,
-      cuisine: cuisine,
-      minForewarningDays: minForewarningDays,
-      imageUrl: imageUrl,
-    );
-
     final docRef = await _restaurantTable
         .doc(restaurantId)
         .collection('dishes')
@@ -77,7 +54,7 @@ class DishFirestore {
     return docRef.id;
   }
 
-  /// Aggiorna un piatto esistente
+  /// Update an existing dish
   Future<void> updateDish({
     required String restaurantId,
     required String dishId,
@@ -90,7 +67,7 @@ class DishFirestore {
     int? minForewarningDays,
     String? imageUrl,
   }) async {
-    // Crea una mappa solo con i campi da aggiornare
+    // Create a map only with the fields to update
     final updates = <String, dynamic>{};
 
     if (name != null) updates['name'] = name;
@@ -117,10 +94,10 @@ class DishFirestore {
       updates['image'] = imageUrl;
     }
 
-    // Se non ci sono aggiornamenti, termina
+    // If there are no updates, return
     if (updates.isEmpty) return;
 
-    // Esegui l'aggiornamento solo dei campi modificati
+    // Execute the update only for the modified fields
     await _restaurantTable
         .doc(restaurantId)
         .collection('dishes')

@@ -65,6 +65,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   Course? _initialCourse;
   Cuisine? _initialCuisine;
 
+  // Current values
+  late String _currentName;
+  late String _currentDescription;
+  late double? _currentPrice;
+
   bool _hasChanges = false;
   bool _hasValidationErrors = false;
   String? _nameError;
@@ -79,6 +84,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _descriptionFocus = FocusNode();
   final FocusNode _priceFocus = FocusNode();
+  bool _courseFocused = false;
+  bool _cuisineFocused = false;
 
   @override
   void initState() {
@@ -104,15 +111,31 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _initialCuisine = widget.cuisine;
     }
 
+    // Initialize current values with initial values
+    _currentName = _initialName;
+    _currentDescription = _initialDescription;
+    _currentPrice = _initialPrice;
+
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
     _priceController = TextEditingController(
         text: _initialPrice != null ? _initialPrice!.toString() : '');
     _imageUrlController = TextEditingController(text: _initialImageUrl ?? '');
 
-    _nameController.addListener(_checkForChanges);
-    _descriptionController.addListener(_checkForChanges);
-    _priceController.addListener(_checkForChanges);
+    _nameController.addListener(() {
+      _currentName = _nameController.text;
+      _checkForChanges();
+    });
+
+    _descriptionController.addListener(() {
+      _currentDescription = _descriptionController.text;
+      _checkForChanges();
+    });
+
+    _priceController.addListener(() {
+      _currentPrice = _parsePrice();
+      _checkForChanges();
+    });
     _imageUrlController.addListener(_checkForChanges);
 
     _selectedCourse = _initialCourse;
@@ -168,18 +191,23 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
 
   void _resetCurrentField() {
     if (_currentFocus == 'name') {
-      _nameController.text = _initialName;
+      _nameController.text = _currentName;
       _nameFocus.unfocus();
     } else if (_currentFocus == 'description') {
-      _descriptionController.text = _initialDescription;
+      _descriptionController.text = _currentDescription;
       _descriptionFocus.unfocus();
     } else if (_currentFocus == 'price') {
-      _priceController.text = _initialPrice != null ? _initialPrice!.toString() : '';
+      _priceController.text = _currentPrice != null ? _currentPrice!.toString() : '';
       _priceFocus.unfocus();
     } else if (_currentFocus == 'image') {
       _imageUrlController.text = _initialImageUrl ?? '';
       setState(() => _currentFocus = null);
     }
+
+    setState(() {
+      _courseFocused = false;
+      _cuisineFocused = false;
+    });
 
     _checkForChanges();
   }
@@ -187,9 +215,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   void _checkForChanges() {
     _validate();
 
-    final nameChanged = _nameController.text != _initialName;
-    final descriptionChanged = _descriptionController.text != _initialDescription;
-    final priceChanged = _parsePrice() != _initialPrice;
+    debugPrint(_currentName);
+    debugPrint(_initialName);
+    final nameChanged = _currentName != _initialName;
+    final descriptionChanged = _currentDescription != _initialDescription;
+    final priceChanged = _currentPrice != _initialPrice;
     final imageUrlChanged = _imageUrlController.text != _initialImageUrl;
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
@@ -233,8 +263,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     }
 
     // Price validation
-    if (_priceController.text.isNotEmpty) {
+    if (_priceController.text.isEmpty) {
+      priceError = 'Price is required';
+    } else {
       final price = _parsePrice();
+
       if (price == null) {
         priceError = 'Price format is invalid';
       } else if (price <= 0) {
@@ -275,14 +308,14 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   void _saveChanges() {
     if (_hasValidationErrors) return;
 
-    final name = _nameController.text;
-    final description = _descriptionController.text;
-    final price = _parsePrice() ?? 0.0;
-    final course = _selectedCourse ?? Course.other;
-    final cuisine = _selectedCuisine ?? Cuisine.other;
+      final name = _currentName;
+      final description = _currentDescription;
+      final price = _currentPrice ?? 0.0;
+      final course = _selectedCourse ?? Course.other;
+      final cuisine = _selectedCuisine ?? Cuisine.other;
 
     if (widget.isNew) {
-      // Passa isAvailable solo se il piatto è nuovo
+      // isAvailable is only passed for new dishes
       widget.onSave?.call(
         name,
         description,
@@ -294,7 +327,6 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         isAvailable: _availabilityStatus,
       );
     } else {
-      // Per i piatti esistenti, non passare isAvailable
       widget.onSave?.call(
         name,
         description,
@@ -318,9 +350,19 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
-        onTap: () {if (widget.isEditable && _currentFocus != null) {
-          _resetCurrentField();
-        }}, // Prevent closing the dialog when tapping inside
+        onTap: () {
+          if (widget.isEditable) {
+              _resetCurrentField();
+
+            // Remove focus from course and cuisine dropdowns
+            if (_courseFocused || _cuisineFocused) {
+              setState(() {
+                _courseFocused = false;
+                _cuisineFocused = false;
+              });
+            }
+          }
+        }, // Prevent closing the dialog when tapping inside
         child: Container(
           decoration: BoxDecoration(
             color: colorScheme.darkGrayBackground,
@@ -330,165 +372,176 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      color: colorScheme.surfaceContainerHighest,
-                      padding: const EdgeInsets.symmetric(vertical: 25),
-                      child: Center(
-                        child: widget.heroTag != null
-                            ? Hero(
-                                tag: uniqueHeroTag,
-                                child: widget.isEditable
-                                    ? _buildEditableImage(colorScheme)
-                                    : _buildImage(colorScheme),
-                              )
-                            : widget.isEditable
-                              ? _buildEditableImage(colorScheme)
-                              : _buildImage(colorScheme),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        color: colorScheme.surfaceContainerHighest,
+                        padding: const EdgeInsets.symmetric(vertical: 25),
+                        child: Center(
+                          child: widget.heroTag != null
+                              ? Hero(
+                                  tag: uniqueHeroTag,
+                                  child: widget.isEditable
+                                      ? _buildEditableImage(colorScheme)
+                                      : _buildImage(colorScheme),
+                                )
+                              : widget.isEditable
+                                ? _buildEditableImage(colorScheme)
+                                : _buildImage(colorScheme),
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          widget.isEditable
-                              ? _buildEditableName(colorScheme)
-                              : _buildName(colorScheme),
-                          const SizedBox(height: 12),
-                          widget.isEditable
-                              ? _buildEditableDescription(colorScheme)
-                              : _buildDescription(colorScheme),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CustomDropdownMenu<Course>(
-                                      items: Course.values,
-                                      selectedItem: _selectedCourse,
-                                      isEditable: widget.isEditable,
-                                      hint: "Select a course",
-                                      onChanged: (item) {
-                                        setState(() {
-                                          _selectedCourse = item;
-                                          _checkForChanges();
-                                        });
-                                      },
-                                    ),
-                                    if (_courseError != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4, left: 8),
-                                        child: Text(
-                                          _courseError!,
-                                          style: TextStyle(
-                                            color: colorScheme.error,
-                                            fontSize: 12,
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            widget.isEditable
+                                ? _buildEditableName(colorScheme)
+                                : _buildName(colorScheme),
+                            const SizedBox(height: 5),
+                            widget.isEditable
+                                ? _buildEditableDescription(colorScheme)
+                                : _buildDescription(colorScheme),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CustomDropdownMenu<Course>(
+                                        items: Course.values,
+                                        selectedItem: _selectedCourse,
+                                        isEditable: widget.isEditable,
+                                        hint: "Select a course",
+                                        isFocused: _courseFocused,
+                                        onTap: () {
+                                          setState(() {
+                                            _courseFocused = true;
+                                            _cuisineFocused = false;
+                                            _currentFocus = null;
+
+                                            _nameFocus.unfocus();
+                                            _descriptionFocus.unfocus();
+                                            _priceFocus.unfocus();
+                                          });
+                                        },
+                                        onChanged: (item) {
+                                          setState(() {
+                                            if (_selectedCourse != item) {
+                                              _selectedCourse = item;
+                                            }
+                                            _courseFocused = false;
+                                            _checkForChanges();
+                                          });
+                                        },
+                                      ),
+                                      if (_courseError != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4, left: 8),
+                                          child: Text(
+                                            _courseError!,
+                                            style: TextStyle(
+                                              color: colorScheme.error,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CustomDropdownMenu<Cuisine>(
-                                      items: Cuisine.values,
-                                      selectedItem: _selectedCuisine,
-                                      isEditable: widget.isEditable,
-                                      hint: "Select a cuisine",
-                                      onChanged: (item) {
-                                        setState(() {
-                                          _selectedCuisine = item;
-                                          _checkForChanges();
-                                        });
-                                      },
-                                    ),
-                                    if (_cuisineError != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4, left: 8),
-                                        child: Text(
-                                          _cuisineError!,
-                                          style: TextStyle(
-                                            color: colorScheme.error,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              widget.isEditable
-                                  ? CircularButton(
-                                      icon: Icons.delete,
-                                      iconColor: colorScheme.error,
-                                      backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
-                                      size: 50,
-                                      bottomPadding: 0,
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                        widget.onDelete?.call();
-                                      },
-                                    )
-                                  : CircularButton(
-                                      icon: Icons.add,
-                                      iconColor: colorScheme.primary,
-                                      backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
-                                      size: 50,
-                                      bottomPadding: 0,
-                                      onPressed: () {
-
-                                      },
-                                    ),
-
-                              const SizedBox(width: 20),
-
-                              widget.isEditable
-                                  ? _buildEditablePrice(colorScheme)
-                                  : _buildPrice(colorScheme),
-                              /*
-                              Column(
-                                children: [
-                                  const Text('Availability'),
-                                  const SizedBox(height: 4),
-                                  DishAvailabilityButton(
-                                    initialValue: _availabilityStatus,
-                                    isEditable: widget.isEditable,
-                                    onToggle: (value) {
-                                      setState(() {
-                                        _availabilityStatus = value;
-                                      });
-
-                                      // Immediately call the father to notify the change without triggering the save button
-                                      widget.onAvailabilityChanged?.call(value);
-                                    },
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      CustomDropdownMenu<Cuisine>(
+                                        items: Cuisine.values,
+                                        selectedItem: _selectedCuisine,
+                                        isEditable: widget.isEditable,
+                                        hint: "Select a cuisine",
+                                        isFocused: _cuisineFocused,
+                                        onTap: () {
+                                          setState(() {
+                                            _cuisineFocused = true;
+                                            _courseFocused = false;
+                                            _currentFocus = null;
 
-                               */
-                            ],
-                          ),
-                        ],
+                                            _nameFocus.unfocus();
+                                            _descriptionFocus.unfocus();
+                                            _priceFocus.unfocus();
+                                          });
+                                        },
+                                        onChanged: (item) {
+                                          setState(() {
+                                            if (_selectedCuisine != item) {
+                                              _selectedCuisine = item;
+                                            }
+                                            _cuisineFocused = false;
+                                            _checkForChanges();
+                                          });
+                                        },
+                                      ),
+                                      if (_cuisineError != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4, left: 8),
+                                          child: Text(
+                                            _cuisineError!,
+                                            style: TextStyle(
+                                              color: colorScheme.error,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                widget.isEditable
+                                    ? CircularButton(
+                                        icon: Icons.delete,
+                                        iconColor: colorScheme.error,
+                                        backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
+                                        size: 50,
+                                        bottomPadding: 0,
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          widget.onDelete?.call();
+                                        },
+                                      )
+                                    : CircularButton(
+                                        icon: Icons.add,
+                                        iconColor: colorScheme.primary,
+                                        backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
+                                        size: 50,
+                                        bottomPadding: 0,
+                                        onPressed: () {
+
+                                        },
+                                      ),
+
+                                const SizedBox(width: 20),
+
+                                widget.isEditable
+                                    ? _buildEditablePrice(colorScheme)
+                                    : _buildPrice(colorScheme),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               if (widget.isEditable && _hasChanges)
@@ -686,7 +739,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
               border: InputBorder.none,
             ),
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _nameFocus.unfocus(),
+              onSubmitted: (_) {
+                _currentName = _nameController.text;
+                _nameFocus.unfocus();
+                _checkForChanges();
+              },
           ),
         ),
         if (_nameError != null)
@@ -732,7 +789,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
               border: InputBorder.none,
             ),
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _descriptionFocus.unfocus(),
+              onSubmitted: (_) {
+                _currentDescription = _descriptionController.text;
+                _descriptionFocus.unfocus();
+                _checkForChanges();
+              },
           ),
         ),
         if (_descriptionError != null)
@@ -797,7 +858,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                   ],
                   textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _priceFocus.unfocus(),
+                    onSubmitted: (_) {
+                      _currentPrice = _parsePrice();
+                      _priceFocus.unfocus();
+                      _checkForChanges();
+                    },
                 ),
               ),
             ],

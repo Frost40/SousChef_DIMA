@@ -299,19 +299,33 @@ class RestaurantProvider with ChangeNotifier {
 
         // Updating local restaurant model
         if (_restaurant != null && _restaurant!.id == restaurantId) {
-          _restaurant = Restaurant(
-            id: _restaurant!.id,
-            name: _restaurant!.name,
-            address: _restaurant!.address,
-            isOpen: _restaurant!.isOpen,
-            restaurantTypes: _restaurant!.restaurantTypes,
-            ownerId: _restaurant!.ownerId,
-            location: _restaurant!.location,
-            imageUrl: imageUrl,
-          );
+          _restaurant = _restaurant!.copyWith(imageUrl: imageUrl);
         }
       } else {
         _errorMessage = "Impossible to upload the image. Please try again.";
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Updates the restaurant's image URL directly in Firestore
+  Future<void> updateRestaurantImageUrl(String restaurantId, String imageUrl) async {
+    _isLoading = true;
+    clearErrors();
+    notifyListeners();
+
+    try {
+      await _restaurantFirestore.updateRestaurantImage(restaurantId, imageUrl);
+
+      // Updating local restaurant model
+      if (_restaurant != null && _restaurant!.id == restaurantId) {
+        _restaurant = _restaurant!.copyWith(imageUrl: imageUrl);
       }
 
       _isLoading = false;

@@ -48,4 +48,23 @@ class FirebaseStorage {
       return null;
     }
   }
+
+  Future<void> deleteDishImage(String restaurantId, String dishId) async {
+    try {
+      // Reference to the image path
+      final firebase_storage.Reference ref = _storage.ref().child('images/restaurants/$restaurantId/dishes/$dishId.png');
+
+      // Delete the file
+      await ref.delete();
+      debugPrint('Image successfully deleted');
+    } catch (e) {
+      if (e is firebase_storage.FirebaseException && e.code == 'object-not-found') {
+        // The image does not exist, ignore the error
+        debugPrint('Image not found in storage, no deletion required');
+      } else {
+        // Re-throw other errors
+        rethrow;
+      }
+    }
+  }
 }

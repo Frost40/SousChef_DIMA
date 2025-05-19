@@ -98,6 +98,29 @@ class Restaurant {
       imageUrl: this.imageUrl,
     );
   }
+
+  /// Creates a copy of this Restaurant with the given fields replaced with new values
+  Restaurant copyWith({
+    String? id,
+    String? name,
+    String? address,
+    bool? isOpen,
+    List<RestaurantType>? restaurantTypes,
+    String? ownerId,
+    GeoPoint? location,
+    String? imageUrl,
+  }) {
+    return Restaurant(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      isOpen: isOpen ?? this.isOpen,
+      restaurantTypes: restaurantTypes ?? this.restaurantTypes,
+      ownerId: ownerId ?? this.ownerId,
+      location: location ?? this.location,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 }
 
 enum RestaurantType { fixedMenu, onRequest }

@@ -7,6 +7,8 @@ class CustomDropdownMenu<T> extends StatefulWidget {
   final bool isEditable;
   final ValueChanged<T> onChanged;
   final String? hint;
+  final VoidCallback? onTap;
+  final bool isFocused;
 
   const CustomDropdownMenu({
     super.key,
@@ -15,6 +17,8 @@ class CustomDropdownMenu<T> extends StatefulWidget {
     required this.onChanged,
     this.selectedItem,
     this.hint,
+    this.onTap,
+    this.isFocused = false,
   });
 
   @override
@@ -48,14 +52,14 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
       items: widget.items.map((T value) {
         return PopupMenuItem<T>(
           value: value,
-          padding: EdgeInsets.zero, // Remove the default padding to adapt to the inkWell
+          padding: EdgeInsets.zero,
           child: InkWell(
-            onTap: () => Navigator.of(context).pop(value), // Close the menu and return the selected value
+            onTap: () => Navigator.of(context).pop(value),
             splashColor: colorScheme.primary.withOpacity(0.12),
             highlightColor: colorScheme.primary.withOpacity(0.1),
             child: Container(
               width: size.width,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Internal padding for the text
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -86,11 +90,23 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
       ),
     );
 
+    // Qui sta la chiave: quando il menu si chiude, rimuoviamo il focus
+    // indipendentemente da cosa ha causato la chiusura
     if (selected != null) {
       setState(() {
         _selectedItem = selected;
       });
       widget.onChanged(selected);
+    } else {
+      // Se l'utente ha toccato fuori dal menu, rimuoviamo il focus
+      // chiamando onChanged con il valore attuale per ripristinare lo stato
+      if (widget.isFocused) {
+        // Aggiungiamo un breve ritardo per far coincidere la rimozione del focus
+        // con la chiusura dell'animazione del menu
+        Future.delayed(const Duration(milliseconds: 300), () {
+          widget.onChanged(_selectedItem as T);
+        });
+      }
     }
   }
 
@@ -117,12 +133,15 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
         color: colorScheme.darkGrayBackground,
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: colorScheme.surfaceContainerHighest,
+          color: widget.isFocused ? colorScheme.primary : colorScheme.surfaceContainerHighest,
           width: 1
         ),
       ),
       child: InkWell(
-        onTap: widget.isEditable ? _showCustomMenu : null,
+        onTap: widget.isEditable ? () {
+          widget.onTap?.call(); // Chiama onTap prima di mostrare il menu
+          _showCustomMenu();
+        } : null,
         child: Row(
           children: [
             Expanded(

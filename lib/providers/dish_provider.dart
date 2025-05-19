@@ -56,6 +56,21 @@ class DishProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+
+      final dish = _dishes.firstWhere(
+            (dish) => dish.id == dishId,
+        orElse: () => throw Exception('Dish not found in local state'),
+      );
+
+      // Delete teh image from firebase storage if it exists
+      if (dish.imageUrl != null && dish.imageUrl!.isNotEmpty) {
+        try {
+          await _firebaseStorage.deleteDishImage(restaurantId, dishId);
+        } catch (storageError) {
+          debugPrint('Error while deleting the image: $storageError');
+        }
+      }
+
       await _dishFirestore.deleteDish(restaurantId, dishId);
 
       // Update local state
@@ -96,7 +111,7 @@ class DishProvider with ChangeNotifier {
     }
   }
 
-  // Crea un nuovo piatto
+  // Create a new dish
   Future<void> createDish({
     required String restaurantId,
     required String name,
@@ -105,56 +120,51 @@ class DishProvider with ChangeNotifier {
     required Course course,
     required bool isAvailable,
     required Cuisine cuisine,
+    bool isSpecial = false,
     int? minForewarningDays,
     File? imageFile,
+    String? imageUrl,
   }) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
 
     try {
-      String? imageUrl;
-
-      // Crea l'oggetto Dish con i dati
+      // Create the Dish object with provided data
       Dish newDish = Dish(
         id: 'temp-id',
         name: name,
         description: description,
         price: price,
-        isSpecial: false,
+        isSpecial: isSpecial,
         isAvailable: isAvailable,
         course: course,
         cuisine: cuisine,
         minForewarningDays: minForewarningDays,
-        imageUrl: '',
+        imageUrl: imageUrl ?? '',
       );
 
-      // Crea un nuovo piatto sul database
+      // Create a new dish in the database
       final String dishId = await _dishFirestore.createDish(
         restaurantId: restaurantId,
-        name: name,
-        description: description,
-        price: price,
-        isSpecial: false,
-        isAvailable: isAvailable,
-        course: course,
-        cuisine: cuisine,
-        minForewarningDays: minForewarningDays,
+        dish: newDish,
       );
 
+      newDish = newDish.copyWith(id: dishId);
+
       if (imageFile != null) {
-        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
-        // Aggiorna il piatto con l'URL dell'immagine
+        final newImageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
+        // Update the dish with the new image URL
         await _dishFirestore.updateDish(
           restaurantId: restaurantId,
           dishId: dishId,
-          imageUrl: imageUrl,
+          imageUrl: newImageUrl,
         );
+
+        newDish = newDish.copyWith(imageUrl: newImageUrl);
       }
 
-      newDish = newDish.copyWith(id: dishId, imageUrl: imageUrl);
-
-      // Aggiorna lo stato locale
+      // Update local state
       _dishes.add(newDish);
 
       _isLoading = false;
@@ -166,7 +176,7 @@ class DishProvider with ChangeNotifier {
     }
   }
 
-  // Aggiorna un piatto esistente
+  // Update an existing dish
   Future<void> updateDish({
     required String restaurantId,
     required String dishId,
@@ -178,26 +188,28 @@ class DishProvider with ChangeNotifier {
     bool? isAvailable,
     int? minForewarningDays,
     File? imageFile,
+    String? imageUrl,
   }) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
 
     try {
-      // Trova l'indice del piatto nell'array locale
+      // Find the index of the dish in the local list
       final index = _dishes.indexWhere((dish) => dish.id == dishId);
       if (index == -1) {
         throw Exception('Dish not found in local state');
       }
 
-      String? imageUrl = _dishes[index].imageUrl;
+      // If no new image URL is provided, use the existing one
+      String? newImageUrl = imageUrl ?? _dishes[index].imageUrl;
 
-      // Carica una nuova immagine se fornita
+      // Upload a new image if provided
       if (imageFile != null) {
-        imageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
+        newImageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
       }
 
-      // Aggiorna il documento nel database
+      // Update the document in the database
       await _dishFirestore.updateDish(
         restaurantId: restaurantId,
         dishId: dishId,
@@ -208,10 +220,10 @@ class DishProvider with ChangeNotifier {
         cuisine: cuisine ?? _dishes[index].cuisine,
         isAvailable: isAvailable ?? _dishes[index].isAvailable,
         minForewarningDays: minForewarningDays ?? _dishes[index].minForewarningDays,
-        imageUrl: imageUrl,
+        imageUrl: newImageUrl,
       );
 
-      // Aggiorna lo stato locale
+      // Update local state
       _dishes[index] = _dishes[index].copyWith(
         name: name,
         description: description,
@@ -220,7 +232,7 @@ class DishProvider with ChangeNotifier {
         cuisine: cuisine,
         isAvailable: isAvailable,
         minForewarningDays: minForewarningDays,
-        imageUrl: imageUrl,
+        imageUrl: newImageUrl,
       );
 
       _isLoading = false;

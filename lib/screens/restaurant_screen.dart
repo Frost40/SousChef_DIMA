@@ -14,8 +14,6 @@ import '../widgets/animated_button.dart';
 import '../widgets/circular_button.dart';
 import '../widgets/restaurant_screen/menu_item.dart';
 import '../widgets/restaurant_screen/restaurant_info.dart';
-// Import commented out as firebase_auth is not directly used in the build method shown
-// import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 class RestaurantScreen extends StatefulWidget {
   final String restaurantId;
@@ -32,148 +30,6 @@ class RestaurantScreen extends StatefulWidget {
 class _RestaurantScreenState extends State<RestaurantScreen> {
   int _selectedTabIndex = 0;
 
-  // Fixed menu items (unchanged)
-  final List<Map<String, dynamic>> _fixedMenuItems = [
-    {
-      'name': 'Beef Carpaccio',
-      'description': 'Thinly sliced raw beef with arugula, capers and parmesan shavings',
-      'imageUrl': 'https://example.com/carpaccio.jpg',
-      'course': Course.appetizer,
-      'price': 12.99,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Caprese Salad',
-      'description': 'Tomatoes, buffalo mozzarella, fresh basil and olive oil',
-      'imageUrl': '',
-      'course': Course.appetizer,
-      'price': 15.50,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Tuscan Bean Soup',
-      'description': 'Hearty soup with cannellini beans, vegetables and Tuscan herbs',
-      'imageUrl': '',
-      'course': Course.appetizer,
-      'price': 24.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Spaghetti Carbonara',
-      'description': 'Traditional pasta with eggs, guanciale, pecorino cheese and black pepper',
-      'imageUrl': 'https://example.com/carbonara.jpg',
-      'course': Course.pastaDish,
-      'price': 8.50,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Truffle Linguine',
-      'description': 'Handmade linguine with black truffle cream and aged parmesan',
-      'imageUrl': 'https://example.com/truffle.jpg',
-      'course': Course.pastaDish,
-      'price': 10.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Wild Mushroom Ravioli',
-      'description': 'Homemade ravioli filled with wild mushrooms in a sage butter sauce',
-      'imageUrl': '',
-      'course': Course.pastaDish,
-      'price': 35.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Porcini Mushroom Risotto',
-      'description': 'Creamy risotto with fresh porcini mushrooms and parmesan cheese',
-      'imageUrl': '',
-      'course': Course.pastaDish,
-      'price': 18.75,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Florentine T-bone Steak',
-      'description': 'Grilled T-bone beef steak, served rare',
-      'imageUrl': 'https://example.com/bistecca.jpg',
-      'course': Course.mainDish,
-      'price': 22.50,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Mediterranean Sea Bass',
-      'description': 'Fresh sea bass fillet with herbs, lemon and roasted vegetables',
-      'imageUrl': '',
-      'course': Course.mainDish,
-      'price': 16.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Osso Buco',
-      'description': 'Slow-cooked veal shanks with vegetables and gremolata',
-      'imageUrl': 'https://example.com/ossobuco.jpg',
-      'course': Course.mainDish,
-      'price': 28.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Veal Saltimbocca',
-      'description': 'Thin veal cutlets with prosciutto and sage in wine sauce',
-      'imageUrl': 'https://example.com/saltimbocca.jpg',
-      'course': Course.mainDish,
-      'price': 9.50,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Grilled Octopus',
-      'description': 'Tender octopus with potatoes, olives and cherry tomatoes',
-      'imageUrl': 'https://example.com/octopus.jpg',
-      'course': Course.mainDish,
-      'price': 11.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Tiramisu',
-      'description': 'Classic Italian dessert with mascarpone, coffee and ladyfingers',
-      'imageUrl': 'https://example.com/tiramisu.jpg',
-      'course': Course.dessert,
-      'price': 26.50,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Panna Cotta',
-      'description': 'Silky vanilla cream dessert with fresh berry compote',
-      'imageUrl': 'https://example.com/pannacotta.jpg',
-      'course': Course.dessert,
-      'price': 14.00,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Pistachio Cheesecake',
-      'description': 'Creamy cheesecake with pistachio crust and white chocolate ganache',
-      'imageUrl': '',
-      'course': Course.dessert,
-      'price': 19.50,
-      'isAvailable': true,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _onRequestMenuItems = [
-    {
-      'name': 'Chef\'s Tasting Menu',
-      'description': 'Custom culinary experience based on guest preferences',
-      'imageUrl': '',
-      'course': Course.other,
-      'price': 38.99,
-      'isAvailable': true,
-    },
-    {
-      'name': 'Seasonal Special Dish',
-      'description': 'Dish prepared with fresh seasonal ingredients',
-      'imageUrl': 'https://example.com/seasonal.jpg',
-      'course': Course.other,
-      'price': 42.50,
-      'isAvailable': true,
-    },
-  ];
   @override
   void initState() {
     super.initState();
@@ -251,18 +107,15 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
                 // Callbacks (unchanged)
                 onOpenStatusChanged: isOwner ? (isOpen) {
-                  debugPrint("New open status: $isOpen");
                   restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
                 } : null,
                 onFixedMenuToggled: isOwner ? (isEnabled) {
-                  debugPrint("New fixed menu status: $isEnabled");
                   restaurantProvider.updateRestaurantType(
                       widget.restaurantId,
                       RestaurantType.fixedMenu
                   );
                 } : null,
                 onOnRequestToggled: isOwner ? (isEnabled) {
-                  debugPrint("New on request status: $isEnabled");
                    restaurantProvider.updateRestaurantType(
                        widget.restaurantId,
                        RestaurantType.onRequest
@@ -274,12 +127,18 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 } : null,
                 onImageUploadPressed: isOwner ? (File? imageFile) {
                   if (imageFile != null) {
-                    debugPrint("New image file: ${imageFile.path}");
                       restaurantProvider.updateRestaurantImage(
                           widget.restaurantId,
                           imageFile
                       );
-
+                  }
+                } : null,
+                onImageUrlChanged: isOwner ? (String? imageUrl) {
+                  if (imageUrl != null && imageUrl.isNotEmpty) {
+                    restaurantProvider.updateRestaurantImageUrl(
+                        widget.restaurantId,
+                        imageUrl
+                    );
                   }
                 } : null,
               ),
@@ -324,15 +183,6 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         isNew: true,
                         isEditable: isOwner,
                         onSave: (name, description, price, course, cuisine, {imageFile, imageUrl, isAvailable}) {
-                          debugPrint('New dish saved');
-                          debugPrint(name);
-                          debugPrint(description);
-                          debugPrint(price.toString());
-                          debugPrint(course.toString());
-                          debugPrint(cuisine.toString());
-                          debugPrint(imageFile?.path ?? 'No image file');
-                          debugPrint(imageUrl ?? 'No image URL');
-                          debugPrint(isAvailable.toString());
                           dishProvider.createDish(
                             restaurantId: dishProvider.currentRestaurantId!,
                             name: name,
@@ -341,7 +191,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                             course: course,
                             cuisine: cuisine,
                             imageFile: imageFile,
+                            imageUrl: imageUrl,
                             isAvailable: isAvailable ?? false,
+                            isSpecial: _selectedTabIndex == 1, // Fixed menu
                           );
                         },
                       ),
@@ -392,19 +244,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final dishProvider = Provider.of<DishProvider>(context);
 
-    // Verifica se i dati sono in caricamento
+    // Check if data is loading
     if (dishProvider.isLoading) {
       return const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Verifica se c'è un errore
+    // Check if there's an error
     if (dishProvider.errorMessage != null) {
       return SliverFillRemaining(
         child: Center(
           child: Text(
-            'Errore nel caricamento dei piatti: ${dishProvider.errorMessage}',
+            'Error loading dishes: ${dishProvider.errorMessage}',
             style: TextStyle(color: colorScheme.error),
             textAlign: TextAlign.center,
           ),
@@ -412,16 +264,16 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       );
     }
 
-    // Filtra i piatti in base al tipo di menu (fisso o su richiesta)
+    // Filter dishes by menu type (fixed or on request)
     final dishes = dishProvider.dishes.where((dish) =>
-      !dish.isSpecial == isFixedMenu // isFixedMenu = true per menu fisso, false per menu su richiesta
+      !dish.isSpecial == isFixedMenu // isFixedMenu = true for fixed menu, false for on request menu
     ).toList();
 
     if (dishes.isEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Text(
-            'Nessun piatto disponibile',
+            'No dishes available',
             style: TextStyle(
               fontSize: 16,
               color: colorScheme.onSurface.withOpacity(0.6),
@@ -431,28 +283,30 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       );
     }
 
-    // Raggruppa i piatti per categoria
     Map<Course, List<Dish>> groupedItems = {};
 
-    // Inizializza tutte le categorie per assicurare un ordine coerente
+    // Initialize all categories to ensure consistent order
     for (var course in Course.values) {
       groupedItems[course] = [];
     }
 
-    // Raggruppa i piatti per categoria
+    // Group dishes by category
     for (var dish in dishes) {
       Course course = dish.course ?? Course.other;
       groupedItems[course]!.add(dish);
     }
 
-    // Rimuovi le categorie vuote
+    groupedItems.forEach((course, dishList) {
+      dishList.sort((a, b) => a.name.compareTo(b.name));
+    });
+
+    // Remove empty categories
     groupedItems.removeWhere((key, value) => value.isEmpty);
 
-    // Converti in una lista piatta con intestazioni per SliverList
+    // Convert into a flat list with headers for SliverList
     List<Widget> sliverItems = [];
 
     groupedItems.forEach((course, items) {
-      // Aggiungi intestazione di sezione
       sliverItems.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 25, 16, 8),
@@ -476,7 +330,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         ),
       );
 
-      // Aggiungi elementi per questa sezione
+      // Add each dish item
       for (var dish in items) {
         sliverItems.add(
           Padding(
@@ -492,7 +346,6 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               cuisine: dish.cuisine ?? Cuisine.other,
               onDelete: isEditable
                   ? () {
-                      debugPrint('Delete dish: ${dish.name}');
                       dishProvider.deleteDish(
                           dishProvider.currentRestaurantId!,
                           dish.id
@@ -501,8 +354,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   : null,
               onEdit: isEditable
                 ? (newName, newDescription, newPrice, newCourse, newCuisine, {imageFile, imageUrl, isAvailable}) {
-                  debugPrint('Edit dish: ${dish.name}');
-                  dishProvider.updateDish(
+                    debugPrint('Image url: ${imageUrl ?? 'No image URL'}');
+                    dishProvider.updateDish(
                       restaurantId: dishProvider.currentRestaurantId!,
                       dishId: dish.id,
                       name: newName,
@@ -511,8 +364,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       course: newCourse,
                       cuisine: newCuisine,
                       imageFile: imageFile,
-                  );
-                }
+                      imageUrl: imageUrl,
+                    );
+                  }
                 : null,
               onAvailabilityChanged: isEditable
                 ? (newAvailability) {
@@ -529,7 +383,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         );
       }
 
-      // Aggiungi divisore dopo ogni sezione (tranne l'ultima)
+      // Add divider after each section (except the last)
       if (course != groupedItems.keys.last) {
         sliverItems.add(
           Padding(
