@@ -78,7 +78,7 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
         minWidth: size.width,
         maxWidth: size.width,
       ),
-      elevation: 8,
+      elevation: 4,
       color: colorScheme.darkGrayBackground,
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.only(
@@ -133,9 +133,23 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
         color: colorScheme.darkGrayBackground,
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: widget.isFocused ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+          color: widget.isFocused ? colorScheme.primary : Colors.transparent,
           width: 1
         ),
+        boxShadow: widget.isFocused ? [] : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 1.5,
+            spreadRadius: 0,
+            offset: const Offset(0, 1),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 3,
+            spreadRadius: -0.5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: widget.isEditable ? () {

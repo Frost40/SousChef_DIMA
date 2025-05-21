@@ -177,25 +177,26 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 actionButton: CircularButton(
                   icon: Icons.add,
                   onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => DishDetailDialog(
-                        isNew: true,
-                        isEditable: isOwner,
-                        onSave: (name, description, price, course, cuisine, {imageFile, imageUrl, isAvailable}) {
-                          dishProvider.createDish(
-                            restaurantId: dishProvider.currentRestaurantId!,
-                            name: name,
-                            description: description,
-                            price: price,
-                            course: course,
-                            cuisine: cuisine,
-                            imageFile: imageFile,
-                            imageUrl: imageUrl,
-                            isAvailable: isAvailable ?? false,
-                            isSpecial: _selectedTabIndex == 1, // Fixed menu
-                          );
-                        },
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DishDetailDialog(
+                          isNew: true,
+                          isEditable: isOwner,
+                          onSave: (name, description, price, course, cuisine, {imageFile, imageUrl, isAvailable}) {
+                            dishProvider.createDish(
+                              restaurantId: dishProvider.currentRestaurantId!,
+                              name: name,
+                              description: description,
+                              price: price,
+                              course: course,
+                              cuisine: cuisine,
+                              imageFile: imageFile,
+                              imageUrl: imageUrl,
+                              isAvailable: isAvailable ?? false,
+                              isSpecial: _selectedTabIndex == 1, // Fixed menu
+                            );
+                          },
+                        ),
                       ),
                     );
                   },

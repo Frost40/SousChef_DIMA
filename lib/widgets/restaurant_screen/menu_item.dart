@@ -150,23 +150,24 @@ class MenuItem extends StatelessWidget {
     );
   }
 
+  // Modifica del metodo _showDishDetailDialog in MenuItem
   void _showDishDetailDialog(BuildContext context, String heroTag, ColorScheme colorScheme) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
-      builder: (context) => DishDetailDialog(
-        heroTag: heroTag,
-        dishName: dishName,
-        description: description,
-        imageUrl: imageUrl,
-        isEditable: isEditable,
-        initialAvailability: isAvailable,
-        onDelete: onDelete,
-        price: price,
-        course: course,
-        cuisine: cuisine,
-        onSave: onEdit,
-        onAvailabilityChanged: onAvailabilityChanged,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DishDetailDialog(
+          heroTag: heroTag,
+          dishName: dishName,
+          description: description,
+          imageUrl: imageUrl,
+          isEditable: false,
+          initialAvailability: isAvailable,
+          onDelete: onDelete,
+          price: price,
+          course: course,
+          cuisine: cuisine,
+          onSave: onEdit,
+          onAvailabilityChanged: onAvailabilityChanged,
+        ),
       ),
     );
   }
