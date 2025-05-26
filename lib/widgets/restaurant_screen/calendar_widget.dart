@@ -1,85 +1,89 @@
-import 'package:flutter/material.dart';
-        import 'package:intl/intl.dart';
+import 'package:flutter/cupertino.dart';
+            import 'package:flutter/material.dart';
+            import 'package:intl/intl.dart';
 
-        class CalendarWidget extends StatefulWidget {
-          final bool isEditable;
-          final int maxDays;
-          final DateTime initialDateTime;
-          final ValueChanged<DateTime>? onChanged;
+            class CalendarWidget extends StatefulWidget {
+              final bool isEditable;
+              final int maxDays;
+              final DateTime initialDateTime;
+              final ValueChanged<DateTime>? onChanged;
 
-          const CalendarWidget({
-            Key? key,
-            this.isEditable = true,
-            this.maxDays = 30,
-            required this.initialDateTime,
-            this.onChanged,
-          }) : super(key: key);
+              const CalendarWidget({
+                Key? key,
+                this.isEditable = true,
+                this.maxDays = 30,
+                required this.initialDateTime,
+                this.onChanged,
+              }) : super(key: key);
 
-          @override
-          _CalendarWidgetState createState() => _CalendarWidgetState();
-        }
+              @override
+              _CalendarWidgetState createState() => _CalendarWidgetState();
+            }
 
-        class _CalendarWidgetState extends State<CalendarWidget> {
-          late DateTime _selectedDateTime;
-          final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
-          final DateFormat _timeFormat = DateFormat('HH:mm');
+            // dart
+            class _CalendarWidgetState extends State<CalendarWidget> {
+              late DateTime _selectedDateTime;
+              late DateTime _minDate;
+              final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
 
-          @override
-          void initState() {
-            super.initState();
-            _selectedDateTime = widget.initialDateTime;
-          }
+              @override
+              void initState() {
+                super.initState();
+                final now = DateTime.now();
+                _minDate = now;
+                _selectedDateTime = widget.initialDateTime.isBefore(now) ? now : widget.initialDateTime;
+              }
 
-          Future<void> _selectDateTime() async {
-            DateTime? date = await showDatePicker(
-              context: context,
-              initialDate: _selectedDateTime,
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(Duration(days: widget.maxDays)),
-            );
-            if (date == null) return;
+              void _selectDate() {
+                if (!widget.isEditable) return;
 
-            TimeOfDay? time = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
-              initialEntryMode: TimePickerEntryMode.dial,
-            );
-            if (time == null) return;
-
-            final newDateTime = DateTime(
-              date.year,
-              date.month,
-              date.day,
-              time.hour,
-              time.minute,
-            );
-
-            setState(() {
-              _selectedDateTime = newDateTime;
-            });
-            widget.onChanged?.call(newDateTime);
-          }
-
-          @override
-          Widget build(BuildContext context) {
-            final dateText = _dateFormat.format(_selectedDateTime);
-            final timeText = _timeFormat.format(_selectedDateTime);
-
-            return InkWell(
-              onTap: widget.isEditable ? _selectDateTime : null,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    '$dateText - $timeText',
-                    style: const TextStyle(fontSize: 16),
+                showCupertinoModalPopup(
+                  context: context,
+                  builder: (_) => Container(
+                    height: 250,
+                    color: Colors.white,
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.date,
+                      minimumDate: _minDate,
+                      maximumDate: _minDate.add(Duration(days: widget.maxDays)),
+                      initialDateTime: _selectedDateTime,
+                      onDateTimeChanged: (DateTime newDate) {
+                        setState(() {
+                          _selectedDateTime = newDate;
+                        });
+                        widget.onChanged?.call(newDate);
+                      },
+                    ),
                   ),
-                ),
-              ),
-            );
-          }
-        }
+                );
+              }
+
+              @override
+              Widget build(BuildContext context) {
+                final dateText = _dateFormat.format(_selectedDateTime);
+
+                return GestureDetector(
+                  onTap: widget.isEditable ? _selectDate : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        dateText,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+                    ),
+                  ),
+                );
+              }
+            }

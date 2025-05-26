@@ -38,7 +38,7 @@ class DishFirestore {
         .doc(restaurantId)
         .collection('dishes')
         .doc(dishId)
-        .update({'isAvailable': isAvailable});
+        .update({'is_available': isAvailable});
   }
 
   /// Create a new dish for a restaurant
@@ -58,46 +58,10 @@ class DishFirestore {
   Future<void> updateDish({
     required String restaurantId,
     required String dishId,
-    String? name,
-    String? description,
-    double? price,
-    Course? course,
-    Cuisine? cuisine,
-    bool? isAvailable,
-    int? minForewarningDays,
-    String? imageUrl,
+    required Map<String, dynamic> updates,
   }) async {
-    // Create a map only with the fields to update
-    final updates = <String, dynamic>{};
-
-    if (name != null) updates['name'] = name;
-    if (description != null) updates['description'] = description;
-    if (price != null) updates['price'] = price;
-
-    if (course != null) {
-      updates['course'] = course.toString().split('.').last;
-    }
-
-    if (cuisine != null) {
-      updates['cuisine'] = cuisine.toString().split('.').last;
-    }
-
-    if (isAvailable != null) {
-      updates['is_available'] = isAvailable;
-    }
-
-    if (minForewarningDays != null) {
-      updates['min_forewarning_days'] = minForewarningDays;
-    }
-
-    if (imageUrl != null) {
-      updates['image'] = imageUrl;
-    }
-
-    // If there are no updates, return
     if (updates.isEmpty) return;
 
-    // Execute the update only for the modified fields
     await _restaurantTable
         .doc(restaurantId)
         .collection('dishes')

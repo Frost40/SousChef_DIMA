@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sous_chef/models/dish.dart';
+import 'package:sous_chef/providers/dish_provider.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
 import 'package:sous_chef/widgets/circular_button.dart';
@@ -13,45 +15,41 @@ import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 import 'package:sous_chef/widgets/image_upload_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/dish_availability_button.dart';
 
-class DishDetailDialog extends StatefulWidget {
-  final String? heroTag;
-  final String dishName;
-  final String description;
-  final String? imageUrl;
-  final bool isEditable;
-  final VoidCallback? onDelete;
-  final double? price;
-  final bool initialAvailability;
-  final Course? course;
-  final Cuisine? cuisine;
-  final bool isSpecial;
-  final bool isNew;
-  final Function(String, String, double, Course, Cuisine, {String? imageUrl, File? imageFile, bool? isAvailable})? onSave;
-  final Function(bool)? onAvailabilityChanged;
+import '../providers/user_provider.dart';
+import '../widgets/circular_number_input.dart';
 
-  const DishDetailDialog({
+class DishScreen extends StatefulWidget {
+  final String? heroTag;
+  final String? dishId;
+  final bool isEditable;
+  final bool isNew;
+  final bool isSpecial;
+  final Function(bool)? onAvailabilityChanged; // Manteniamo solo questo callback
+
+  const DishScreen({
     super.key,
     this.heroTag,
-    this.dishName = '',
-    this.description = '',
-    this.imageUrl,
     required this.isEditable,
-    this.onDelete,
-    this.price,
-    this.initialAvailability = false,
-    required this.onSave,
-    this.onAvailabilityChanged,
+    this.dishId,
     this.isNew = false,
-    this.course,
-    this.cuisine,
-    this.isSpecial = true,
+    this.isSpecial = false,
+    this.onAvailabilityChanged,
   });
 
   @override
-  State<DishDetailDialog> createState() => _DishDetailDialogState();
+  State<DishScreen> createState() => _DishDetailDialogState();
 }
 
-class _DishDetailDialogState extends State<DishDetailDialog> {
+class _DishDetailDialogState extends State<DishScreen> {
+  Dish? _dish;
+  bool get initialAvailability => _dish?.isAvailable ?? false;
+  bool get isSpecial => _dish?.isSpecial ?? widget.isSpecial;
+  String? get imageUrl => _dish?.imageUrl;
+  String get dishName => _dish?.name ?? '';
+  String get description => _dish?.description ?? '';
+  double? get price => _dish?.price;
+  int get minForewarningDays => _dish?.minForewarningDays ?? 0;
+
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
@@ -64,6 +62,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   late double? _initialPrice;
   late String? _initialImageUrl;
   late bool _availabilityStatus;
+  late String _initialUsername;
   Course? _initialCourse;
   Cuisine? _initialCuisine;
 
@@ -71,6 +70,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   late String _currentName;
   late String _currentDescription;
   late double? _currentPrice;
+  late String _currentUsername;
 
   bool _hasChanges = false;
   bool _hasValidationErrors = false;
@@ -78,6 +78,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   String? _descriptionError;
   String? _priceError;
   String? _imageUrlError;
+  String? _usernameError;
   String? _courseError;
   String? _cuisineError;
   File? _imageFile;
@@ -86,8 +87,10 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _descriptionFocus = FocusNode();
   final FocusNode _priceFocus = FocusNode();
+  final FocusNode _usernameFocus = FocusNode();
   bool _courseFocused = false;
   bool _cuisineFocused = false;
+
 
   @override
   void initState() {
@@ -102,27 +105,36 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _availabilityStatus = false;
       _initialCourse = null;
       _initialCuisine = null;
+      _initialUsername = '';
     } else {
-      // Use passed values for an existing dish
-      _initialName = widget.dishName;
-      _initialDescription = widget.description;
-      _initialPrice = widget.price;
-      _initialImageUrl = widget.imageUrl;
-      _availabilityStatus = widget.initialAvailability;
-      _initialCourse = widget.course;
-      _initialCuisine = widget.cuisine;
+
+      final dishProvider = Provider.of<DishProvider>(context, listen: false);
+      _dish = dishProvider.getDishById(widget.dishId!);
+
+      if (_dish != null) {
+        _initialName = _dish!.name;
+        _initialDescription = _dish!.description ?? '';
+        _initialPrice = _dish!.price;
+        _initialImageUrl = _dish!.imageUrl;
+        _availabilityStatus = _dish!.isAvailable ?? false;
+        _initialCourse = _dish!.course;
+        _initialCuisine = _dish!.cuisine;
+        _initialUsername = _dish!.userId ?? '';
+      }
     }
 
     // Initialize current values with initial values
     _currentName = _initialName;
     _currentDescription = _initialDescription;
     _currentPrice = _initialPrice;
+    _currentUsername = _initialUsername;
 
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
     _priceController = TextEditingController(
         text: _initialPrice != null ? _initialPrice!.toString() : '');
     _imageUrlController = TextEditingController(text: _initialImageUrl ?? '');
+    _debugPrintState();
 
     _nameController.addListener(() {
       _currentName = _nameController.text;
@@ -138,6 +150,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _currentPrice = _parsePrice();
       _checkForChanges();
     });
+
     _imageUrlController.addListener(_checkForChanges);
 
     _selectedCourse = _initialCourse;
@@ -169,13 +182,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   }
 
   @override
-  void didUpdateWidget(DishDetailDialog oldWidget) {
+  void didUpdateWidget(DishScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialAvailability != oldWidget.initialAvailability) {
-      setState(() {
-        _availabilityStatus = widget.initialAvailability;
-      });
-    }
   }
 
   @override
@@ -188,6 +196,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     _nameFocus.dispose();
     _descriptionFocus.dispose();
     _priceFocus.dispose();
+
+    _usernameFocus.dispose();
     super.dispose();
   }
 
@@ -220,7 +230,11 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     final nameChanged = _currentName != _initialName;
     final descriptionChanged = _currentDescription != _initialDescription;
     final priceChanged = _currentPrice != _initialPrice;
-    final imageUrlChanged = _imageUrlController.text != _initialImageUrl;
+    final usernameChanged = _currentUsername != _initialUsername;
+    final String controllerText = _imageUrlController.text;
+    final String? initialText = _initialImageUrl;
+    final imageUrlChanged = (initialText == null && controllerText.isNotEmpty) ||
+        (initialText != null && controllerText != initialText);
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
 
@@ -228,11 +242,16 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _hasChanges = (nameChanged ||
           descriptionChanged ||
           priceChanged ||
+          usernameChanged ||
           imageUrlChanged ||
           courseChanged ||
           cuisineChanged) &&
           !_hasValidationErrors;
     });
+
+    debugPrint("Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, " +
+        "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
+        "cuisine=$cuisineChanged, hasChanges=$_hasChanges");
   }
 
   double? _parsePrice() {
@@ -292,7 +311,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       _courseError = courseError;
       _cuisineError = cuisineError;
       _hasValidationErrors = nameError != null ||
-          descriptionError != null ||
+          _usernameError != null ||
           priceError != null ||
           imageUrlError != null ||
           courseError != null ||
@@ -303,36 +322,78 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   void _saveChanges() {
     if (_hasValidationErrors) return;
 
+    final dishProvider = Provider.of<DishProvider>(context, listen: false);
+    final restaurantId = dishProvider.currentRestaurantId;
+
+    if (restaurantId == null) {
+      debugPrint("Error: No restaurant ID available");
+      return;
+    }
+
     final name = _currentName;
     final description = _currentDescription;
     final price = _currentPrice ?? 0.0;
     final course = _selectedCourse ?? Course.other;
     final cuisine = _selectedCuisine ?? Cuisine.other;
+    final isAvailable = _availabilityStatus;
 
     if (widget.isNew) {
-      widget.onSave?.call(
-        name,
-        description,
-        price,
-        course,
-        cuisine,
-        imageUrl: _imageFile == null ? _imageUrlController.text : null,
+      dishProvider.createDish(
+        restaurantId: restaurantId,
+        name: name,
+        description: description,
+        price: price,
+        course: course,
+        cuisine: cuisine,
         imageFile: _imageFile,
-        isAvailable: _availabilityStatus,
+        imageUrl: _imageFile == null ? _imageUrlController.text : null,
+        isAvailable: isAvailable,
+        isSpecial: isSpecial,
+        userId: isSpecial ? _currentUsername : '',
       );
-    } else {
-      widget.onSave?.call(
-        name,
-        description,
-        price,
-        course,
-        cuisine,
-        imageUrl: _imageFile == null ? _imageUrlController.text : null,
+    } else if (widget.dishId != null) {
+      dishProvider.updateDish(
+        restaurantId: restaurantId,
+        dishId: widget.dishId!,
+        name: name,
+        description: description,
+        price: price,
+        course: course,
+        cuisine: cuisine,
         imageFile: _imageFile,
+        imageUrl: _imageFile == null ? _imageUrlController.text : null,
       );
     }
 
     Navigator.of(context).pop();
+  }
+
+  void _deleteDish() {
+    if (widget.dishId == null) return;
+
+    final dishProvider = Provider.of<DishProvider>(context, listen: false);
+    final restaurantId = dishProvider.currentRestaurantId;
+
+    if (restaurantId == null) {
+      debugPrint("Error: No restaurant ID available");
+      return;
+    }
+
+    dishProvider.deleteDish(restaurantId, widget.dishId!);
+    Navigator.of(context).pop();
+  }
+
+  void _debugPrintState() {
+    debugPrint("Debug _DishDetailDialogState:");
+    debugPrint("  _dish: $_dish");
+    debugPrint("  _initialName: $_initialName");
+    debugPrint("  _initialDescription: $_initialDescription");
+    debugPrint("  _initialPrice: $_initialPrice");
+    debugPrint("  _initialImageUrl: $_initialImageUrl");
+    debugPrint("  _initialCourse: $_initialCourse");
+    debugPrint("  _initialCuisine: $_initialCuisine");
+    debugPrint("  _initialUsername: $_initialUsername");
+    debugPrint("  isSpecial: $isSpecial");
   }
 
   @override
@@ -353,14 +414,16 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
             });
           }
         }
+
+        FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         backgroundColor: colorScheme.surface,
-        extendBodyBehindAppBar: true, // Estende il body dietro l'AppBar
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: Colors.transparent, // Rende l'AppBar trasparente
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text(''), // Rimuove il titolo
+          title: const Text(''),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.of(context).pop(),
@@ -384,7 +447,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                 width: double.infinity,
                 color: colorScheme.surfaceContainerHighest,
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 25, // Aggiungi il padding per il safe area superiore
+                  top: MediaQuery.of(context).padding.top + 25,
                   bottom: 25,
                 ),
                 child: Center(
@@ -561,8 +624,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                     const SizedBox(height: 40),
 
 
-                      // Sezione condizionale basata sullo stato del widget
-                      if (widget.isEditable && widget.isSpecial)
+                      // Username selection for special dishes
+                      if (widget.isEditable && isSpecial)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -586,11 +649,69 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                               color: colorScheme.onSurface,
                             ),
                             const SizedBox(height: 10),
-                            // Widget per selezionare l'username (es. dropdown)
-                            // ...
+                            AccountSettingField(
+                              fieldName: "Username",
+                              initialValue: _initialUsername,
+                              padding: 0,
+                              asyncValidator: _validateUsername,
+                              onValueChanged: (username, isModified) {
+                                setState(() {
+                                  _currentUsername = username;
+                                  _usernameFocus.unfocus();
+                                  _checkForChanges();
+                                });
+                              },
+                              onValidationError: (error) {
+                                setState(() {
+                                  _usernameError = error;
+                                });
+                              },
+                              onTextChanged: () {
+                                // Cleaning the error when the user starts typing
+                                setState(() {
+                                  _usernameError = null;
+                                });
+                              },
+                            ),
+
+                            if (_usernameError != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 8),
+                                child: Text(
+                                  _usernameError!,
+                                  style: TextStyle(
+                                    color: colorScheme.error,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+
                             const SizedBox(height: 10),
+
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    "Enter the username of the user for whom the dish is created.",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
                           ],
                         )
+                      // Date and time selection for ordering a dish
                       else if (!widget.isEditable)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,7 +736,6 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                               color: colorScheme.onSurface,
                             ),
                             const SizedBox(height: 10),
-                            // Mostra il nome utente per cui è speciale
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               child: CalendarWidget(
@@ -628,9 +748,6 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                           ],
                         ),
 
-                      // SizedBox non necessario qui perché già incluso nelle colonne condizionali
-
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -642,10 +759,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                                   backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
                                   size: 50,
                                   bottomPadding: 0,
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    widget.onDelete?.call();
-                                  },
+                                  onPressed: _deleteDish,
                                 )
                               : CircularButton(
                                   icon: Icons.add,
@@ -654,7 +768,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                                   size: 50,
                                   bottomPadding: 0,
                                   onPressed: () {
-
+                                    // Gestione per aggiungere al carrello o effettuare un ordine
                                   },
                                 ),
 
@@ -663,6 +777,18 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
                         widget.isEditable
                             ? _buildEditablePrice(colorScheme)
                             : _buildPrice(colorScheme),
+
+                        if (widget.isEditable)
+                          const SizedBox(width: 20),
+                          CircularNumberInput(
+                            size: 50.0,
+                            initialValue: minForewarningDays,
+                            onNumberSubmitted: (value) {
+                              print("Numero inserito: $value");
+                              // Gestisci il valore qui
+                            },
+                          )
+
                       ],
                     ),
                   ],
@@ -675,16 +801,17 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     );
   }
 
+  // Manteniamo gli stessi metodi per costruire l'interfaccia
   Widget _buildImage(ColorScheme colorScheme) {
     return Stack(
       children: [
         CircleAvatar(
           radius: 60,
           backgroundColor: colorScheme.surface,
-          child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
+          child: imageUrl != null && imageUrl!.isNotEmpty
               ? ClipOval(
                   child: Image.network(
-                    widget.imageUrl!,
+                    imageUrl!,
                     width: 120,
                     height: 120,
                     fit: BoxFit.cover,
@@ -703,17 +830,18 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         ),
 
         // Availability button on the bottom-left corner
-        Positioned(
-          bottom: 0,
-          left: 0,
-          child: DishAvailabilityButton(
-            initialValue: _availabilityStatus,
-            isEditable: false,
-            size: 40,
-            symbolResize: 0.6,
-            onToggle: null,
+        if (!isSpecial)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: DishAvailabilityButton(
+              initialValue: _availabilityStatus,
+              isEditable: false,
+              size: 40,
+              symbolResize: 0.6,
+              onToggle: null,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -780,7 +908,8 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         ),
 
         // Availability button on the bottom-left corner
-        Positioned(
+        if (!isSpecial)
+          Positioned(
           bottom: 0,
           left: 0,
           child: DishAvailabilityButton(
@@ -789,9 +918,19 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
             size: 40,
             symbolResize: 0.6,
             onToggle: (value) {
+              debugPrint("Availability changed: $value");
               setState(() {
                 _availabilityStatus = value;
               });
+
+              if (widget.dishId != null) {
+                final dishProvider = Provider.of<DishProvider>(context, listen: false);
+                final restaurantId = dishProvider.currentRestaurantId;
+
+                if (restaurantId != null) {
+                  dishProvider.updateDishAvailability(restaurantId, widget.dishId!, value);
+                }
+              }
 
               widget.onAvailabilityChanged?.call(value);
             },
@@ -801,12 +940,13 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
     );
   }
 
+  // Resto dei metodi build rimane uguale...
   Widget _buildName(ColorScheme colorScheme) {
     return Container(
-      width: double.infinity, // Assicura che occupi la stessa larghezza
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Padding verticale per coerenza
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Text(
-        widget.dishName,
+        dishName,
         style: const TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
@@ -999,7 +1139,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-        widget.description,
+        description,
         style: TextStyle(
           fontSize: 16,
           color: colorScheme.onSurfaceVariant,
@@ -1014,7 +1154,7 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
   }
 
   Widget _buildPrice(ColorScheme colorScheme) {
-    if (widget.price == null) {
+    if (price == null) {
       return Text(
         'Price not set',
         style: TextStyle(
@@ -1025,6 +1165,28 @@ class _DishDetailDialogState extends State<DishDetailDialog> {
       );
     }
 
-    return PriceTag(price: widget.price!, height: 60, width: 120,);
+    return PriceTag(price: price!, height: 60, width: 120);
+  }
+
+  Future<String?> _validateUsername(String value) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    // Control for emptiness
+    if (value.isEmpty) {
+      return "The username cannot be empty";
+    }
+
+    // Check for character types
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+      return "The username can only contain letters, numbers, and underscores";
+    }
+
+    // Verify uniqueness
+    final isTaken = await userProvider.isUsernameTaken(value, notify: false);
+    if (!isTaken) {
+      return "No user found with this username";
+    }
+
+    return null;
   }
 }

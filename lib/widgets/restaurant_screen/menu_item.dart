@@ -5,10 +5,12 @@ import 'package:sous_chef/models/dish.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
+import '../../transition_type.dart';
 import 'dish_availability_button.dart';
-import 'dish_detail_dialog.dart';
+import '../../screens/dish_screen.dart';
 
 class MenuItem extends StatelessWidget {
+  final String dishId;
   final String dishName;
   final String description;
   final String? imageUrl;
@@ -34,6 +36,7 @@ class MenuItem extends StatelessWidget {
     this.isAvailable = false,
     this.onEdit,
     this.onAvailabilityChanged,
+    required this.dishId,
   });
 
   @override
@@ -153,21 +156,14 @@ class MenuItem extends StatelessWidget {
   // Modifica del metodo _showDishDetailDialog in MenuItem
   void _showDishDetailDialog(BuildContext context, String heroTag, ColorScheme colorScheme) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => DishDetailDialog(
+      CustomPageRoute(
+        page: DishScreen(
           heroTag: heroTag,
-          dishName: dishName,
-          description: description,
-          imageUrl: imageUrl,
-          isEditable: false,
-          initialAvailability: isAvailable,
-          onDelete: onDelete,
-          price: price,
-          course: course,
-          cuisine: cuisine,
-          onSave: onEdit,
+          isEditable: isEditable,
+          dishId: dishId,
           onAvailabilityChanged: onAvailabilityChanged,
         ),
+        transitionType: TransitionType.slideRight,
       ),
     );
   }

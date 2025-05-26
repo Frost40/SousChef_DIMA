@@ -4,6 +4,7 @@ import 'package:sous_chef/themes/theme_extensions.dart';
 class AccountSettingField extends StatefulWidget {
   final String fieldName;
   final String initialValue;
+  final double padding;
   final Function(String, bool) onValueChanged; // isModified parameter added to prevent unnecessary updates
   final Function(String?)? onValidationError;
   final Function()? onTextChanged; // New callback for when user types
@@ -21,6 +22,7 @@ class AccountSettingField extends StatefulWidget {
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.asyncValidator,
+    this.padding = 25,
   });
 
   @override
@@ -125,7 +127,7 @@ class _AccountSettingFieldState extends State<AccountSettingField> {
     var colorTheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 25),
+      margin: EdgeInsets.symmetric(horizontal: widget.padding),
       height: 50,
       decoration: BoxDecoration(
         border: Border.all(

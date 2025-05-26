@@ -5,11 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
-import 'package:sous_chef/widgets/restaurant_screen/dish_detail_dialog.dart';
+import 'package:sous_chef/screens/dish_screen.dart';
 import '../models/dish.dart';
 import '../providers/dish_provider.dart';
 import '../providers/restaurant_provider.dart';
 import '../providers/auth_provider.dart';
+import '../transition_type.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/circular_button.dart';
 import '../widgets/restaurant_screen/menu_item.dart';
@@ -178,25 +179,13 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   icon: Icons.add,
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => DishDetailDialog(
+                      CustomPageRoute(
+                        page: DishScreen(
                           isNew: true,
                           isEditable: isOwner,
-                          onSave: (name, description, price, course, cuisine, {imageFile, imageUrl, isAvailable}) {
-                            dishProvider.createDish(
-                              restaurantId: dishProvider.currentRestaurantId!,
-                              name: name,
-                              description: description,
-                              price: price,
-                              course: course,
-                              cuisine: cuisine,
-                              imageFile: imageFile,
-                              imageUrl: imageUrl,
-                              isAvailable: isAvailable ?? false,
-                              isSpecial: _selectedTabIndex == 1, // Fixed menu
-                            );
-                          },
+                          isSpecial: _selectedTabIndex == 1,
                         ),
+                        transitionType: TransitionType.slideRight,
                       ),
                     );
                   },
@@ -337,8 +326,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
             child: MenuItem(
+              dishId: dish.id,
               dishName: dish.name,
-              description: dish.description,
+              description: dish.description ?? '',
               imageUrl: dish.imageUrl ?? '',
               isEditable: isEditable,
               price: dish.price,

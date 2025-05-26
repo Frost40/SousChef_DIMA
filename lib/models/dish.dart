@@ -3,38 +3,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Dish {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final double price;
   final bool isSpecial;
+  final Course course;
+  final Cuisine cuisine;
+  final int minForewarningDays;
+  final String? imageUrl;
+  final DateTime? creationTime;
 
   // Regular dish attributes
   final bool? isAvailable;
-  final Course? course;
-  final Cuisine? cuisine;
-  final int? minForewarningDays;
-  final String? imageUrl;
 
   // Special dish attributes
   final String? userId;
-  final DateTime? creationTime;
-  final int? duration;
-  final DateTime? pickupDateTime;
 
   Dish({
     required this.id,
     required this.name,
-    required this.description,
+    this.description = '',
     required this.price,
     required this.isSpecial,
     this.isAvailable,
-    this.course,
-    this.cuisine,
-    this.minForewarningDays,
-    this.imageUrl,
+    required this.course,
+    required this.cuisine,
+    this.minForewarningDays = 0,
+    this.imageUrl = '',
     this.userId,
     this.creationTime,
-    this.duration,
-    this.pickupDateTime,
   });
 
   factory Dish.fromFirestore(DocumentSnapshot doc) {
@@ -42,7 +38,7 @@ class Dish {
     bool isSpecial = data['is_special'] ?? false;
 
     // Convert course from string to enum
-    Course? dishCourse;
+    Course? dishCourse = Course.other;
     if (!isSpecial && data['course'] != null) {
       final String courseStr = data['course'] as String;
       try {
@@ -55,7 +51,7 @@ class Dish {
     }
 
     // Convert cuisine from string to enum
-    Cuisine? dishCuisine;
+    Cuisine? dishCuisine = Cuisine.other;
     if (!isSpecial && data['cuisine'] != null) {
       final String cuisineStr = data['cuisine'] as String;
       try {
@@ -78,17 +74,13 @@ class Dish {
       isAvailable: isSpecial ? null : data['is_available'],
       course: dishCourse,
       cuisine: dishCuisine,
-      minForewarningDays: isSpecial ? null : data['min_forewarning_days'],
+      minForewarningDays: data['min_forewarning_days'] ?? 0,
       imageUrl: isSpecial ? null : data['image'],
 
       // Special dish attributes
       userId: isSpecial ? data['userId'] : null,
       creationTime: isSpecial && data['creation_time'] != null
           ? (data['creation_time'] as Timestamp).toDate()
-          : null,
-      duration: isSpecial ? data['duration'] : null,
-      pickupDateTime: isSpecial && data['pickup_dateTime'] != null
-          ? (data['pickup_dateTime'] as Timestamp).toDate()
           : null,
     );
   }
@@ -98,6 +90,10 @@ class Dish {
       'name': name,
       'description': description,
       'price': price,
+      'course': course.toString().split('.').last,
+      'cuisine': cuisine.toString().split('.').last,
+      'min_forewarning_days': minForewarningDays,
+      'image': imageUrl,
       'is_special': isSpecial,
     };
 
@@ -105,10 +101,6 @@ class Dish {
     if (!isSpecial) {
       data.addAll({
         'is_available': isAvailable,
-        'course': course?.toString().split('.').last,
-        'cuisine': cuisine?.toString().split('.').last,
-        'min_forewarning_days': minForewarningDays,
-        'image': imageUrl,
       });
     }
 
@@ -117,8 +109,6 @@ class Dish {
       data.addAll({
         'userId': userId,
         if (creationTime != null) 'creation_time': Timestamp.fromDate(creationTime!),
-        'duration': duration,
-        if (pickupDateTime != null) 'pickup_dateTime': Timestamp.fromDate(pickupDateTime!),
       });
     }
 
@@ -155,8 +145,6 @@ class Dish {
       imageUrl: imageUrl ?? this.imageUrl,
       userId: userId ?? this.userId,
       creationTime: creationTime ?? this.creationTime,
-      duration: duration ?? this.duration,
-      pickupDateTime: pickupDateTime ?? this.pickupDateTime,
     );
   }
 }

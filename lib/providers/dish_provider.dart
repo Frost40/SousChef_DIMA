@@ -31,6 +31,15 @@ class DishProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Return the dish by its ID
+  Dish? getDishById(String dishId) {
+    try {
+      return _dishes.firstWhere((dish) => dish.id == dishId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Fetch all dishes from a restaurant
   Future<void> fetchDishes(String restaurantId) async {
     _isLoading = true;
@@ -118,9 +127,10 @@ class DishProvider with ChangeNotifier {
     required String description,
     required double price,
     required Course course,
-    required bool isAvailable,
     required Cuisine cuisine,
-    bool isSpecial = false,
+    required isSpecial,
+    bool? isAvailable,
+    String? userId,
     int? minForewarningDays,
     File? imageFile,
     String? imageUrl,
@@ -130,6 +140,14 @@ class DishProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Field validation based on the dish type
+      if (isSpecial && (userId == null || userId.isEmpty)) {
+        throw Exception('Il campo userId è obbligatorio per i piatti speciali');
+      }
+      if (!isSpecial && isAvailable == null) {
+        throw Exception('Il campo isAvailable è obbligatorio per i piatti normali');
+      }
+
       // Create the Dish object with provided data
       Dish newDish = Dish(
         id: 'temp-id',
@@ -137,11 +155,12 @@ class DishProvider with ChangeNotifier {
         description: description,
         price: price,
         isSpecial: isSpecial,
-        isAvailable: isAvailable,
         course: course,
         cuisine: cuisine,
-        minForewarningDays: minForewarningDays,
+        minForewarningDays: minForewarningDays ?? 0,
         imageUrl: imageUrl ?? '',
+        isAvailable: isSpecial ? null : isAvailable,
+        userId: isSpecial ? userId : null,
       );
 
       // Create a new dish in the database
@@ -155,10 +174,13 @@ class DishProvider with ChangeNotifier {
       if (imageFile != null) {
         final newImageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
         // Update the dish with the new image URL
+        final updates = <String, dynamic>{
+          'image': newImageUrl,
+        };
         await _dishFirestore.updateDish(
           restaurantId: restaurantId,
           dishId: dishId,
-          imageUrl: newImageUrl,
+          updates: {'image': newImageUrl},
         );
 
         newDish = newDish.copyWith(imageUrl: newImageUrl);
@@ -180,12 +202,13 @@ class DishProvider with ChangeNotifier {
   Future<void> updateDish({
     required String restaurantId,
     required String dishId,
-    required String name,
-    required String description,
-    required double price,
+    String? name,
+    String? description,
+    double? price,
     Course? course,
     Cuisine? cuisine,
     bool? isAvailable,
+    String? userId,
     int? minForewarningDays,
     File? imageFile,
     String? imageUrl,
@@ -201,6 +224,8 @@ class DishProvider with ChangeNotifier {
         throw Exception('Dish not found in local state');
       }
 
+      final isSpecial = _dishes[index].isSpecial;
+
       // If no new image URL is provided, use the existing one
       String? newImageUrl = imageUrl ?? _dishes[index].imageUrl;
 
@@ -209,20 +234,34 @@ class DishProvider with ChangeNotifier {
         newImageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
       }
 
+      final updates = <String, dynamic>{};
+
+      if (name != null) updates['name'] = name;
+      if (description != null) updates['description'] = description;
+      if (price != null) updates['price'] = price;
+
+      if (course != null) updates['course'] = course.toString().split('.').last;
+      if (cuisine != null) updates['cuisine'] = cuisine.toString().split('.').last;
+      if (minForewarningDays != null) updates['min_forewarning_days'] = minForewarningDays;
+
+      // Aggiungi i campi condizionali
+      if (!isSpecial && isAvailable != null) {
+        updates['is_available'] = isAvailable;
+      }
+      if (isSpecial && userId != null) {
+        updates['userId'] = userId;
+      }
+
+      if (imageFile != null || imageUrl != null) {
+        updates['image'] = newImageUrl;
+      }
+
       // Update the document in the database
       await _dishFirestore.updateDish(
         restaurantId: restaurantId,
         dishId: dishId,
-        name: name,
-        description: description,
-        price: price,
-        course: course ?? _dishes[index].course,
-        cuisine: cuisine ?? _dishes[index].cuisine,
-        isAvailable: isAvailable ?? _dishes[index].isAvailable,
-        minForewarningDays: minForewarningDays ?? _dishes[index].minForewarningDays,
-        imageUrl: newImageUrl,
+        updates: updates,
       );
-
       // Update local state
       _dishes[index] = _dishes[index].copyWith(
         name: name,
@@ -230,7 +269,8 @@ class DishProvider with ChangeNotifier {
         price: price,
         course: course,
         cuisine: cuisine,
-        isAvailable: isAvailable,
+        isAvailable: isSpecial ? _dishes[index].isAvailable : isAvailable,
+        userId: isSpecial ? userId ?? _dishes[index].userId : null,
         minForewarningDays: minForewarningDays,
         imageUrl: newImageUrl,
       );
