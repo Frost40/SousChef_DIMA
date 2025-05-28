@@ -90,19 +90,19 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
       ),
     );
 
-    // Qui sta la chiave: quando il menu si chiude, rimuoviamo il focus
-    // indipendentemente da cosa ha causato la chiusura
+    // Here is the key: when the menu closes, we remove the focus
+    // regardless of what caused the closing
     if (selected != null) {
       setState(() {
         _selectedItem = selected;
       });
       widget.onChanged(selected);
     } else {
-      // Se l'utente ha toccato fuori dal menu, rimuoviamo il focus
-      // chiamando onChanged con il valore attuale per ripristinare lo stato
+      // If the user tapped outside the menu, remove the focus
+      // by calling onChanged with the current value to restore the state
       if (widget.isFocused) {
-        // Aggiungiamo un breve ritardo per far coincidere la rimozione del focus
-        // con la chiusura dell'animazione del menu
+        // We add a short delay to synchronize the removal of focus
+        // with the closing animation of the menu
         Future.delayed(const Duration(milliseconds: 300), () {
           widget.onChanged(_selectedItem as T);
         });
@@ -136,7 +136,7 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
           color: widget.isFocused ? colorScheme.primary : Colors.transparent,
           width: 1
         ),
-        boxShadow: widget.isFocused ? [] : [
+        boxShadow: (widget.isFocused || !widget.isEditable) ? [] : [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
             blurRadius: 1.5,
@@ -153,7 +153,7 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
       ),
       child: InkWell(
         onTap: widget.isEditable ? () {
-          widget.onTap?.call(); // Chiama onTap prima di mostrare il menu
+          widget.onTap?.call(); // Call the onTap function before showing the menu
           _showCustomMenu();
         } : null,
         child: Row(

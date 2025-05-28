@@ -37,11 +37,12 @@ class DishScreen extends StatefulWidget {
   });
 
   @override
-  State<DishScreen> createState() => _DishDetailDialogState();
+  State<DishScreen> createState() => _DishScreenState();
 }
 
-class _DishDetailDialogState extends State<DishScreen> {
+class _DishScreenState extends State<DishScreen> {
   Dish? _dish;
+  DateTime? _selectedDateTime;
   bool get initialAvailability => _dish?.isAvailable ?? false;
   bool get isSpecial => _dish?.isSpecial ?? widget.isSpecial;
   String? get imageUrl => _dish?.imageUrl;
@@ -65,12 +66,14 @@ class _DishDetailDialogState extends State<DishScreen> {
   late String _initialUsername;
   Course? _initialCourse;
   Cuisine? _initialCuisine;
+  late int _initialMinForewarningDays;
 
   // Current values
   late String _currentName;
   late String _currentDescription;
   late double? _currentPrice;
   late String _currentUsername;
+  late int _currentMinForewarningDays;
 
   bool _hasChanges = false;
   bool _hasValidationErrors = false;
@@ -106,6 +109,7 @@ class _DishDetailDialogState extends State<DishScreen> {
       _initialCourse = null;
       _initialCuisine = null;
       _initialUsername = '';
+      _initialMinForewarningDays = 0;
     } else {
 
       final dishProvider = Provider.of<DishProvider>(context, listen: false);
@@ -120,6 +124,7 @@ class _DishDetailDialogState extends State<DishScreen> {
         _initialCourse = _dish!.course;
         _initialCuisine = _dish!.cuisine;
         _initialUsername = _dish!.userId ?? '';
+        _initialMinForewarningDays = _dish!.minForewarningDays;
       }
     }
 
@@ -128,6 +133,7 @@ class _DishDetailDialogState extends State<DishScreen> {
     _currentDescription = _initialDescription;
     _currentPrice = _initialPrice;
     _currentUsername = _initialUsername;
+    _currentMinForewarningDays = _initialMinForewarningDays;
 
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
@@ -237,6 +243,8 @@ class _DishDetailDialogState extends State<DishScreen> {
         (initialText != null && controllerText != initialText);
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
+    final minForwarningDaysChanged =
+        _currentMinForewarningDays != _initialMinForewarningDays;
 
     setState(() {
       _hasChanges = (nameChanged ||
@@ -245,7 +253,8 @@ class _DishDetailDialogState extends State<DishScreen> {
           usernameChanged ||
           imageUrlChanged ||
           courseChanged ||
-          cuisineChanged) &&
+          cuisineChanged ||
+          minForwarningDaysChanged) &&
           !_hasValidationErrors;
     });
 
@@ -336,6 +345,7 @@ class _DishDetailDialogState extends State<DishScreen> {
     final course = _selectedCourse ?? Course.other;
     final cuisine = _selectedCuisine ?? Cuisine.other;
     final isAvailable = _availabilityStatus;
+    final minForwarningDays = _currentMinForewarningDays;
 
     if (widget.isNew) {
       dishProvider.createDish(
@@ -348,6 +358,7 @@ class _DishDetailDialogState extends State<DishScreen> {
         imageFile: _imageFile,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
         isAvailable: isAvailable,
+        minForewarningDays: minForwarningDays,
         isSpecial: isSpecial,
         userId: isSpecial ? _currentUsername : '',
       );
@@ -362,6 +373,7 @@ class _DishDetailDialogState extends State<DishScreen> {
         cuisine: cuisine,
         imageFile: _imageFile,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
+        minForewarningDays: minForwarningDays,
       );
     }
 
@@ -736,15 +748,18 @@ class _DishDetailDialogState extends State<DishScreen> {
                               color: colorScheme.onSurface,
                             ),
                             const SizedBox(height: 10),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: CalendarWidget(
-                                  isEditable: true,
-                                  maxDays: 50,
-                                  initialDateTime: DateTime.now(),
-                                  onChanged: (dateTime) {}),
+
+                            DateTimePickerWidget(
+                              maxDateDays: minForewarningDays,
+                              onDateTimeSelected: (dateTime) {
+                                setState(() {
+                                  _selectedDateTime = dateTime;
+                                });
+                                debugPrint("Selected date and time: $_selectedDateTime");
+                              },
                             ),
-                            const SizedBox(height: 10),
+
+                            const SizedBox(height: 40),
                           ],
                         ),
 
@@ -779,15 +794,22 @@ class _DishDetailDialogState extends State<DishScreen> {
                             : _buildPrice(colorScheme),
 
                         if (widget.isEditable)
-                          const SizedBox(width: 20),
-                          CircularNumberInput(
-                            size: 50.0,
-                            initialValue: minForewarningDays,
-                            onNumberSubmitted: (value) {
-                              print("Numero inserito: $value");
-                              // Gestisci il valore qui
-                            },
-                          )
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(width: 20),
+
+                              CircularNumberInput(
+                                size: 50.0,
+                                initialValue: minForewarningDays,
+                                onNumberSubmitted: (value) {
+                                  _currentMinForewarningDays = value;
+                                  _checkForChanges();
+                                },
+                              ),
+                            ],
+                          ),
+
 
                       ],
                     ),
@@ -801,7 +823,6 @@ class _DishDetailDialogState extends State<DishScreen> {
     );
   }
 
-  // Manteniamo gli stessi metodi per costruire l'interfaccia
   Widget _buildImage(ColorScheme colorScheme) {
     return Stack(
       children: [
@@ -945,13 +966,19 @@ class _DishDetailDialogState extends State<DishScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Text(
-        dishName,
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
-        textAlign: TextAlign.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            dishName,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -1139,15 +1166,15 @@ class _DishDetailDialogState extends State<DishScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-        description,
-        style: TextStyle(
-          fontSize: 16,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        textAlign: TextAlign.left,
-        maxLines: 4,
-      ),
-          const SizedBox(height: 20),
+            description,
+            style: TextStyle(
+              fontSize: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.left,
+            maxLines: 4,
+          ),
+          const SizedBox(height: 40),
         ],
       ),
     );
