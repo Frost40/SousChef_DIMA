@@ -57,10 +57,12 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   Widget build(BuildContext context) {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dishProvider = Provider.of<DishProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isOwner = restaurantProvider.restaurant != null &&
+    final bool isOwner = false;
+        /*restaurantProvider.restaurant != null &&
         authProvider.user?.id == restaurantProvider.restaurant!.ownerId;
+
+         */
 
     // Handle potential null restaurant during initial load
     final Restaurant? restaurant = restaurantProvider.restaurant;

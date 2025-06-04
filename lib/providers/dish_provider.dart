@@ -17,12 +17,10 @@ class DishProvider with ChangeNotifier {
 
   // Dishes of the currently selected restaurant
   List<Dish> _dishes = [];
-
   List<Dish> get dishes => _dishes;
 
   // Current restaurant ID
   String? _currentRestaurantId;
-
   String? get currentRestaurantId => _currentRestaurantId;
 
   /// Clears all errors and optionally resets restaurant data

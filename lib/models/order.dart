@@ -36,8 +36,9 @@ class Order {
   final String id;
   final String userId;
   final String restaurantName;
+  final String restaurantId;
   final DateTime dateTime;
-  final int verificationCode;
+  final int? verificationCode;
   final String status;
   final double total;
   final String restaurantAddress;
@@ -48,8 +49,9 @@ class Order {
     required this.id,
     required this.userId,
     required this.restaurantName,
+    required this.restaurantId,
     required this.dateTime,
-    required this.verificationCode,
+    this.verificationCode,
     required this.status,
     required this.total,
     required this.restaurantAddress,
@@ -71,8 +73,9 @@ class Order {
       id: doc.id,
       userId: data['user_id'] ?? '',
       restaurantName: data['restaurant_name'] ?? '',
+      restaurantId: data['restaurant_id'] ?? '',
       dateTime: (data['dateTime'] as Timestamp).toDate(),
-      verificationCode: data['verification_code'] ?? 0,
+      verificationCode: data['verification_code'],
       status: data['status'] ?? '',
       total: (data['total'] ?? 0.0).toDouble(),
       restaurantAddress: data['restaurant_address'] ?? '',
@@ -85,6 +88,7 @@ class Order {
     return {
       'user_id': userId,
       'restaurant_name': restaurantName,
+      'restaurant_id': restaurantId,
       'dateTime': Timestamp.fromDate(dateTime),
       'verification_code': verificationCode,
       'status': status,
@@ -93,5 +97,48 @@ class Order {
       'restaurant_location': restaurantLocation,
       'dishes': dishes.map((item) => item.toMap()).toList(),
     };
+  }
+
+  Order copyWith({
+    String? id,
+    String? userId,
+    String? restaurantName,
+    String? restaurantId,
+    DateTime? dateTime,
+    int? verificationCode,
+    String? status,
+    double? total,
+    String? restaurantAddress,
+    GeoPoint? restaurantLocation,
+    List<OrderItem>? dishes,
+    Map<String, OrderItem>? updatedDishes,
+  }) {
+    // Se vengono forniti piatti aggiornati, modifica i piatti esistenti
+    // Inizializziamo updatedDishList solo se updatedDishes è fornito
+    List<OrderItem> updatedDishList = this.dishes;
+
+    if (updatedDishes != null && updatedDishes.isNotEmpty) {
+      updatedDishList = List.from(this.dishes);
+      for (int i = 0; i < updatedDishList.length; i++) {
+        String dishId = updatedDishList[i].dishId;
+        if (updatedDishes.containsKey(dishId)) {
+          updatedDishList[i] = updatedDishes[dishId]!;
+        }
+      }
+    }
+
+    return Order(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      restaurantName: restaurantName ?? this.restaurantName,
+      restaurantId: restaurantId ?? this.restaurantId,
+      dateTime: dateTime ?? this.dateTime,
+      verificationCode: verificationCode ?? this.verificationCode,
+      status: status ?? this.status,
+      total: total ?? this.total,
+      restaurantAddress: restaurantAddress ?? this.restaurantAddress,
+      restaurantLocation: restaurantLocation ?? this.restaurantLocation,
+      dishes: dishes ?? updatedDishList,
+    );
   }
 }
