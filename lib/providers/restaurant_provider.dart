@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../services/firebase_storage.dart';
 import '../models/restaurant.dart';
-import '../services/database/dish_firestore.dart';
 import '../services/database/restaurant_firestore.dart';
 
 /// Provider that manages user data operations using the UserFirestore service.
@@ -125,21 +124,6 @@ class RestaurantProvider with ChangeNotifier {
       _restaurant = null;
     }
     notifyListeners();
-  }
-
-  /// Converts errors into user-friendly messages
-  String _getErrorMessage(dynamic error) {
-    String errorMessage = error.toString();
-
-    if (errorMessage.contains('Restaurant not found')) {
-      return 'Restaurant not found. Please check the restaurant ID.';
-    } else if (errorMessage.contains('permission-denied')) {
-      return 'You do not have permission to access this restaurant.';
-    } else if (errorMessage.contains('network-request-failed')) {
-      return 'Network error. Please check your internet connection.';
-    }
-
-    return 'An error occurred: $errorMessage';
   }
 
   /// Updates the restaurant's open status
@@ -335,5 +319,20 @@ class RestaurantProvider with ChangeNotifier {
       _errorMessage = _getErrorMessage(e);
       notifyListeners();
     }
+  }
+
+  /// Converts errors into user-friendly messages
+  String _getErrorMessage(dynamic error) {
+    String errorMessage = error.toString();
+
+    if (errorMessage.contains('Restaurant not found')) {
+      return 'Restaurant not found. Please check the restaurant ID.';
+    } else if (errorMessage.contains('permission-denied')) {
+      return 'You do not have permission to access this restaurant.';
+    } else if (errorMessage.contains('network-request-failed')) {
+      return 'Network error. Please check your internet connection.';
+    }
+
+    return 'An error occurred: $errorMessage';
   }
 }

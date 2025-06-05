@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/dish_provider.dart';
+import 'package:sous_chef/providers/order_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
 import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
         ChangeNotifierProvider(create: (_) => DishProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
         Provider<AppRouter>(create: (_) => AppRouter()),
       ],
       child: Consumer2<AppRouter, ThemeProvider>(

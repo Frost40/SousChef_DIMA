@@ -15,8 +15,10 @@ import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 import 'package:sous_chef/widgets/image_upload_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/dish_availability_button.dart';
 
+import '../providers/order_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/circular_number_input.dart';
+import '../widgets/custom_alert_dialog.dart';
 
 class DishScreen extends StatefulWidget {
   final String? heroTag;
@@ -783,7 +785,57 @@ class _DishScreenState extends State<DishScreen> {
                                   size: 50,
                                   bottomPadding: 0,
                                   onPressed: () {
-                                    // Gestione per aggiungere al carrello o effettuare un ordine
+                                    if (_selectedDateTime == null) {
+                                      CustomAlertDialog.showInfoDialog(
+                                        context: context,
+                                        title: "Warning",
+                                        message: "Select a date and time to proceed.",
+                                        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                      );
+                                      return;
+                                    }
+
+                                    if (_availabilityStatus == false) {
+                                      CustomAlertDialog.showInfoDialog(
+                                        context: context,
+                                        title: "Warning",
+                                        message: "The dish is not available.",
+                                        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                      );
+                                      return;
+                                    }
+
+                                    final userProvider = Provider.of<UserProvider>(context, listen: false);
+                                    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+                                    orderProvider.setContext(context);
+
+                                    if (_dish != null) {
+                                      orderProvider.addOrder(
+                                        userId: userProvider.userData?.id ?? '',
+                                        dishId: _dish!.id,
+                                        dishName: _dish!.name,
+                                        dishPrice: _dish!.price,
+                                        pickupDateTime: _selectedDateTime!,
+                                      ).then((_) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Dish sent to cart",
+                                          message: "The dish \"${_dish!.name}\" has been correctly added to your cart.",
+                                          icon: Icon(Icons.check_circle, color: colorScheme.primary),
+                                          buttonText: "OK",
+                                        ).then((_) {
+                                          Navigator.of(context).pop();
+                                        });
+                                      }).catchError((error) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Error",
+                                          message: orderProvider.errorMessage ?? "Something went wrong. Try again later.",
+                                          icon: Icon(Icons.error_outline, color: colorScheme.error),
+                                        );
+                                      });
+                                    }
                                   },
                                 ),
 
