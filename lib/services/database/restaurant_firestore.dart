@@ -19,8 +19,8 @@ class RestaurantFirestore {
   }) async {
     // Create a new restaurant document
     final DocumentReference restaurantDoc = await _restaurantsTable.add({
-      'restaurantName': restaurantName,
-      'ownerId': ownerId,
+      'name': restaurantName,
+      'owner_id': ownerId,
     });
 
     // Return the ID of the newly created restaurant
@@ -56,7 +56,7 @@ class RestaurantFirestore {
   // Method to update restaurant's open status
   Future<void> updateRestaurantOpenStatus(String restaurantId, bool isOpen) async {
     await _restaurantsTable.doc(restaurantId).update({
-      'isOpen': isOpen
+      'is_open': isOpen
     });
   }
 
@@ -78,7 +78,7 @@ class RestaurantFirestore {
   Future<void> updateRestaurantType(String restaurantId, List<RestaurantType> restaurantTypes) async {
     // Convert restaurant types from enum to strings
     List<String> restaurantTypesStrings = restaurantTypes.map((type) {
-      return type == RestaurantType.fixedMenu ? 'fixedMenu' : 'onRequest';
+      return type == RestaurantType.fixedMenu ? 'fixed_menu' : 'on_request';
     }).toList();
 
     await _restaurantsTable.doc(restaurantId).update({
@@ -89,7 +89,7 @@ class RestaurantFirestore {
   // Method to update restaurant's image URL
   Future<void> updateRestaurantImage(String restaurantId, String imageUrl) async {
     await _restaurantsTable.doc(restaurantId).update({
-      'imageUrl': imageUrl
+      'image_url': imageUrl
     });
   }
 }

@@ -15,7 +15,7 @@ class OrderItem {
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
     return OrderItem(
-      dishId: map['dishId'] ?? '',
+      dishId: map['dish_id'] ?? '',
       name: map['name'] ?? '',
       quantity: map['quantity'] ?? 0,
       price: (map['price'] ?? 0.0).toDouble(),
@@ -24,7 +24,7 @@ class OrderItem {
 
   Map<String, dynamic> toMap() {
     return {
-      'dishId': dishId,
+      'dish_id': dishId,
       'name': name,
       'quantity': quantity,
       'price': price,
@@ -74,7 +74,7 @@ class Order {
       userId: data['user_id'] ?? '',
       restaurantName: data['restaurant_name'] ?? '',
       restaurantId: data['restaurant_id'] ?? '',
-      dateTime: (data['dateTime'] as Timestamp).toDate(),
+      dateTime: (data['date_time'] as Timestamp).toDate(),
       verificationCode: data['verification_code'],
       status: data['status'] ?? '',
       total: (data['total'] ?? 0.0).toDouble(),
@@ -89,7 +89,7 @@ class Order {
       'user_id': userId,
       'restaurant_name': restaurantName,
       'restaurant_id': restaurantId,
-      'dateTime': Timestamp.fromDate(dateTime),
+      'date_time': Timestamp.fromDate(dateTime),
       'verification_code': verificationCode,
       'status': status,
       'total': total,
@@ -113,8 +113,8 @@ class Order {
     List<OrderItem>? dishes,
     Map<String, OrderItem>? updatedDishes,
   }) {
-    // Se vengono forniti piatti aggiornati, modifica i piatti esistenti
-    // Inizializziamo updatedDishList solo se updatedDishes è fornito
+    // If updated dishes are provided, modify the existing dishes
+    // Initialize updatedDishList only if updatedDishes is provided
     List<OrderItem> updatedDishList = this.dishes;
 
     if (updatedDishes != null && updatedDishes.isNotEmpty) {

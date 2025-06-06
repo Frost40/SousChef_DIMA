@@ -16,7 +16,7 @@ class Dish {
   final bool? isAvailable;
 
   // Special dish attributes
-  final String? userId;
+  final String? userUsername;
 
   Dish({
     required this.id,
@@ -29,7 +29,7 @@ class Dish {
     required this.cuisine,
     this.minForewarningDays = 0,
     this.imageUrl = '',
-    this.userId,
+    this.userUsername,
     this.creationTime,
   });
 
@@ -78,7 +78,7 @@ class Dish {
       imageUrl: isSpecial ? null : data['image'],
 
       // Special dish attributes
-      userId: isSpecial ? data['userId'] : null,
+      userUsername: isSpecial ? data['user_username'] : null,
       creationTime: isSpecial && data['creation_time'] != null
           ? (data['creation_time'] as Timestamp).toDate()
           : null,
@@ -107,7 +107,7 @@ class Dish {
     // Add special dish attributes
     if (isSpecial) {
       data.addAll({
-        'userId': userId,
+        'user_username': userUsername,
         if (creationTime != null) 'creation_time': Timestamp.fromDate(creationTime!),
       });
     }
@@ -127,7 +127,7 @@ class Dish {
     Cuisine? cuisine,
     int? minForewarningDays,
     String? imageUrl,
-    String? userId,
+    String? userUsername,
     DateTime? creationTime,
     int? duration,
     DateTime? pickupDateTime,
@@ -143,7 +143,7 @@ class Dish {
       cuisine: cuisine ?? this.cuisine,
       minForewarningDays: minForewarningDays ?? this.minForewarningDays,
       imageUrl: imageUrl ?? this.imageUrl,
-      userId: userId ?? this.userId,
+      userUsername: userUsername ?? this.userUsername,
       creationTime: creationTime ?? this.creationTime,
     );
   }

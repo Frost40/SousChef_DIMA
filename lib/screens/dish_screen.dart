@@ -26,7 +26,7 @@ class DishScreen extends StatefulWidget {
   final bool isEditable;
   final bool isNew;
   final bool isSpecial;
-  final Function(bool)? onAvailabilityChanged; // Manteniamo solo questo callback
+  final Function(bool)? onAvailabilityChanged;
 
   const DishScreen({
     super.key,
@@ -125,7 +125,7 @@ class _DishScreenState extends State<DishScreen> {
         _availabilityStatus = _dish!.isAvailable ?? false;
         _initialCourse = _dish!.course;
         _initialCuisine = _dish!.cuisine;
-        _initialUsername = _dish!.userId ?? '';
+        _initialUsername = _dish!.userUsername ?? '';
         _initialMinForewarningDays = _dish!.minForewarningDays;
       }
     }
@@ -142,7 +142,6 @@ class _DishScreenState extends State<DishScreen> {
     _priceController = TextEditingController(
         text: _initialPrice != null ? _initialPrice!.toString() : '');
     _imageUrlController = TextEditingController(text: _initialImageUrl ?? '');
-    _debugPrintState();
 
     _nameController.addListener(() {
       _currentName = _nameController.text;
@@ -362,7 +361,7 @@ class _DishScreenState extends State<DishScreen> {
         isAvailable: isAvailable,
         minForewarningDays: minForwarningDays,
         isSpecial: isSpecial,
-        userId: isSpecial ? _currentUsername : '',
+        userUsername: isSpecial ? _currentUsername : '',
       );
     } else if (widget.dishId != null) {
       dishProvider.updateDish(
@@ -376,6 +375,7 @@ class _DishScreenState extends State<DishScreen> {
         imageFile: _imageFile,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
         minForewarningDays: minForwarningDays,
+        userUsername: isSpecial ? _currentUsername : '',
       );
     }
 
@@ -395,19 +395,6 @@ class _DishScreenState extends State<DishScreen> {
 
     dishProvider.deleteDish(restaurantId, widget.dishId!);
     Navigator.of(context).pop();
-  }
-
-  void _debugPrintState() {
-    debugPrint("Debug _DishDetailDialogState:");
-    debugPrint("  _dish: $_dish");
-    debugPrint("  _initialName: $_initialName");
-    debugPrint("  _initialDescription: $_initialDescription");
-    debugPrint("  _initialPrice: $_initialPrice");
-    debugPrint("  _initialImageUrl: $_initialImageUrl");
-    debugPrint("  _initialCourse: $_initialCourse");
-    debugPrint("  _initialCuisine: $_initialCuisine");
-    debugPrint("  _initialUsername: $_initialUsername");
-    debugPrint("  isSpecial: $isSpecial");
   }
 
   @override
@@ -824,9 +811,7 @@ class _DishScreenState extends State<DishScreen> {
                                           message: "The dish \"${_dish!.name}\" has been correctly added to your cart.",
                                           icon: Icon(Icons.check_circle, color: colorScheme.primary),
                                           buttonText: "OK",
-                                        ).then((_) {
-                                          Navigator.of(context).pop();
-                                        });
+                                        );
                                       }).catchError((error) {
                                         CustomAlertDialog.showInfoDialog(
                                           context: context,
@@ -1013,7 +998,6 @@ class _DishScreenState extends State<DishScreen> {
     );
   }
 
-  // Resto dei metodi build rimane uguale...
   Widget _buildName(ColorScheme colorScheme) {
     return Container(
       width: double.infinity,

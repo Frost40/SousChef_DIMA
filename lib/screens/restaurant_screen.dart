@@ -58,11 +58,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isOwner = false;
-        /*restaurantProvider.restaurant != null &&
+    final bool isOwner = restaurantProvider.restaurant != null &&
         authProvider.user?.id == restaurantProvider.restaurant!.ownerId;
-
-         */
 
     // Handle potential null restaurant during initial load
     final Restaurant? restaurant = restaurantProvider.restaurant;
@@ -85,7 +82,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             // This app bar will shrink and stick to the top
             SliverAppBar(
               backgroundColor: colorScheme.darkGrayBackground,
-              title: const Text('Restaurant'),
+              title: isOwner
+                  ? InkWell(
+                onTap: () => _showEditNameDialog(context, restaurant.name),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(restaurant.name),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.edit, size: 16),
+                  ],
+                ),
+              )
+                  : Text(restaurant.name),
               centerTitle: true,
               pinned: true, // Makes the AppBar stick at the top
               floating: false, // AppBar doesn't reappear on scrolling down slightly
@@ -235,6 +244,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   Widget _buildSliverMenuList(bool isFixedMenu, bool isEditable) {
     final colorScheme = Theme.of(context).colorScheme;
     final dishProvider = Provider.of<DishProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUsername = authProvider.user?.username;
 
     // Check if data is loading
     if (dishProvider.isLoading) {
@@ -256,10 +267,23 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       );
     }
 
-    // Filter dishes by menu type (fixed or on request)
-    final dishes = dishProvider.dishes.where((dish) =>
-      !dish.isSpecial == isFixedMenu // isFixedMenu = true for fixed menu, false for on request menu
-    ).toList();
+    // Filter dishes based on menu type and user permissions
+    final List<Dish> dishes;
+
+    if (isFixedMenu) {
+      // For fixed menu show all non special dishes
+      dishes = dishProvider.dishes.where((dish) => !dish.isSpecial).toList();
+    } else {
+      if (isEditable) {
+        // For menu on request show all special dishes if the user is the owner of the restaurant
+        dishes = dishProvider.dishes.where((dish) => dish.isSpecial).toList();
+      } else {
+        // In case the user is not the owner show all special dishes with his username
+        dishes = dishProvider.dishes.where((dish) =>
+        dish.isSpecial && dish.userUsername == currentUsername
+        ).toList();
+      }
+    }
 
     if (dishes.isEmpty) {
       return SliverFillRemaining(
@@ -400,6 +424,41 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           },
           childCount: sliverItems.length,
         ),
+      ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context, String currentName) {
+    final TextEditingController nameController = TextEditingController(text: currentName);
+    final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modify Name'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Restaurant Name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newName = nameController.text.trim();
+              if (newName.isNotEmpty) {
+                restaurantProvider.updateRestaurantName(widget.restaurantId, newName);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

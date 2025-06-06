@@ -20,7 +20,7 @@ class OrderFirestore {
   Future<List<Order>> getUserOrders(String userId) async {
     firestore.QuerySnapshot snapshot = await _ordersTable
         .where('user_id', isEqualTo: userId)
-        .orderBy('dateTime', descending: true)
+        .orderBy('date_time', descending: true)
         .get();
 
     return snapshot.docs

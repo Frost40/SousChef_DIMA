@@ -111,7 +111,7 @@ class RestaurantProvider with ChangeNotifier {
       return restaurants;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Errore nel recupero dei ristoranti preferiti: $e';
+      _errorMessage = 'Error while recovering favourite restaurants: $e';
       notifyListeners();
       return [];
     }

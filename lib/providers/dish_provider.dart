@@ -128,7 +128,7 @@ class DishProvider with ChangeNotifier {
     required Cuisine cuisine,
     required isSpecial,
     bool? isAvailable,
-    String? userId,
+    String? userUsername,
     int? minForewarningDays,
     File? imageFile,
     String? imageUrl,
@@ -139,7 +139,7 @@ class DishProvider with ChangeNotifier {
 
     try {
       // Field validation based on the dish type
-      if (isSpecial && (userId == null || userId.isEmpty)) {
+      if (isSpecial && (userUsername == null || userUsername.isEmpty)) {
         throw Exception('Il campo userId è obbligatorio per i piatti speciali');
       }
       if (!isSpecial && isAvailable == null) {
@@ -158,7 +158,7 @@ class DishProvider with ChangeNotifier {
         minForewarningDays: minForewarningDays ?? 0,
         imageUrl: imageUrl ?? '',
         isAvailable: isSpecial ? null : isAvailable,
-        userId: isSpecial ? userId : null,
+        userUsername: isSpecial ? userUsername : null,
       );
 
       // Create a new dish in the database
@@ -172,9 +172,6 @@ class DishProvider with ChangeNotifier {
       if (imageFile != null) {
         final newImageUrl = await _firebaseStorage.uploadDishImage(restaurantId, dishId, imageFile);
         // Update the dish with the new image URL
-        final updates = <String, dynamic>{
-          'image': newImageUrl,
-        };
         await _dishFirestore.updateDish(
           restaurantId: restaurantId,
           dishId: dishId,
@@ -206,7 +203,7 @@ class DishProvider with ChangeNotifier {
     Course? course,
     Cuisine? cuisine,
     bool? isAvailable,
-    String? userId,
+    String? userUsername,
     int? minForewarningDays,
     File? imageFile,
     String? imageUrl,
@@ -246,8 +243,8 @@ class DishProvider with ChangeNotifier {
       if (!isSpecial && isAvailable != null) {
         updates['is_available'] = isAvailable;
       }
-      if (isSpecial && userId != null) {
-        updates['userId'] = userId;
+      if (isSpecial && userUsername != null) {
+        updates['user_username'] = userUsername;
       }
 
       if (imageFile != null || imageUrl != null) {
@@ -268,7 +265,7 @@ class DishProvider with ChangeNotifier {
         course: course,
         cuisine: cuisine,
         isAvailable: isSpecial ? _dishes[index].isAvailable : isAvailable,
-        userId: isSpecial ? userId ?? _dishes[index].userId : null,
+        userUsername: isSpecial ? userUsername ?? _dishes[index].userUsername : null,
         minForewarningDays: minForewarningDays,
         imageUrl: newImageUrl,
       );

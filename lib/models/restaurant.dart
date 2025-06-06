@@ -30,9 +30,9 @@ class Restaurant {
 
     if (typesArray != null && typesArray.isNotEmpty) {
       for (String type in typesArray.cast<String>()) {
-        if (type == 'fixedMenu') {
+        if (type == 'fixed_menu') {
           restaurantTypes.add(RestaurantType.fixedMenu);
-        } else if (type == 'onRequest') {
+        } else if (type == 'on_request') {
           restaurantTypes.add(RestaurantType.onRequest);
         }
       }
@@ -42,31 +42,29 @@ class Restaurant {
       id: doc.id,
       name: data['name'] ?? '',
       address: data['address'] ?? '',
-      isOpen: data['isOpen'] ?? false,
+      isOpen: data['is_open'] ?? false,
       restaurantTypes: restaurantTypes,
-      ownerId: data['ownerId'] ?? '',
+      ownerId: data['owner_id'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
-      imageUrl: data['imageUrl'] ?? '',
+      imageUrl: data['image_url'] ?? '',
     );
   }
 
   Map<String, dynamic> toFirestore() {
     // Convert restaurant_type from enum to string for Firestore
     List<String> restaurantTypesStrings = restaurantTypes.map((type) {
-      return type == RestaurantType.fixedMenu ? 'fixedMenu' : 'onRequest';
+      return type == RestaurantType.fixedMenu ? 'fixed_menu' : 'on_request';
     }).toList();
 
     return {
       'name': name,
       'address': address,
-      'isOpen': isOpen,
+      'is_open': isOpen,
       'restaurant_types': restaurantTypesStrings,
-      'ownerId': ownerId,
+      'owner_id': ownerId,
       'location': location,
     };
   }
-
-  // Creates a new Restaurant instance with updated dishes
 
   /// Helping methods for restaurant types
   // Verify if the restaurant has a specific type
@@ -88,14 +86,14 @@ class Restaurant {
     }
 
     return Restaurant(
-      id: this.id,
-      name: this.name,
-      address: this.address,
-      isOpen: this.isOpen,
+      id: id,
+      name: name,
+      address: address,
+      isOpen: isOpen,
       restaurantTypes: newTypes,
-      ownerId: this.ownerId,
-      location: this.location,
-      imageUrl: this.imageUrl,
+      ownerId: ownerId,
+      location: location,
+      imageUrl: imageUrl,
     );
   }
 

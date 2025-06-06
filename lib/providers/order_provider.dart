@@ -90,7 +90,11 @@ class OrderProvider extends ChangeNotifier {
         throw Exception('Restaurant not found');
       }
 
-      int? orderIndex = await hasPendingOrderDateTime(
+      Map<String, int> orderDishesCount = {};
+       for (final order in _userOrders) {
+          orderDishesCount[order.id] = order.dishes.length;
+      }
+      debugPrint('Dettagli ordini: ${_userOrders.length} ordini, conteggio piatti per ordine: $orderDishesCount');      int? orderIndex = await hasPendingOrderDateTime(
           currentRestaurant.id, pickupDateTime);
 
       if (orderIndex != null) {
@@ -130,12 +134,19 @@ class OrderProvider extends ChangeNotifier {
           );
         } else {
           // If the dish is not in the order, add it
-          existingOrder.dishes.add(OrderItem(
+          OrderItem newDish = OrderItem(
             dishId: dishId,
             name: dishName,
             quantity: 1, // Initial quantity
             price: dishPrice,
-          ));
+          );
+
+          await _orderFirestore.addDishToOrder(
+            orderId: existingOrder.id,
+            orderItem: newDish
+          );
+
+          existingOrder.dishes.add(newDish);
 
           // Update the total price of the order
           existingOrder.copyWith(total: existingOrder.total + dishPrice);
