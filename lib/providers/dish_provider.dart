@@ -140,10 +140,16 @@ class DishProvider with ChangeNotifier {
     try {
       // Field validation based on the dish type
       if (isSpecial && (userUsername == null || userUsername.isEmpty)) {
-        throw Exception('Il campo userId è obbligatorio per i piatti speciali');
+        _isLoading = false;
+        _errorMessage = 'THe username field is required for special dishes';
+        notifyListeners();
+        return;
       }
       if (!isSpecial && isAvailable == null) {
-        throw Exception('Il campo isAvailable è obbligatorio per i piatti normali');
+        _isLoading = false;
+        _errorMessage = 'The isAvailable field is required for regular dishes';
+        notifyListeners();
+        return;
       }
 
       // Create the Dish object with provided data
@@ -216,7 +222,10 @@ class DishProvider with ChangeNotifier {
       // Find the index of the dish in the local list
       final index = _dishes.indexWhere((dish) => dish.id == dishId);
       if (index == -1) {
-        throw Exception('Dish not found in local state');
+        _isLoading = false;
+        _errorMessage = 'Dish not found in local state';
+        notifyListeners();
+        return;
       }
 
       final isSpecial = _dishes[index].isSpecial;

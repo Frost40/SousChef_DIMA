@@ -87,7 +87,10 @@ class OrderProvider extends ChangeNotifier {
       Restaurant? currentRestaurant = _restaurantProvider?.restaurant;
 
       if (currentRestaurant == null) {
-        throw Exception('Restaurant not found');
+        _isLoading = false;
+        _errorMessage = 'Restaurant not found';
+        notifyListeners();
+        return;
       }
 
       Map<String, int> orderDishesCount = {};
@@ -159,7 +162,7 @@ class OrderProvider extends ChangeNotifier {
           userId: userId,
           restaurantName: currentRestaurant.name,
           restaurantId: currentRestaurant.id,
-          dateTime: pickupDateTime,
+          pickupDateTime: pickupDateTime,
           status: 'pending',
           total: dishPrice,
           // Initial total with one dish
@@ -177,7 +180,10 @@ class OrderProvider extends ChangeNotifier {
 
         final newOrderId = await _orderFirestore.createNewOrder(order: newOrder);
         if (newOrderId.isEmpty) {
-          throw Exception('Failed to create new order');
+          _isLoading = false;
+          _errorMessage = 'Failed to create new order';
+          notifyListeners();
+          return;
         }
         _userOrders.add(newOrder.copyWith(id: newOrderId));
       }
@@ -201,6 +207,31 @@ class OrderProvider extends ChangeNotifier {
 
       await _orderFirestore.updateOrderStatus(orderId, status);
 
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      debugPrint(_errorMessage);
+    }
+  }
+
+  /// Update the restaurant name in all pending orders
+  Future<void> updateRestaurantNameInOrders(String restaurantId, String newName) async {
+    try {
+      _isLoading = true;
+      clearErrors();
+      notifyListeners();
+
+      await _orderFirestore.updateRestaurantNameInOrders(restaurantId, newName);
+
+      // Also update the local list of orders if present
+      for (int i = 0; i < _userOrders.length; i++) {
+        if (_userOrders[i].restaurantId == restaurantId && _userOrders[i].status != 'completed') {
+          _userOrders[i] = _userOrders[i].copyWith(restaurantName: newName);
+        }
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -220,7 +251,7 @@ class OrderProvider extends ChangeNotifier {
         Order order = _userOrders[i];
         if (order.restaurantId == restaurantId &&
             order.status == 'pending' &&
-            _isSameDateTime(order.dateTime, pickupDateTime)) {
+            _isSameDateTime(order.pickupDateTime, pickupDateTime)) {
           return i; // Returns the index of the order in the local list
         }
       }
@@ -230,11 +261,14 @@ class OrderProvider extends ChangeNotifier {
 
   // Helper method to compare dates ignoring seconds and milliseconds
   bool _isSameDateTime(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day &&
-        date1.hour == date2.hour &&
-        date1.minute == date2.minute;
+    final date1Utc = date1.toUtc();
+    final date2Utc = date2.toUtc();
+
+    return date1Utc.year == date2Utc.year &&
+        date1Utc.month == date2Utc.month &&
+        date1Utc.day == date2Utc.day &&
+        date1Utc.hour == date2Utc.hour &&
+        date1Utc.minute == date2Utc.minute;
   }
 
   /// Converts technical errors into user-friendly messages

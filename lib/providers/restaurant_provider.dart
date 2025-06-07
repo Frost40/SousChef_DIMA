@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 import '../services/firebase_storage.dart';
 import '../models/restaurant.dart';
 import '../services/database/restaurant_firestore.dart';
+import 'order_provider.dart';
 
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
@@ -159,7 +162,7 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's name
-  Future<void> updateRestaurantName(String restaurantId, String name) async {
+  Future<void> updateRestaurantName(String restaurantId, String name, {required BuildContext context}) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -180,6 +183,10 @@ class RestaurantProvider with ChangeNotifier {
           imageUrl: _restaurant!.imageUrl,
         );
       }
+
+      // Propagate the name modification to non completed orders via OrderProvider
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      await orderProvider.updateRestaurantNameInOrders(restaurantId, name);
 
       _isLoading = false;
       notifyListeners();

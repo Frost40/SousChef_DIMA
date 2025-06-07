@@ -452,7 +452,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             onPressed: () {
               final newName = nameController.text.trim();
               if (newName.isNotEmpty) {
-                restaurantProvider.updateRestaurantName(widget.restaurantId, newName);
+                restaurantProvider.updateRestaurantName(widget.restaurantId, newName, context: context);
                 Navigator.of(context).pop();
               }
             },

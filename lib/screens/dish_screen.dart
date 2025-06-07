@@ -9,7 +9,7 @@ import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
 import 'package:sous_chef/widgets/circular_button.dart';
 import 'package:sous_chef/widgets/custom_dropdown_menu.dart';
-import 'package:sous_chef/widgets/restaurant_screen/calendar_widget.dart';
+import 'package:sous_chef/widgets/dish_screen/calendar_widget.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 import 'package:sous_chef/widgets/image_upload_button.dart';

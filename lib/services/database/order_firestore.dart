@@ -20,7 +20,7 @@ class OrderFirestore {
   Future<List<Order>> getUserOrders(String userId) async {
     firestore.QuerySnapshot snapshot = await _ordersTable
         .where('user_id', isEqualTo: userId)
-        .orderBy('date_time', descending: true)
+        .orderBy('pickup_date_time', descending: true)
         .get();
 
     return snapshot.docs
@@ -126,5 +126,23 @@ class OrderFirestore {
   // Update order status
   Future<void> updateOrderStatus(String orderId, String status) async {
     await _ordersTable.doc(orderId).update({'status': status});
+  }
+
+  /// Update the restaurant name in all non-completed orders
+  Future<void> updateRestaurantNameInOrders(String restaurantId, String newName) async {
+    // Find all non-completed orders for this restaurant
+    firestore.QuerySnapshot ordersSnapshot = await _ordersTable
+        .where('restaurant_id', isEqualTo: restaurantId)
+        .where('status', isNotEqualTo: 'completed')
+        .get();
+
+    // Batch write to update all documents in a single operation
+    final batch = _firestore.batch();
+    for (var doc in ordersSnapshot.docs) {
+      batch.update(doc.reference, {'restaurant_name': newName});
+    }
+
+    // Execute the batch operation
+    await batch.commit();
   }
 }

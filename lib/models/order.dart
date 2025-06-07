@@ -37,7 +37,7 @@ class Order {
   final String userId;
   final String restaurantName;
   final String restaurantId;
-  final DateTime dateTime;
+  final DateTime pickupDateTime;
   final int? verificationCode;
   final String status;
   final double total;
@@ -50,7 +50,7 @@ class Order {
     required this.userId,
     required this.restaurantName,
     required this.restaurantId,
-    required this.dateTime,
+    required this.pickupDateTime,
     this.verificationCode,
     required this.status,
     required this.total,
@@ -74,7 +74,7 @@ class Order {
       userId: data['user_id'] ?? '',
       restaurantName: data['restaurant_name'] ?? '',
       restaurantId: data['restaurant_id'] ?? '',
-      dateTime: (data['date_time'] as Timestamp).toDate(),
+      pickupDateTime: (data['pickup_date_time'] as Timestamp).toDate(),
       verificationCode: data['verification_code'],
       status: data['status'] ?? '',
       total: (data['total'] ?? 0.0).toDouble(),
@@ -89,7 +89,7 @@ class Order {
       'user_id': userId,
       'restaurant_name': restaurantName,
       'restaurant_id': restaurantId,
-      'date_time': Timestamp.fromDate(dateTime),
+      'pickup_date_time': Timestamp.fromDate(pickupDateTime),
       'verification_code': verificationCode,
       'status': status,
       'total': total,
@@ -104,7 +104,7 @@ class Order {
     String? userId,
     String? restaurantName,
     String? restaurantId,
-    DateTime? dateTime,
+    DateTime? pickupDateTime,
     int? verificationCode,
     String? status,
     double? total,
@@ -132,7 +132,7 @@ class Order {
       userId: userId ?? this.userId,
       restaurantName: restaurantName ?? this.restaurantName,
       restaurantId: restaurantId ?? this.restaurantId,
-      dateTime: dateTime ?? this.dateTime,
+      pickupDateTime: pickupDateTime ?? this.pickupDateTime,
       verificationCode: verificationCode ?? this.verificationCode,
       status: status ?? this.status,
       total: total ?? this.total,
