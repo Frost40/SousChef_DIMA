@@ -167,7 +167,7 @@ class UserFirestore {
     try {
       // 1. Check if user owns a restaurant
       final restaurantQuery = await db.collection('restaurants')
-          .where('ownerId', isEqualTo: userId)
+          .where('owner_id', isEqualTo: userId)
           .get();
 
       // 2. For each restaurant (should be at most 1 per user)
@@ -190,7 +190,7 @@ class UserFirestore {
 
       // 3. Delete special dishes created by the user in other restaurants
       final specialDishesQuery = await db.collectionGroup('dishes')
-          .where('userId', isEqualTo: userId)
+          .where('user_id', isEqualTo: userId)
           .where('is_special', isEqualTo: true)
           .get();
 

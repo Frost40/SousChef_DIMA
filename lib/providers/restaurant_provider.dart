@@ -162,7 +162,7 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's name
-  Future<void> updateRestaurantName(String restaurantId, String name, {required BuildContext context}) async {
+  Future<void> updateRestaurantName(String restaurantId, String name, {required OrderProvider orderProvider}) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -185,7 +185,6 @@ class RestaurantProvider with ChangeNotifier {
       }
 
       // Propagate the name modification to non completed orders via OrderProvider
-      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
       await orderProvider.updateRestaurantNameInOrders(restaurantId, name);
 
       _isLoading = false;

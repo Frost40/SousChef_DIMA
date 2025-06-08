@@ -97,8 +97,7 @@ class OrderProvider extends ChangeNotifier {
        for (final order in _userOrders) {
           orderDishesCount[order.id] = order.dishes.length;
       }
-      debugPrint('Dettagli ordini: ${_userOrders.length} ordini, conteggio piatti per ordine: $orderDishesCount');      int? orderIndex = await hasPendingOrderDateTime(
-          currentRestaurant.id, pickupDateTime);
+      int? orderIndex = await hasPendingOrderDateTime(currentRestaurant.id, pickupDateTime);
 
       if (orderIndex != null) {
         // If an order already exists for the restaurant and date, add the dish to that order
@@ -239,7 +238,6 @@ class OrderProvider extends ChangeNotifier {
       _isLoading = false;
       _errorMessage = _getErrorMessage(e);
       notifyListeners();
-      debugPrint(_errorMessage);
     }
   }
 
@@ -273,35 +271,35 @@ class OrderProvider extends ChangeNotifier {
 
   /// Converts technical errors into user-friendly messages
   String _getErrorMessage(dynamic error) {
-    String errorString = error.toString().toLowerCase();
+    String errorMessage = error.toString().toLowerCase();
 
-    if (errorString.contains('permission-denied') ||
-        errorString.contains('permission')) {
+    if (errorMessage.contains('permission-denied') ||
+        errorMessage.contains('permission')) {
       return 'You do not have permission to complete this operation.';
-    } else if (errorString.contains('not-found') || errorString.contains('no such')) {
+    } else if (errorMessage.contains('not-found') || errorMessage.contains('no such')) {
       return 'The requested order was not found.';
-    } else if (errorString.contains('network') || errorString.contains('connection')) {
+    } else if (errorMessage.contains('network') || errorMessage.contains('connection')) {
       return 'Connection error. Please check your internet connection.';
-    } else if (errorString.contains('timeout')) {
+    } else if (errorMessage.contains('timeout')) {
       return 'Operation timed out. Please try again later.';
-    } else if (errorString.contains('invalid') || errorString.contains('validation')) {
+    } else if (errorMessage.contains('invalid') || errorMessage.contains('validation')) {
       return 'The order data is not valid.';
-    } else if (errorString.contains('unauthenticated') ||
-        errorString.contains('unauthorized')) {
+    } else if (errorMessage.contains('unauthenticated') ||
+        errorMessage.contains('unauthorized')) {
       return 'Session expired. Please log in again.';
-    } else if (errorString.contains('unavailable') ||
-        errorString.contains('not-available')) {
+    } else if (errorMessage.contains('unavailable') ||
+        errorMessage.contains('not-available')) {
       return 'The service is currently unavailable. Please try again later.';
-    } else if (errorString.contains('already-exists')) {
+    } else if (errorMessage.contains('already-exists')) {
       return 'This order already exists in the system.';
-    } else if (errorString.contains('out-of-stock')) {
+    } else if (errorMessage.contains('out-of-stock')) {
       return 'One or more products are not available.';
-    } else if (errorString.contains('cancelled')) {
+    } else if (errorMessage.contains('cancelled')) {
       return 'The operation was cancelled.';
-    } else if (errorString.contains('date') || errorString.contains('time')) {
+    } else if (errorMessage.contains('date') || errorMessage.contains('time')) {
       return 'The selected date or time is not valid.';
-    } else if (errorString.contains('payment') ||
-        errorString.contains('transaction')) {
+    } else if (errorMessage.contains('payment') ||
+        errorMessage.contains('transaction')) {
       return 'There was an error during payment.';
     }
 

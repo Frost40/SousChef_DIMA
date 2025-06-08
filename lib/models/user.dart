@@ -30,7 +30,7 @@ class User {
       name: data['name'] ?? '',
       surname: data['surname'] ?? '',
       phone: data['phone'] ?? '',
-      restaurantId: (data['restaurantId']!= null)? data['restaurantId'] : '',
+      restaurantId: (data['restaurant_id']!= null)? data['restaurant_id'] : '',
       favourites: (data['favourites'] != null)
         ? List<String>.from(data['favourites']) // Assicurati che sia una List<String>
         : <String>[],
@@ -44,7 +44,7 @@ class User {
       'name': name,
       'surname': surname,
       'phone': phone,
-      if (restaurantId != null) 'restaurantId': restaurantId,
+      if (restaurantId != null) 'restaurant_id': restaurantId,
       if (favourites != null) 'favourites': favourites,
     };
   }

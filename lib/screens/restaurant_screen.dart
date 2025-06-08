@@ -8,10 +8,12 @@ import 'package:sous_chef/widgets/navigation_tabbar.dart';
 import 'package:sous_chef/screens/dish_screen.dart';
 import '../models/dish.dart';
 import '../providers/dish_provider.dart';
+import '../providers/order_provider.dart';
 import '../providers/restaurant_provider.dart';
 import '../providers/auth_provider.dart';
 import '../transition_type.dart';
 import '../widgets/animated_button.dart';
+import '../widgets/custom_alert_dialog.dart';
 import '../widgets/circular_button.dart';
 import '../widgets/restaurant_screen/menu_item.dart';
 import '../widgets/restaurant_screen/restaurant_info.dart';
@@ -431,10 +433,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   void _showEditNameDialog(BuildContext context, String currentName) {
     final TextEditingController nameController = TextEditingController(text: currentName);
     final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Modify Name'),
         content: TextField(
           controller: nameController,
@@ -445,15 +448,37 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final newName = nameController.text.trim();
               if (newName.isNotEmpty) {
-                restaurantProvider.updateRestaurantName(widget.restaurantId, newName, context: context);
-                Navigator.of(context).pop();
+                await restaurantProvider.updateRestaurantName(
+                  widget.restaurantId,
+                  newName,
+                  orderProvider: orderProvider
+                );
+
+                Navigator.of(dialogContext).pop();
+
+                // Check for errors after update
+                if (restaurantProvider.errorMessage != null) {
+                  CustomAlertDialog.showInfoDialog(
+                    context: context,
+                    title: 'Error',
+                    message: restaurantProvider.errorMessage!,
+                    icon: Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+                  );
+                } else if (orderProvider.errorMessage != null) {
+                  CustomAlertDialog.showInfoDialog(
+                    context: context,
+                    title: 'Error updating the orders',
+                    message: orderProvider.errorMessage!,
+                    icon: Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+                  );
+                }
               }
             },
             child: const Text('Save'),
