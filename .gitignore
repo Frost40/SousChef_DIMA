@@ -33,7 +33,6 @@ migrate_working_dir/
 .pub/
 /build/
 
-# --- ADD THESE LINES FOR DESKTOP PLATFORMS ---
 # Generated desktop plugin registration files
 /linux/flutter/generated_plugin_registrant.cc
 /linux/flutter/generated_plugin_registrant.h
@@ -42,6 +41,11 @@ migrate_working_dir/
 /windows/flutter/generated_plugin_registrant.h
 /windows/flutter/generated_plugins.cmake
 /macos/Flutter/GeneratedPluginRegistrant.swift
+
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
 # ----------------------------------------------
 
 # Symbolication related
