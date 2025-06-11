@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 
+import '../transition_type.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -15,15 +17,13 @@ class HomeScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sign Out',
-            onPressed: () async {
-              await authProvider.signOut();
-              // Naviga alla schermata di login dopo il logout
-              if (context.mounted) {
-                Navigator.of(context, rootNavigator: true)
-                    .pushReplacementNamed('/login');
-              }
+            icon: const Icon(Icons.shopping_cart),
+            tooltip: 'Carrello',
+            onPressed: () {
+              Navigator.of(context).pushNamed(
+                '/cart',
+                arguments: {'transitionType': TransitionType.slideRight},
+              );
             },
           ),
         ],

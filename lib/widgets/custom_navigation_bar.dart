@@ -70,10 +70,11 @@ class _CustomNavBarState extends State<CustomNavBar> {
       ],
       currentIndex: _selectedIndex,
       onTap: (index) {
+        widget.onTap(index);
+
         setState(() {
           _selectedIndex = index;
         });
-        widget.onTap(index);
       },
       backgroundColor: Theme.of(context).colorScheme.surface,
     );

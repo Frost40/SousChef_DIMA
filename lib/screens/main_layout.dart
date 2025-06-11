@@ -8,6 +8,7 @@ import '../providers/user_provider.dart';
 import '../widgets/custom_navigation_bar.dart';
 import 'account_screen.dart';
 import 'account_settings_screen.dart';
+import 'cart_screen.dart';
 import 'favorites_screen.dart';
 import 'orders_screen.dart';
 import '../transition_type.dart';
@@ -74,6 +75,9 @@ class _MainLayoutState extends State<MainLayout> {
             case '/account':
               page = const AccountScreen();
               transitionType = TransitionType.spotify;
+              break;
+            case '/cart':
+              page = const CartScreen();  // Dovrai creare questa schermata
               break;
             // Pagine interne mantengono slideRight di default
             case '/account-settings':
