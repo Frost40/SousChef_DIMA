@@ -145,4 +145,11 @@ class OrderFirestore {
     // Execute the batch operation
     await batch.commit();
   }
+
+  /// Delete an order from the database
+  /// @param orderId - order to delete
+  /// @returns Future<void>
+  Future<void> deleteOrder(String orderId) async {
+    await _ordersTable.doc(orderId).delete();
+  }
 }
