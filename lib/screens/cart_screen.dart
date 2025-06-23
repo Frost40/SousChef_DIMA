@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sous_chef/widgets/order_screen/order_card.dart';
+import 'package:sous_chef/widgets/order_card.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_provider.dart';
 import '../widgets/animated_button.dart';
@@ -66,7 +66,9 @@ class _CartScreenState extends State<CartScreen> {
                 : SingleChildScrollView(
                     child: Column(
                       children: [
-                        ...orderProvider.userOrders.map((order) {
+                        ...orderProvider.userOrders
+                            .where((order) => order.status == 'pending')
+                            .map((order) {
                           return OrderCard(
                             restaurantName: order.restaurantName,
                             dishes: order.dishes,

@@ -16,10 +16,24 @@ class OrderFirestore {
     return null;
   }
 
-  // Get all orders for a user
+  /// Get all orders for a user
   Future<List<Order>> getUserOrders(String userId) async {
     firestore.QuerySnapshot snapshot = await _ordersTable
         .where('user_id', isEqualTo: userId)
+        .where('status', isNotEqualTo: "completed")
+        .orderBy('pickup_date_time', descending: true)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Order.fromFirestore(doc))
+        .toList();
+  }
+
+  /// Fetch old orders (all the completed) for a user
+  Future<List<Order>> getUserCompletedOrders(String userId) async {
+    firestore.QuerySnapshot snapshot = await _ordersTable
+        .where('user_id', isEqualTo: userId)
+        .where('status', isEqualTo: "completed")
         .orderBy('pickup_date_time', descending: true)
         .get();
 

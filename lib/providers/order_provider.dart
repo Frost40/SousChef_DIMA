@@ -58,6 +58,29 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<Order>> fetchUserCompletedOrders(String userId) async {
+    List<Order> completedOrders = [];
+
+    try {
+      _isLoading = true;
+      clearErrors();
+      notifyListeners();
+
+      // Fetch only completed orders
+      completedOrders = await _orderFirestore.getUserCompletedOrders(userId);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      debugPrint(_errorMessage);
+    }
+
+    return completedOrders;
+  }
+
   // Recovers an order from the local list by its ID
   Order? getOrderById(String orderId) {
     try {
