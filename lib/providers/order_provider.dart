@@ -242,17 +242,17 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Deletes an order by its ID
-  /// @param orderId - ID dell'ordine da eliminare
+  /// @param orderId - ID of the order to delete
   Future<void> deleteOrder(String orderId) async {
     try {
       _isLoading = true;
       clearErrors();
       notifyListeners();
 
-      // Elimina l'ordine dal database
+      // Delete the order from Firestore
       await _orderFirestore.deleteOrder(orderId);
 
-      // Rimuovi l'ordine dalla lista locale
+      // Delete the order from the local list
       _userOrders.removeWhere((order) => order.id == orderId);
 
       _isLoading = false;
