@@ -60,7 +60,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isOwner = false;
+    final bool isOwner = restaurantProvider.restaurant != null &&
+        authProvider.user?.id == restaurantProvider.restaurant!.ownerId;
 
     // Handle potential null restaurant during initial load
     final Restaurant? restaurant = restaurantProvider.restaurant;
