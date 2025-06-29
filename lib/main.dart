@@ -11,13 +11,20 @@ import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/services/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app_router.dart';
 import 'firebase_options.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+  await Stripe.instance.applySettings();
+
   runApp(const MyApp());
 }
 
