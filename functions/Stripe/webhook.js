@@ -39,6 +39,7 @@ async function handleStripeWebhook(req, res, stripeWebhookSecret, db, FieldValue
             case 'payment_intent.succeeded': {
                 const paymentIntent = event.data.object;
                 const orderIdsString = paymentIntent.metadata?.orders_id;
+
                 if (!orderIdsString) {
                     console.warn(`Webhook: payment_intent.succeeded event ${event.id} missing orders_id in metadata.`);
                     return res.json({ received: true });
@@ -70,98 +71,33 @@ async function handleStripeWebhook(req, res, stripeWebhookSecret, db, FieldValue
 
             case 'payment_intent.payment_failed': {
                 const paymentIntent = event.data.object;
-                const orderId = paymentIntent.metadata?.order_id;
+                const orderIdsString = paymentIntent.metadata?.orders_id;
 
-                if (!orderId) {
-                    console.warn(`Webhook: payment_intent.payment_failed event ${event.id} missing order_id in metadata. Skipping.`);
+                if (!orderIdsString) {
+                    console.warn(`Webhook: payment_intent.payment_failed event ${event.id} missing orders_id in metadata. Skipping.`);
                     return res.json({ received: true });
                 }
 
-                const orderRef = db.collection('orders').doc(orderId);
-                const orderDoc = await orderRef.get();
+                const orderIds = orderIdsString.split(',');
+                const batch = db.batch();
 
-                if (!orderDoc.exists) {
-                    console.warn(`Webhook: payment_intent.payment_failed event ${event.id} for non-existent order ${orderId}. Skipping.`);
-                    return res.json({ received: true });
+                for (const orderId of orderIds) {
+                    const orderRef = db.collection('orders').doc(orderId);
+                    // You could add an idempotency check here if needed,
+                    // e.g., check if the status is already 'ready_for_checkout'.
+                    batch.update(orderRef, {
+                        status: 'ready_for_checkout', // Revert status to allow another payment attempt
+                    });
                 }
 
-                const currentStatus = orderDoc.data()?.status;
-                if (currentStatus === 'failed') {
-                    console.log(`Webhook: Order ${orderId} already marked as 'failed'. Skipping duplicate processing for event ${event.id}.`);
-                    return res.json({ received: true });
-                }
-
-                await orderRef.update({
-                    status: 'failed',
-                    payment_id: paymentIntent.id,
-                    failure_code: paymentIntent.last_payment_error?.code || 'unknown',
-                    failure_message: paymentIntent.last_payment_error?.message || 'unknown',
-                    lastAttemptDate: FieldValue.serverTimestamp(),
-                });
-                console.log(`Webhook: Order ${orderId} status updated to 'failed' for event ${event.id}.`);
+                await batch.commit();
+                console.log(`Webhook: Status updated to 'ready_for_checkout' for orders: ${orderIds.join(', ')} for failed PI ${paymentIntent.id}`);
                 break;
             }
-
-            case 'charge.refunded': {
-                const charge = event.data.object;
-                const paymentIntentId = charge.payment_intent; // Charge is linked to Payment Intent
-                let orderId = charge.metadata?.order_id; // Check if orderId is in charge metadata
-
-                // If orderId not directly in charge metadata, try to find it via paymentIntent
-                if (!orderId && paymentIntentId) {
-                    const paymentIntentDoc = await db.collection('orders').where('payment_id', '==', paymentIntentId).limit(1).get();
-                    if (!paymentIntentDoc.empty) {
-                        orderId = paymentIntentDoc.docs[0].id;
-                    }
-                }
-
-                if (!orderId) {
-                    console.warn(`Webhook: charge.refunded event ${event.id} could not find associated order_id. Skipping.`);
-                    return res.json({ received: true });
-                }
-
-                const orderRef = db.collection('orders').doc(orderId);
-                const orderDoc = await orderRef.get();
-
-                if (!orderDoc.exists) {
-                    console.warn(`Webhook: charge.refunded event ${event.id} for non-existent order ${orderId}. Skipping.`);
-                    return res.json({ received: true });
-                }
-
-                const currentStatus = orderDoc.data()?.status;
-                if (currentStatus === 'refunded') {
-                    console.log(`Webhook: Order ${orderId} already marked as 'refunded'. Skipping duplicate processing for event ${event.id}.`);
-                    return res.json({ received: true });
-                }
-
-                // Determine if it's a full or partial refund
-                const originalAmount = orderDoc.data().amountPaid; // Assuming you store this when payment succeeded
-                const refundedAmount = charge.amount_refunded;
-
-                let newStatus = 'partially_refunded';
-                if (originalAmount && refundedAmount >= originalAmount) {
-                    newStatus = 'refunded';
-                }
-
-                await orderRef.update({
-                    status: newStatus,
-                    refund_id: charge.id, // Store charge ID related to the refund
-                    refund_date: FieldValue.serverTimestamp(),
-                    // Consider adding total_refunded_amount field to track cumulative refunds if doing partials
-                });
-                console.log(`Webhook: Order ${orderId} status updated to '${newStatus}' for event ${event.id}.`);
-                break;
-            }
-
-            // Add other Stripe event types you need to handle here (e.g., customer.subscription.created, etc.)
-
-            default:
-                // Log any unhandled event types for awareness
-                console.log(`Webhook: Unhandled event type: ${event.type}. Event ID: ${event.id}`);
         }
 
         // Crucially, send a 200 OK response to Stripe to acknowledge receipt.
-        // This tells Stripe the event was delivered successfully and it doesn't need to retry.
+        // This tells Stripe the event was delivered successfully, and it doesn't need to retry.
         res.json({ received: true });
 
     } catch (error) {

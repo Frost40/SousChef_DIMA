@@ -185,7 +185,7 @@ class OrderProvider extends ChangeNotifier {
           restaurantName: currentRestaurant.name,
           restaurantId: currentRestaurant.id,
           pickupDateTime: pickupDateTime,
-          status: 'pending',
+          status: 'ready_for_checkout',
           total: dishPrice,
           // Initial total with one dish
           restaurantAddress: currentRestaurant.address,

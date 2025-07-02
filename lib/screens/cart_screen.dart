@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/order_card.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_provider.dart';
+import '../providers/stripe_provider.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/circular_button.dart';
+import '../widgets/custom_alert_dialog.dart';
 import '../widgets/personalized_button.dart';
 
 class CartScreen extends StatefulWidget {
@@ -53,7 +55,7 @@ class _CartScreenState extends State<CartScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: orderProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : orderProvider.userOrders.isEmpty
+            : orderProvider.userOrders.where((order) => order.status == 'ready_for_checkout').isEmpty
                 ? Center(
                     child: Text(
                       'No orders received!',
@@ -67,7 +69,7 @@ class _CartScreenState extends State<CartScreen> {
                     child: Column(
                       children: [
                         ...orderProvider.userOrders
-                            .where((order) => order.status == 'pending')
+                            .where((order) => order.status == 'ready_for_checkout')
                             .map((order) {
                           return OrderCard(
                             restaurantName: order.restaurantName,
@@ -81,8 +83,21 @@ class _CartScreenState extends State<CartScreen> {
                               backgroundColor:
                                   colorScheme.errorContainer.withOpacity(0.3),
                               onPressed: () {
-                                // Deleting the order
-                                orderProvider.deleteOrder(order.id);
+                                // Confirm order deletion using CustomAlertDialog
+                                CustomAlertDialog.showConfirmationDialog(
+                                  context: context,
+                                  title: 'Remove Order',
+                                  message: 'Are you sure you want to remove this order?',
+                                  confirmText: 'Remove',
+                                  cancelText: 'Cancel',
+                                  confirmColor: colorScheme.error,
+                                  icon: Icon(Icons.delete_outline, color: colorScheme.error),
+                                ).then((confirmed) {
+                                  if (confirmed) {
+                                    // Deleting the order
+                                    orderProvider.deleteOrder(order.id);
+                                  }
+                                });
                               },
                             ),
                           );
@@ -90,7 +105,78 @@ class _CartScreenState extends State<CartScreen> {
                         const SizedBox(height: 20),
                         AnimatedButton(
                           onTap: () async {
-                            // TODO: Implement checkout functionality
+                            final stripeProvider = Provider.of<StripeProvider>(context, listen: false);
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+                            final ordersToCheckout = orderProvider.userOrders
+                                .where((order) => order.status == 'ready_for_checkout')
+                                .toList();
+
+                            if (ordersToCheckout.isEmpty) {
+                              CustomAlertDialog.showInfoDialog(
+                                context: context,
+                                title: 'No Orders',
+                                message: 'There are no orders to process',
+                                icon: Icon(Icons.info_outline, color: colorScheme.primary),
+                              );
+                              return;
+                            }
+
+                            // Calculate checkout amount
+                            final totalAmount = ordersToCheckout.fold<double>(
+                                0, (sum, order) => sum + order.total);
+
+                            // Prepare items to send to Stripe
+                            final List<Map<String, dynamic>> items = ordersToCheckout.map((order) {
+                              return {
+                                'id': order.id,
+                                'restaurantId': order.restaurantId,
+                                'restaurantName': order.restaurantName,
+                                'amount': order.total,
+                              };
+                            }).toList();
+
+                            // Show confirmation dialog before processing payment
+                            final confirmCheckout = await CustomAlertDialog.showConfirmationDialog(
+                              context: context,
+                              title: 'Confirm Checkout',
+                              message: 'Proceed with payment of \$${totalAmount.toStringAsFixed(2)}?',
+                              confirmText: 'Proceed',
+                              icon: Icon(Icons.shopping_cart_checkout, color: colorScheme.primary),
+                            );
+
+                            if (!confirmCheckout) return;
+
+                            // Payment processing
+                            final success = await stripeProvider.processPayment(
+                              context: context,
+                              amount: totalAmount,
+                              items: items,
+                            );
+
+                            if (success) {
+                              // For each order, update the status to 'pending'
+                              for (final order in ordersToCheckout) {
+                                await orderProvider.updateOrderStatus(order.id, 'pending');
+                              }
+
+                              await CustomAlertDialog.showInfoDialog(
+                                context: context,
+                                title: 'Success',
+                                message: 'Payment completed successfully!',
+                                icon: Icon(Icons.check_circle_outline, color: colorScheme.primary),
+                              );
+
+                              // Fetch updated orders
+                              orderProvider.fetchUserOrders(authProvider.user!.id, forceRefresh: true);
+                            } else if (stripeProvider.errorMessage != null) {
+                              await CustomAlertDialog.showInfoDialog(
+                                context: context,
+                                title: 'Payment Failed',
+                                message: stripeProvider.errorMessage!,
+                                icon: Icon(Icons.error_outline, color: colorScheme.error),
+                              );
+                            }
                           },
                           child: PersonalizedButton(
                               text: "Checkout", onPressed: null),

@@ -10,7 +10,6 @@ class StripeProvider with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  Map<String, dynamic>? _lastPaymentResult;
 
   // Inizializza Stripe
   static Future<void> initialize() async {
@@ -63,12 +62,6 @@ class StripeProvider with ChangeNotifier {
       // 4. Presenta il foglio di pagamento
       await Stripe.instance.presentPaymentSheet();
 
-      // 5. Salva il risultato per riferimento futuro
-      _lastPaymentResult = {
-        'success': true,
-        'orderIds': orderIds,
-      };
-
       _isLoading = false;
       notifyListeners();
       return true;
@@ -88,7 +81,7 @@ class StripeProvider with ChangeNotifier {
   }
 
   Future<bool> refundPayment({
-    required String paymentIntentId,
+    required String orderId,
     required double amount,
   }) async {
     try {
@@ -98,7 +91,7 @@ class StripeProvider with ChangeNotifier {
 
       final amountInCents = (amount * 100).toInt();
       await _stripeService.createRefund(
-        paymentIntentId: paymentIntentId,
+        paymentIntentId: orderId,
         amount: amountInCents,
       );
 

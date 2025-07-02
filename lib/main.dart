@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/dish_provider.dart';
 import 'package:sous_chef/providers/order_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
+import 'package:sous_chef/providers/stripe_provider.dart';
 import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RestaurantProvider()),
         ChangeNotifierProvider(create: (_) => DishProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => StripeProvider()),
         Provider<AppRouter>(create: (_) => AppRouter()),
       ],
       child: Consumer2<AppRouter, ThemeProvider>(
