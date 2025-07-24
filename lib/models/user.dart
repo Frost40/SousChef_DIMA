@@ -45,7 +45,7 @@ class User {
       'surname': surname,
       'phone': phone,
       if (restaurantId != null) 'restaurant_id': restaurantId,
-      if (favourites != null) 'favourites': favourites,
+      'favourites': favourites,
     };
   }
 

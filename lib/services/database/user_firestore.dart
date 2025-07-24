@@ -244,7 +244,7 @@ class UserFirestore {
       });
     } catch (e) {
       debugPrint('Error while removing restaurant from favorites: $e');
-      throw e;
+      rethrow;
     }
   }
 

@@ -5,7 +5,7 @@ import '../../providers/user_provider.dart';
 class RestaurantTile extends StatelessWidget {
   final Map<String, dynamic> restaurant;
 
-  const RestaurantTile({Key? key, required this.restaurant}) : super(key: key);
+  const RestaurantTile({super.key, required this.restaurant});
 
   @override
   Widget build(BuildContext context) {

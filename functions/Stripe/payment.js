@@ -15,8 +15,6 @@ const admin = require("firebase-admin");
  * callable context (includes auth info).
  * @param {string} stripeSecretKey - The Stripe secret key.
  * @param {object} db - The Firestore database instance.
- * @param {object} FieldValue - Firebase Firestore
- * FieldValue for server timestamps.
  * @return {Promise<object>} - A promise that resolves
  * with the client secret and order ID.
  * @throws {HttpsError} - Throws an HttpsError on
@@ -27,7 +25,6 @@ async function createPaymentIntentLogic(
     context,
     stripeSecretKey,
     db,
-    FieldValue,
 ) {
   // 1. Authentication Check
   if (!context.auth) {
@@ -64,13 +61,13 @@ async function createPaymentIntentLogic(
     }
 
     // 3. Retrieve and veryfing Order IDs from the provided items
-    console.log(`Verifying orders for user ${userId}: ${orderIds.join(", ")}`);
-
     const orderIds = data.items.map((item) => item.id);
 
     if (!orderIds || orderIds.length === 0) {
       throw new HttpsError("invalid-argument", "No order IDs provided.");
     }
+
+    console.log(`Verifying orders for user ${userId}: ${orderIds.join(", ")}`);
 
     // Query Firestore for the requested orders
     const ordersQuery = await db.collection("orders")
@@ -104,13 +101,13 @@ async function createPaymentIntentLogic(
             "one or more of these orders");
       }
 
-      // Check if order is in 'pending' status
-      if (order.status !== "pending") {
+      // Check if order is in 'ready_for_checkout' status
+      if (order.status !== "ready_for_checkout") {
         console.error(`Order ${doc.id} is not in 
-        pending state, but ${order.status}`);
+        'ready_for_checkout' state, but ${order.status}`);
         throw new HttpsError(
             "failed-precondition",
-            "One or more orders are not in \"pending\" state");
+            "One or more orders are not in the correct state for payment.");
       }
 
       // Sum up total amount for verification

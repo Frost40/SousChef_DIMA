@@ -162,7 +162,7 @@ class _DateTimePickerWidgetState extends State<DateTimePickerWidget> {
                   children: times
                       .map((t) =>
                         Center(child: Text("${t.hour}:${t.minute.toString().padLeft(2, '0')}",
-                        style: TextStyle(color: colorScheme.onBackground)))
+                        style: TextStyle(color: colorScheme.onSurface)))
                       ).toList(),
                 ),
               ),

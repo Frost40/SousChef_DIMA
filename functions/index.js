@@ -7,16 +7,12 @@ const {defineSecret} = require("firebase-functions/params");
 
 // Initialize Firebase Admin SDK
 initializeApp();
-const db = getFirestore(); // Get Firestore instance once
+const db = getFirestore();
 
-// Define your secrets using Firebase Secret Manager
-// These will be securely loaded at runtime for deployed functions.
-// For local emulation, they are also made available if set
-// via `firebase functions:secrets:set`.
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 
-// Import the specific function logic from the subfolder
+// Import the specific function logic
 const {createPaymentIntentLogic} = require("./Stripe/payment");
 const {createRefundLogic} = require("./Stripe/refund");
 const {handleStripeWebhook} = require("./Stripe/webhook");
@@ -24,17 +20,16 @@ const {handleStripeWebhook} = require("./Stripe/webhook");
 
 /**
  * Cloud Function to create a Stripe Payment Intent.
- * Callable by authenticated clients (e.g., your Flutter app).
  */
 exports.createPaymentIntent = onCall(
-    // Configure this function to access the Stripe secret key
     {secrets: [STRIPE_SECRET_KEY]},
-    async (data, context) => {
-      // Pass the secret key and Firestore instance
-      // to the logic handler
+    // **[FIX] Use the correct v2 request object signature**
+    async (request) => {
+      // In v2, auth info is on request.auth and data is on request.data
+      // We pass them to the logic function just like before.
       return createPaymentIntentLogic(
-          data,
-          context,
+          request.data, // Pass the data from the request
+          request,      // Pass the entire request object as the context
           STRIPE_SECRET_KEY.value(),
           db,
           FieldValue);
@@ -43,16 +38,14 @@ exports.createPaymentIntent = onCall(
 
 /**
  * Cloud Function to process a Stripe Refund.
- * Callable by authenticated clients.
  */
 exports.createRefund = onCall(
-    // Configure this function to access the Stripe secret key
     {secrets: [STRIPE_SECRET_KEY]},
-    async (data, context) => {
-      // Pass the secret key and Firestore instance to the logic handler
+    // **[FIX] Use the correct v2 request object signature**
+    async (request) => {
       return createRefundLogic(
-          data,
-          context,
+          request.data,
+          request, // Pass the entire request object as the context
           STRIPE_SECRET_KEY.value(),
           db,
           FieldValue,
@@ -62,15 +55,11 @@ exports.createRefund = onCall(
 
 /**
  * Cloud Function to handle Stripe Webhook events.
- * Triggered by Stripe, not by clients.
- * It's crucial to set `raw: true` to access the raw request
- * body for signature verification.
+ * (This was already correct, no changes needed here)
  */
 exports.stripeWebhook = onRequest(
-    // Configure this function to access the Stripe webhook secret
     {secrets: [STRIPE_WEBHOOK_SECRET], raw: true},
     async (req, res) => {
-      // Pass the webhook secret and Firestore instance to the logic handler
       await handleStripeWebhook(
           req,
           res,

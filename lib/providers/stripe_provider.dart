@@ -18,6 +18,7 @@ class StripeProvider with ChangeNotifier {
       throw Exception('Chiave pubblicabile di Stripe non trovata');
     }
     Stripe.publishableKey = publishableKey;
+    Stripe.urlScheme = 'souschef-stripe'; 
     await Stripe.instance.applySettings();
   }
 
@@ -36,6 +37,7 @@ class StripeProvider with ChangeNotifier {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+      print('[StripeProvider] Starting payment process...');
 
       // 1. Converti l'importo in centesimi
       final amountInCents = (amount * 100).toInt();
@@ -46,9 +48,20 @@ class StripeProvider with ChangeNotifier {
         currency: currency,
         items: items,
       );
+      print('[StripeProvider] Received payment data from server: $paymentData');
 
       final clientSecret = paymentData['clientSecret'];
       final orderIds = paymentData['orderIds'];
+
+      // [FIX] Add a null and type check for the client secret to prevent a native crash.
+      // The flutter_stripe plugin can crash the app if this value is not a valid string.
+      print('[StripeProvider] Validating client secret...');
+      if (clientSecret == null || clientSecret is! String || clientSecret.isEmpty) {
+        print('[StripeProvider] Client secret is INVALID. Secret: "$clientSecret"');
+        throw Exception(
+            'Il client secret ricevuto dal server non è valido.');
+      }
+      print('[StripeProvider] Client secret is valid. Initializing payment sheet...');
 
       // 3. Configura il foglio di pagamento Stripe
       await Stripe.instance.initPaymentSheet(
@@ -58,15 +71,18 @@ class StripeProvider with ChangeNotifier {
           style: ThemeMode.system,
         ),
       );
+      print('[StripeProvider] Payment sheet initialized. Presenting...');
 
       // 4. Presenta il foglio di pagamento
       await Stripe.instance.presentPaymentSheet();
+      print('[StripeProvider] Payment sheet presented successfully.');
 
       _isLoading = false;
       notifyListeners();
       return true;
 
     } catch (e) {
+      print('[StripeProvider] An error occurred in processPayment: $e');
       _isLoading = false;
 
       if (e is StripeException) {

@@ -160,7 +160,7 @@ class _CustomDropdownMenuState<T> extends State<CustomDropdownMenu<T>> {
           children: [
             Expanded(
               child: Text(
-                _selectedItem != null ? _getDisplayText(_selectedItem!) : (widget.hint ?? ''),
+                _selectedItem != null ? _getDisplayText(_selectedItem as T) : (widget.hint ?? ''),
                 style: TextStyle(
                   color: colorScheme.onSurface,
                 ),

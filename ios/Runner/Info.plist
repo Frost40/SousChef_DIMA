@@ -21,6 +21,7 @@
 				<!-- TODO Replace this value: -->
 				<!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
 				<string>com.googleusercontent.apps.22755112532-ut73aoppho16qok218bbtj9l3ui47vk3</string>
+				<string>souschef-stripe</string> <!-- Or any unique name, e.g., your bundle ID -->
 			</array>
 		</dict>
 	</array>

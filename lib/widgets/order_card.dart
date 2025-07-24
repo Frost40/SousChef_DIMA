@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sous_chef/models/order.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
-import 'package:sous_chef/widgets/circular_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 class OrderCard extends StatefulWidget {

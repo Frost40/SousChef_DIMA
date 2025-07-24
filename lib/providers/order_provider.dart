@@ -20,7 +20,7 @@ class OrderProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  bool _ordersLoaded = false;
+  final bool _ordersLoaded = false;
   bool get ordersLoaded => _ordersLoaded;
 
   // Dishes of the currently selected restaurant

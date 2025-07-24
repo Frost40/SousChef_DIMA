@@ -410,7 +410,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             child: Divider(
               height: 1,
               thickness: 1,
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
           ),
         );

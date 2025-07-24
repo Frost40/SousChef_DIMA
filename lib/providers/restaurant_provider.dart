@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:provider/provider.dart';
 import '../services/firebase_storage.dart';
 import '../models/restaurant.dart';
 import '../services/database/restaurant_firestore.dart';

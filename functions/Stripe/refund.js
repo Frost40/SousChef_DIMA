@@ -15,8 +15,6 @@ const {HttpsError} = require("firebase-functions/v2/https");
  * @param {string} stripeSecretKey - The Stripe
  * secret key.
  * @param {object} db - The Firestore database instance.
- * @param {object} FieldValue - Firebase Firestore
- * FieldValue for server timestamps.
  * @return {Promise<object>} - A promise that
  * resolves with the refund details.
  * @throws {HttpsError} - Throws an HttpsError on
@@ -27,7 +25,6 @@ async function createRefundLogic(
     context,
     stripeSecretKey,
     db,
-    FieldValue,
 ) {
   // 1. Authentication Check
   if (!context.auth) {

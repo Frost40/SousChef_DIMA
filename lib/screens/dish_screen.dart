@@ -259,8 +259,7 @@ class _DishScreenState extends State<DishScreen> {
           !_hasValidationErrors;
     });
 
-    debugPrint("Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, " +
-        "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
+    debugPrint("Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, " "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
         "cuisine=$cuisineChanged, hasChanges=$_hasChanges");
   }
 
@@ -909,7 +908,7 @@ class _DishScreenState extends State<DishScreen> {
       children: [
         CircleAvatar(
           radius: 60,
-          backgroundColor: colorScheme.surfaceVariant,
+          backgroundColor: colorScheme.surfaceContainerHighest,
           child: _imageFile != null
               ? ClipOval(
                   child: Image.file(

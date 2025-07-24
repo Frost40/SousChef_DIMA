@@ -6,7 +6,6 @@ import 'package:sous_chef/providers/order_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
 import 'package:sous_chef/providers/stripe_provider.dart';
 import 'package:sous_chef/providers/user_provider.dart';
-import 'package:sous_chef/providers/restaurant_provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
 import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/themes/theme_provider.dart';

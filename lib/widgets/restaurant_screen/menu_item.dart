@@ -62,7 +62,7 @@ class MenuItem extends StatelessWidget {
                     tag: heroTag,
                     child: CircleAvatar(
                       radius: 30,
-                      backgroundColor: colorScheme.surfaceVariant,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       child: imageUrl != null && imageUrl!.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
