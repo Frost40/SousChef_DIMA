@@ -102,9 +102,9 @@ async function createPaymentIntentLogic(
       }
 
       // Check if order is in 'ready_for_checkout' status
-      if (order.status !== "ready_for_checkout") {
+      if (order.status !== "pending") {
         console.error(`Order ${doc.id} is not in 
-        'ready_for_checkout' state, but ${order.status}`);
+        'pending' state, but ${order.status}`);
         throw new HttpsError(
             "failed-precondition",
             "One or more orders are not in the correct state for payment.");

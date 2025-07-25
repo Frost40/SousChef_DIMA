@@ -201,6 +201,12 @@ class _CartScreenState extends State<CartScreen> {
 
                           if (!confirmCheckout) return;
 
+                          // Update the status to "pending" before processing payment
+                          // This ensures that the orders are marked as pending before payment is processed
+                          for (final order in ordersToCheckout) {
+                            await orderProvider.updateOrderStatus(order.id, 'pending');
+                          }
+
                           // Payment processing
                           final success = await stripeProvider.processPayment(
                             context: context,
@@ -209,13 +215,11 @@ class _CartScreenState extends State<CartScreen> {
                           );
 
                           if (success) {
-                            // For each order, update the status to 'pending'
-                            for (final order in ordersToCheckout) {
-                              await orderProvider.updateOrderStatus(
-                                order.id,
-                                'pending',
-                              );
-                            }
+                            // Fetch updated orders
+                            orderProvider.fetchUserOrders(
+                              authProvider.user!.id,
+                              forceRefresh: true,
+                            );
 
                             await CustomAlertDialog.showInfoDialog(
                               context: context,
@@ -226,13 +230,13 @@ class _CartScreenState extends State<CartScreen> {
                                 color: colorScheme.primary,
                               ),
                             );
-
-                            // Fetch updated orders
-                            orderProvider.fetchUserOrders(
-                              authProvider.user!.id,
-                              forceRefresh: true,
-                            );
                           } else if (stripeProvider.errorMessage != null) {
+                            // If payment failed, update the status back to "ready_for_checkout"
+                            // This ensures that the orders are available for retrying payment
+                            for (final order in ordersToCheckout) {
+                              await orderProvider.updateOrderStatus(order.id, 'ready_for_checkout');
+                            }
+
                             await CustomAlertDialog.showInfoDialog(
                               context: context,
                               title: 'Payment Failed',
