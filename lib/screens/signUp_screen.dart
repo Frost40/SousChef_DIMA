@@ -10,6 +10,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/auth/shake_widget.dart';
 import '../widgets/auth/shake_widget_state.dart';
+import '../widgets/responsive_layout.dart';
 
 class SignUpScreen extends StatefulWidget {
   static const String routeName = '/signup';
@@ -68,25 +69,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final screenSize = MediaQuery.of(context).size;
-            final screenWidth = screenSize.width;
-            final screenHeight = screenSize.height;
-            final aspectRatio = screenWidth / screenHeight;
-
-            final isTablet = screenWidth > 600 && aspectRatio < 1.6;
-
-            if (isTablet) {
-              return _buildTabletLayout(context);
-            } else {
-              return _buildMobileLayout(context);
-            }
-          },
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: SafeArea(
+          child: Center(
+            child: ResponsiveLayout(
+              builder: (context, isTablet) {
+                return isTablet
+                    ? _buildTabletLayout(context)
+                    : _buildMobileLayout(context);
+              },
+            ),
+          ),
         ),
       ),
     );
