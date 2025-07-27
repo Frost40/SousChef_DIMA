@@ -6,6 +6,7 @@ import 'package:sous_chef/models/restaurant.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
 import 'package:sous_chef/screens/dish_screen.dart';
+import 'package:sous_chef/widgets/dish_popup_dialog.dart';
 import '../models/dish.dart';
 import '../providers/dish_provider.dart';
 import '../providers/order_provider.dart';
@@ -17,6 +18,7 @@ import '../widgets/custom_alert_dialog.dart';
 import '../widgets/circular_button.dart';
 import '../widgets/restaurant_screen/menu_item.dart';
 import '../widgets/restaurant_screen/restaurant_info.dart';
+import '../widgets/responsive_layout.dart';
 
 class RestaurantScreen extends StatefulWidget {
   final String restaurantId;
@@ -47,6 +49,52 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       Provider.of<DishProvider>(context, listen: false)
           .fetchDishes(widget.restaurantId);
     });
+  }
+
+  // Metodo helper per aprire il DishScreen in modo diverso a seconda del dispositivo
+  void _openDishScreen({
+    required bool isEditable,
+    String? dishId,
+    String? heroTag,
+    bool isNew = false,
+    bool isSpecial = false,
+    Function(bool)? onAvailabilityChanged,
+  }) {
+    ResponsiveLayout(
+      builder: (context, isTablet) {
+        if (isTablet) {
+          // Mostra il DishScreen come popup per tablet
+          showDialog(
+            context: context,
+            barrierColor: Colors.black54, // Sfondo semi-trasparente
+            builder: (context) => DishPopupDialog(
+              heroTag: heroTag,
+              dishId: dishId,
+              isEditable: isEditable,
+              isNew: isNew,
+              isSpecial: isSpecial,
+              onAvailabilityChanged: onAvailabilityChanged,
+            ),
+          );
+        } else {
+          // Mostra il DishScreen come pagina separata per smartphone
+          Navigator.of(context).push(
+            CustomPageRoute(
+              page: DishScreen(
+                heroTag: heroTag,
+                dishId: dishId,
+                isEditable: isEditable,
+                isNew: isNew,
+                isSpecial: isSpecial,
+                onAvailabilityChanged: onAvailabilityChanged,
+              ),
+              transitionType: TransitionType.slideRight,
+            ),
+          );
+        }
+        return const SizedBox(); // Placeholder, non verrà mai renderizzato
+      },
+    ).builder(context, MediaQuery.of(context).size.shortestSide >= 600);
   }
 
   @override
@@ -174,7 +222,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   tabCount: 2,
                   tabLabels: const ['Fixed menu', 'On Request'],
                   height: 40.0, // Adjust height as needed
-                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0), // Added vertical margin
+                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                   radius: 25.0,
                   initialIndex: _selectedTabIndex, // Pass current index
                   onTabSelected: (index) {
@@ -186,20 +234,33 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   },
                 ),
                 backgroundColor: colorScheme.surface, // Background for the tab bar area
-                padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 8.0),
+                // Adatto il padding orizzontale in base alla dimensione e orientamento del dispositivo
+                padding: (() {
+                  final size = MediaQuery.of(context).size;
+                  final isTablet = size.shortestSide >= 600;
+                  final isLandscape = size.width > size.height;
+
+                  // Logica per il padding orizzontale:
+                  // 1. Tablet in orizzontale: padding massimo (200.0) per rendere la TabBar molto stretta
+                  // 2. Tablet in verticale: padding medio (120.0)
+                  // 3. Smartphone: padding originale (50.0)
+                  final horizontalPadding = isTablet
+                      ? (isLandscape ? 220.0 : 120.0)
+                      : 50.0;
+
+                  return EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: 8.0
+                  );
+                })(),
                 isOwner: isOwner,
                 actionButton: CircularButton(
                   icon: Icons.add,
                   onPressed: () {
-                    Navigator.of(context).push(
-                      CustomPageRoute(
-                        page: DishScreen(
-                          isNew: true,
-                          isEditable: isOwner,
-                          isSpecial: _selectedTabIndex == 1,
-                        ),
-                        transitionType: TransitionType.slideRight,
-                      ),
+                    _openDishScreen(
+                      isEditable: isOwner,
+                      isNew: true,
+                      isSpecial: _selectedTabIndex == 1,
                     );
                   },
                 ),
@@ -325,6 +386,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     List<Widget> sliverItems = [];
 
     groupedItems.forEach((course, items) {
+      // Aggiungiamo l'intestazione della categoria
       sliverItems.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 25, 16, 8),
@@ -348,59 +410,20 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         ),
       );
 
-      // Add each dish item
-      for (var dish in items) {
-        sliverItems.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
-            child: MenuItem(
-              dishId: dish.id,
-              dishName: dish.name,
-              description: dish.description ?? '',
-              imageUrl: dish.imageUrl ?? '',
-              isEditable: isEditable,
-              price: dish.price,
-              isAvailable: dish.isAvailable ?? true,
-              course: dish.course ?? Course.other,
-              cuisine: dish.cuisine ?? Cuisine.other,
-              onDelete: isEditable
-                  ? () {
-                      dishProvider.deleteDish(
-                          dishProvider.currentRestaurantId!,
-                          dish.id
-                      );
-                    }
-                  : null,
-              onEdit: isEditable
-                ? (newName, newDescription, newPrice, newCourse, newCuisine, {imageFile, imageUrl, isAvailable}) {
-                    debugPrint('Image url: ${imageUrl ?? 'No image URL'}');
-                    dishProvider.updateDish(
-                      restaurantId: dishProvider.currentRestaurantId!,
-                      dishId: dish.id,
-                      name: newName,
-                      description: newDescription,
-                      price: newPrice,
-                      course: newCourse,
-                      cuisine: newCuisine,
-                      imageFile: imageFile,
-                      imageUrl: imageUrl,
-                    );
-                  }
-                : null,
-              onAvailabilityChanged: isEditable
-                ? (newAvailability) {
-                  debugPrint('Change availability for dish: ${dish.name}');
-                  dishProvider.updateDishAvailability(
-                      dishProvider.currentRestaurantId!,
-                      dish.id,
-                      newAvailability
-                  );
-                }
-                : null,
-            ),
-          ),
-        );
-      }
+      // Utilizziamo ResponsiveLayout per creare il layout adatto al dispositivo
+      sliverItems.add(
+        ResponsiveLayout(
+          builder: (context, isTablet) {
+            if (isTablet) {
+              // Layout a due colonne per i tablet
+              return _buildTwoColumnLayout(items, isEditable, dishProvider);
+            } else {
+              // Layout a singola colonna per gli smartphone
+              return _buildSingleColumnLayout(items, isEditable, dishProvider);
+            }
+          },
+        ).builder(context, MediaQuery.of(context).size.shortestSide >= 600),
+      );
 
       // Add divider after each section (except the last)
       if (course != groupedItems.keys.last) {
@@ -427,6 +450,118 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           childCount: sliverItems.length,
         ),
       ),
+    );
+  }
+
+  // Layout a due colonne per tablet
+  Widget _buildTwoColumnLayout(List<Dish> items, bool isEditable, DishProvider dishProvider) {
+    // Creiamo una lista di righe, ognuna contenente fino a due elementi
+    List<Widget> rows = [];
+
+    for (var i = 0; i < items.length; i += 2) {
+      final List<Widget> rowItems = [];
+
+      // Primo piatto nella riga
+      rowItems.add(Expanded(
+        child: _buildMenuItem(items[i], isEditable, dishProvider),
+      ));
+
+      // Secondo piatto nella riga (se presente)
+      if (i + 1 < items.length) {
+        rowItems.add(Expanded(
+          child: _buildMenuItem(items[i + 1], isEditable, dishProvider),
+        ));
+      } else {
+        // Placeholder vuoto per mantenere l'allineamento
+        rowItems.add(const Expanded(child: SizedBox()));
+      }
+
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: rowItems,
+          ),
+        ),
+      );
+    }
+
+    return Column(children: rows);
+  }
+
+  // Layout a singola colonna per smartphone
+  Widget _buildSingleColumnLayout(List<Dish> items, bool isEditable, DishProvider dishProvider) {
+    return Column(
+      children: items.map((dish) =>
+        _buildMenuItem(dish, isEditable, dishProvider)
+      ).toList(),
+    );
+  }
+
+  // Helper method to build menu item widget
+  Widget _buildMenuItem(Dish dish, bool isEditable, DishProvider dishProvider) {
+    return MenuItem(
+      dishId: dish.id,
+      dishName: dish.name,
+      description: dish.description ?? '',
+      imageUrl: dish.imageUrl ?? '',
+      isEditable: isEditable,
+      price: dish.price,
+      isAvailable: dish.isAvailable ?? true,
+      course: dish.course ?? Course.other,
+      cuisine: dish.cuisine ?? Cuisine.other,
+      onDelete: isEditable
+          ? () {
+              dishProvider.deleteDish(
+                  dishProvider.currentRestaurantId!,
+                  dish.id
+              );
+            }
+          : null,
+      onEdit: isEditable
+        ? (newName, newDescription, newPrice, newCourse, newCuisine, {imageFile, imageUrl, isAvailable}) {
+            debugPrint('Image url: ${imageUrl ?? 'No image URL'}');
+            dishProvider.updateDish(
+              restaurantId: dishProvider.currentRestaurantId!,
+              dishId: dish.id,
+              name: newName,
+              description: newDescription,
+              price: newPrice,
+              course: newCourse,
+              cuisine: newCuisine,
+              imageFile: imageFile,
+              imageUrl: imageUrl,
+            );
+          }
+        : null,
+      onAvailabilityChanged: isEditable
+        ? (newAvailability) {
+          debugPrint('Change availability for dish: ${dish.name}');
+          dishProvider.updateDishAvailability(
+              dishProvider.currentRestaurantId!,
+              dish.id,
+              newAvailability
+          );
+        }
+        : null,
+      onDishSelected: ({
+        required isEditable,
+        dishId,
+        heroTag,
+        isNew = false,
+        isSpecial = false,
+        onAvailabilityChanged
+      }) {
+        _openDishScreen(
+          isEditable: isEditable,
+          dishId: dishId,
+          heroTag: heroTag,
+          isNew: isNew,
+          isSpecial: dish.isSpecial, // Passiamo il valore corretto per isSpecial dal dish
+          onAvailabilityChanged: onAvailabilityChanged,
+        );
+      },
     );
   }
 

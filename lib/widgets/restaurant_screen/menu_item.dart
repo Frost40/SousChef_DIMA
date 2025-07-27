@@ -22,6 +22,7 @@ class MenuItem extends StatelessWidget {
   final Cuisine cuisine;
   final Function(String, String, double, Course, Cuisine, {File? imageFile, String? imageUrl, bool? isAvailable})? onEdit;
   final Function(bool)? onAvailabilityChanged;
+  final Function({required bool isEditable, String? dishId, String? heroTag, bool isNew, bool isSpecial, Function(bool)? onAvailabilityChanged})? onDishSelected;
 
   const MenuItem({
     super.key,
@@ -37,6 +38,7 @@ class MenuItem extends StatelessWidget {
     this.onEdit,
     this.onAvailabilityChanged,
     required this.dishId,
+    this.onDishSelected,
   });
 
   @override
@@ -153,19 +155,29 @@ class MenuItem extends StatelessWidget {
     );
   }
 
-  // Modifica del metodo _showDishDetailDialog in MenuItem
+  // Modification of _showDishDetailDialog method in MenuItem
   void _showDishDetailDialog(BuildContext context, String heroTag, ColorScheme colorScheme) {
-    Navigator.of(context).push(
-      CustomPageRoute(
-        page: DishScreen(
-          heroTag: heroTag,
-          isEditable: isEditable,
-          dishId: dishId,
-          onAvailabilityChanged: onAvailabilityChanged,
+    if (onDishSelected != null) {
+      onDishSelected!(
+        isEditable: isEditable,
+        dishId: dishId,
+        heroTag: heroTag,
+        isNew: false,
+        isSpecial: false, // This value could be determined elsewhere
+        onAvailabilityChanged: onAvailabilityChanged,
+      );
+    } else {
+      Navigator.of(context).push(
+        CustomPageRoute(
+          page: DishScreen(
+            heroTag: heroTag,
+            isEditable: isEditable,
+            dishId: dishId,
+            onAvailabilityChanged: onAvailabilityChanged,
+          ),
+          transitionType: TransitionType.slideRight,
         ),
-        transitionType: TransitionType.slideRight,
-      ),
-    );
+      );
+    }
   }
 }
-

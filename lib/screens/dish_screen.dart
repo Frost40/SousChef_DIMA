@@ -11,6 +11,7 @@ import 'package:sous_chef/widgets/circular_button.dart';
 import 'package:sous_chef/widgets/custom_dropdown_menu.dart';
 import 'package:sous_chef/widgets/dish_screen/calendar_widget.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
+import 'package:sous_chef/widgets/responsive_layout.dart';
 
 import 'package:sous_chef/widgets/image_upload_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/dish_availability_button.dart';
@@ -244,7 +245,7 @@ class _DishScreenState extends State<DishScreen> {
         (initialText != null && controllerText != initialText);
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
-    final minForwarningDaysChanged =
+    final minForewarningDaysChanged =
         _currentMinForewarningDays != _initialMinForewarningDays;
 
     setState(() {
@@ -255,7 +256,7 @@ class _DishScreenState extends State<DishScreen> {
           imageUrlChanged ||
           courseChanged ||
           cuisineChanged ||
-          minForwarningDaysChanged) &&
+          minForewarningDaysChanged) &&
           !_hasValidationErrors;
     });
 
@@ -345,7 +346,7 @@ class _DishScreenState extends State<DishScreen> {
     final course = _selectedCourse ?? Course.other;
     final cuisine = _selectedCuisine ?? Cuisine.other;
     final isAvailable = _availabilityStatus;
-    final minForwarningDays = _currentMinForewarningDays;
+    final minForewarningDays = _currentMinForewarningDays;
 
     if (widget.isNew) {
       dishProvider.createDish(
@@ -358,7 +359,7 @@ class _DishScreenState extends State<DishScreen> {
         imageFile: _imageFile,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
         isAvailable: isAvailable,
-        minForewarningDays: minForwarningDays,
+        minForewarningDays: minForewarningDays,
         isSpecial: isSpecial,
         userUsername: isSpecial ? _currentUsername : '',
       );
@@ -373,7 +374,7 @@ class _DishScreenState extends State<DishScreen> {
         cuisine: cuisine,
         imageFile: _imageFile,
         imageUrl: _imageFile == null ? _imageUrlController.text : null,
-        minForewarningDays: minForwarningDays,
+        minForewarningDays: minForewarningDays,
         userUsername: isSpecial ? _currentUsername : '',
       );
     }
@@ -424,10 +425,14 @@ class _DishScreenState extends State<DishScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text(''),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          leading: ResponsiveLayout(
+            builder: (context, isTablet) {
+              return IconButton(
+                icon: Icon(isTablet ? Icons.close : Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              );
+            },
+          ).builder(context, MediaQuery.of(context).size.shortestSide >= 600),
           actions: [
             if (widget.isEditable && _hasChanges)
               IconButton(
@@ -1252,3 +1257,4 @@ class _DishScreenState extends State<DishScreen> {
     return null;
   }
 }
+
