@@ -402,465 +402,465 @@ class _DishScreenState extends State<DishScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final String uniqueHeroTag = widget.heroTag ?? 'new_dish_${DateTime.now().millisecondsSinceEpoch}';
 
-    return GestureDetector(
-      onTap: () {
-        if (widget.isEditable) {
-          _resetCurrentField();
+    return ResponsiveLayout(
+      builder: (context, isTablet) {
+        return GestureDetector(
+          onTap: () {
+            if (widget.isEditable) {
+              _resetCurrentField();
 
-          // Remove focus from course and cuisine dropdowns
-          if (_courseFocused || _cuisineFocused) {
-            setState(() {
-              _courseFocused = false;
-              _cuisineFocused = false;
-            });
-          }
-        }
+              // Remove focus from course and cuisine dropdowns
+              if (_courseFocused || _cuisineFocused) {
+                setState(() {
+                  _courseFocused = false;
+                  _cuisineFocused = false;
+                });
+              }
+            }
 
-        FocusScope.of(context).unfocus();
-      },
-      child: Scaffold(
-        backgroundColor: colorScheme.surface,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: const Text(''),
-          leading: ResponsiveLayout(
-            builder: (context, isTablet) {
-              return IconButton(
+            FocusScope.of(context).unfocus();
+          },
+          child: Scaffold(
+            backgroundColor: colorScheme.surface,
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: const Text(''),
+              leading: IconButton(
                 icon: Icon(isTablet ? Icons.close : Icons.arrow_back),
                 onPressed: () => Navigator.of(context).pop(),
-              );
-            },
-          ).builder(context, MediaQuery.of(context).size.shortestSide >= 600),
-          actions: [
-            if (widget.isEditable && _hasChanges)
-              IconButton(
-                icon: Icon(
-                  Icons.save,
-                  color: colorScheme.primary,
-                ),
-                onPressed: _saveChanges,
               ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                color: colorScheme.surfaceContainerHighest,
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 25,
-                  bottom: 25,
-                ),
-                child: Center(
-                  child: widget.heroTag != null
-                      ? Hero(
-                    tag: uniqueHeroTag,
-                    child: widget.isEditable
-                        ? _buildEditableImage(colorScheme)
-                        : _buildImage(colorScheme),
-                    )
-                      : widget.isEditable
-                      ? _buildEditableImage(colorScheme)
-                      : _buildImage(colorScheme),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    widget.isEditable
-                        ? _buildEditableName(colorScheme)
-                        : _buildName(colorScheme),
-                    const SizedBox(height: 5),
-
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          'Description:',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      )
+              actions: [
+                if (widget.isEditable && _hasChanges)
+                  IconButton(
+                    icon: Icon(
+                      Icons.save,
+                      color: colorScheme.primary,
                     ),
-
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: colorScheme.onSurface,
+                    onPressed: _saveChanges,
+                  ),
+              ],
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: colorScheme.surfaceContainerHighest,
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 25,
+                      bottom: 25,
                     ),
-
-                    const SizedBox(height: 5),
-
-                    widget.isEditable
-                        ? _buildEditableDescription(colorScheme)
-                        : _buildDescription(colorScheme),
-
-                    const SizedBox(height: 10),
-
-                    Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            'Course & Cuisine:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
+                    child: Center(
+                      child: widget.heroTag != null
+                          ? Hero(
+                        tag: uniqueHeroTag,
+                        child: widget.isEditable
+                            ? _buildEditableImage(colorScheme)
+                            : _buildImage(colorScheme),
                         )
+                          : widget.isEditable
+                          ? _buildEditableImage(colorScheme)
+                          : _buildImage(colorScheme),
                     ),
-
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: colorScheme.onSurface,
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    Row(
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomDropdownMenu<Course>(
-                                items: Course.values,
-                                selectedItem: _selectedCourse,
-                                isEditable: widget.isEditable,
-                                hint: "Select a course",
-                                isFocused: _courseFocused,
-                                onTap: () {
-                                  setState(() {
-                                    _courseFocused = true;
-                                    _cuisineFocused = false;
-                                    _currentFocus = null;
+                        widget.isEditable
+                            ? _buildEditableName(colorScheme)
+                            : _buildName(colorScheme),
+                        const SizedBox(height: 5),
 
-                                    _nameFocus.unfocus();
-                                    _descriptionFocus.unfocus();
-                                    _priceFocus.unfocus();
-                                  });
-                                },
-                                onChanged: (item) {
-                                  setState(() {
-                                    if (_selectedCourse != item) {
-                                      _selectedCourse = item;
-                                    }
-                                    _courseFocused = false;
-                                    _checkForChanges();
-                                  });
-                                },
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              'Description:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
                               ),
-                              if (_courseError != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4, left: 8),
-                                  child: Text(
-                                    _courseError!,
-                                    style: TextStyle(
-                                      color: colorScheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                            ),
+                          )
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CustomDropdownMenu<Cuisine>(
-                                items: Cuisine.values,
-                                selectedItem: _selectedCuisine,
-                                isEditable: widget.isEditable,
-                                hint: "Select a cuisine",
-                                isFocused: _cuisineFocused,
-                                onTap: () {
-                                  setState(() {
-                                    _cuisineFocused = true;
-                                    _courseFocused = false;
-                                    _currentFocus = null;
 
-                                    _nameFocus.unfocus();
-                                    _descriptionFocus.unfocus();
-                                    _priceFocus.unfocus();
-                                  });
-                                },
-                                onChanged: (item) {
-                                  setState(() {
-                                    if (_selectedCuisine != item) {
-                                      _selectedCuisine = item;
-                                    }
-                                    _cuisineFocused = false;
-                                    _checkForChanges();
-                                  });
-                                },
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.onSurface,
+                        ),
+
+                        const SizedBox(height: 5),
+
+                        widget.isEditable
+                            ? _buildEditableDescription(colorScheme)
+                            : _buildDescription(colorScheme),
+
+                        const SizedBox(height: 10),
+
+                        Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                'Course & Cuisine:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
-                              if (_cuisineError != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4, left: 8),
-                                  child: Text(
-                                    _cuisineError!,
-                                    style: TextStyle(
-                                      color: colorScheme.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                            )
                         ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 40),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.onSurface,
+                        ),
 
+                        const SizedBox(height: 15),
 
-                      // Username selection for special dishes
-                      if (widget.isEditable && isSpecial)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(
-                                  'Select the username:',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                ),
-                              )
-                            ),
-                            Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: colorScheme.onSurface,
-                            ),
-                            const SizedBox(height: 10),
-                            AccountSettingField(
-                              fieldName: "Username",
-                              initialValue: _initialUsername,
-                              padding: 0,
-                              asyncValidator: _validateUsername,
-                              onValueChanged: (username, isModified) {
-                                setState(() {
-                                  _currentUsername = username;
-                                  _usernameFocus.unfocus();
-                                  _checkForChanges();
-                                });
-                              },
-                              onValidationError: (error) {
-                                setState(() {
-                                  _usernameError = error;
-                                });
-                              },
-                              onTextChanged: () {
-                                // Cleaning the error when the user starts typing
-                                setState(() {
-                                  _usernameError = null;
-                                });
-                              },
-                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomDropdownMenu<Course>(
+                                    items: Course.values,
+                                    selectedItem: _selectedCourse,
+                                    isEditable: widget.isEditable,
+                                    hint: "Select a course",
+                                    isFocused: _courseFocused,
+                                    onTap: () {
+                                      setState(() {
+                                        _courseFocused = true;
+                                        _cuisineFocused = false;
+                                        _currentFocus = null;
 
-                            if (_usernameError != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4, left: 8),
-                                child: Text(
-                                  _usernameError!,
-                                  style: TextStyle(
-                                    color: colorScheme.error,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-
-                            const SizedBox(height: 10),
-
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    "Enter the username of the user for whom the dish is created.",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-                          ],
-                        )
-                      // Date and time selection for ordering a dish
-                      else if (!widget.isEditable)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(
-                                  'Select pickup date and time:',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                ),
-                              )
-                            ),
-                            Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: colorScheme.onSurface,
-                            ),
-                            const SizedBox(height: 10),
-
-                            DateTimePickerWidget(
-                              maxDateDays: minForewarningDays,
-                              onDateTimeSelected: (dateTime) {
-                                setState(() {
-                                  _selectedDateTime = dateTime;
-                                });
-                                debugPrint("Selected date and time: $_selectedDateTime");
-                              },
-                            ),
-
-                            const SizedBox(height: 40),
-                          ],
-                        ),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!widget.isNew)
-                            widget.isEditable
-                              ? CircularButton(
-                                  icon: Icons.delete,
-                                  iconColor: colorScheme.error,
-                                  backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
-                                  size: 50,
-                                  bottomPadding: 0,
-                                  onPressed: _deleteDish,
-                                )
-                              : CircularButton(
-                                  icon: Icons.add,
-                                  iconColor: colorScheme.onPrimary,
-                                  backgroundColor: colorScheme.primary,
-                                  size: 50,
-                                  bottomPadding: 0,
-                                  onPressed: () {
-                                    if (_selectedDateTime == null) {
-                                      CustomAlertDialog.showInfoDialog(
-                                        context: context,
-                                        title: "Warning",
-                                        message: "Select a date and time to proceed.",
-                                        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
-                                      );
-                                      return;
-                                    }
-
-                                    if (_availabilityStatus == false) {
-                                      CustomAlertDialog.showInfoDialog(
-                                        context: context,
-                                        title: "Warning",
-                                        message: "The dish is not available.",
-                                        icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
-                                      );
-                                      return;
-                                    }
-
-                                    final userProvider = Provider.of<UserProvider>(context, listen: false);
-                                    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-
-                                    orderProvider.setContext(context);
-
-                                    if (_dish != null) {
-                                      orderProvider.addOrder(
-                                        userId: userProvider.userData?.id ?? '',
-                                        dishId: _dish!.id,
-                                        dishName: _dish!.name,
-                                        dishPrice: _dish!.price,
-                                        pickupDateTime: _selectedDateTime!,
-                                      ).then((_) {
-                                        CustomAlertDialog.showInfoDialog(
-                                          context: context,
-                                          title: "Dish sent to cart",
-                                          message: "The dish \"${_dish!.name}\" has been correctly added to your cart.",
-                                          icon: Icon(Icons.check_circle, color: colorScheme.primary),
-                                          buttonText: "OK",
-                                        );
-                                      }).catchError((error) {
-                                        CustomAlertDialog.showInfoDialog(
-                                          context: context,
-                                          title: "Error",
-                                          message: orderProvider.errorMessage ?? "Something went wrong. Try again later.",
-                                          icon: Icon(Icons.error_outline, color: colorScheme.error),
-                                        );
+                                        _nameFocus.unfocus();
+                                        _descriptionFocus.unfocus();
+                                        _priceFocus.unfocus();
                                       });
-                                    }
+                                    },
+                                    onChanged: (item) {
+                                      setState(() {
+                                        if (_selectedCourse != item) {
+                                          _selectedCourse = item;
+                                        }
+                                        _courseFocused = false;
+                                        _checkForChanges();
+                                      });
+                                    },
+                                  ),
+                                  if (_courseError != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4, left: 8),
+                                      child: Text(
+                                        _courseError!,
+                                        style: TextStyle(
+                                          color: colorScheme.error,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomDropdownMenu<Cuisine>(
+                                    items: Cuisine.values,
+                                    selectedItem: _selectedCuisine,
+                                    isEditable: widget.isEditable,
+                                    hint: "Select a cuisine",
+                                    isFocused: _cuisineFocused,
+                                    onTap: () {
+                                      setState(() {
+                                        _cuisineFocused = true;
+                                        _courseFocused = false;
+                                        _currentFocus = null;
+
+                                        _nameFocus.unfocus();
+                                        _descriptionFocus.unfocus();
+                                        _priceFocus.unfocus();
+                                      });
+                                    },
+                                    onChanged: (item) {
+                                      setState(() {
+                                        if (_selectedCuisine != item) {
+                                          _selectedCuisine = item;
+                                        }
+                                        _cuisineFocused = false;
+                                        _checkForChanges();
+                                      });
+                                    },
+                                  ),
+                                  if (_cuisineError != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4, left: 8),
+                                      child: Text(
+                                        _cuisineError!,
+                                        style: TextStyle(
+                                          color: colorScheme.error,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 40),
+
+
+                          // Username selection for special dishes
+                          if (widget.isEditable && isSpecial)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      'Select the username:',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  )
+                                ),
+                                Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: colorScheme.onSurface,
+                                ),
+                                const SizedBox(height: 10),
+                                AccountSettingField(
+                                  fieldName: "Username",
+                                  initialValue: _initialUsername,
+                                  padding: 0,
+                                  asyncValidator: _validateUsername,
+                                  onValueChanged: (username, isModified) {
+                                    setState(() {
+                                      _currentUsername = username;
+                                      _usernameFocus.unfocus();
+                                      _checkForChanges();
+                                    });
+                                  },
+                                  onValidationError: (error) {
+                                    setState(() {
+                                      _usernameError = error;
+                                    });
+                                  },
+                                  onTextChanged: () {
+                                    // Cleaning the error when the user starts typing
+                                    setState(() {
+                                      _usernameError = null;
+                                    });
                                   },
                                 ),
 
-                        const SizedBox(width: 20),
+                                if (_usernameError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4, left: 8),
+                                    child: Text(
+                                      _usernameError!,
+                                      style: TextStyle(
+                                        color: colorScheme.error,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
 
-                        widget.isEditable
-                            ? _buildEditablePrice(colorScheme)
-                            : _buildPrice(colorScheme),
+                                const SizedBox(height: 10),
 
-                        if (widget.isEditable)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(width: 20),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        "Enter the username of the user for whom the dish is created.",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
-                              CircularNumberInput(
-                                size: 50.0,
-                                initialValue: minForewarningDays,
-                                onNumberSubmitted: (value) {
-                                  _currentMinForewarningDays = value;
-                                  _checkForChanges();
-                                },
+                                const SizedBox(height: 20),
+                              ],
+                            )
+                          // Date and time selection for ordering a dish
+                          else if (!widget.isEditable)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text(
+                                      'Select pickup date and time:',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  )
+                                ),
+                                Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: colorScheme.onSurface,
+                                ),
+                                const SizedBox(height: 10),
+
+                                DateTimePickerWidget(
+                                  maxDateDays: minForewarningDays,
+                                  onDateTimeSelected: (dateTime) {
+                                    setState(() {
+                                      _selectedDateTime = dateTime;
+                                    });
+                                    debugPrint("Selected date and time: $_selectedDateTime");
+                                  },
+                                ),
+
+                                const SizedBox(height: 40),
+                              ],
+                            ),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (!widget.isNew)
+                                widget.isEditable
+                                  ? CircularButton(
+                                      icon: Icons.delete,
+                                      iconColor: colorScheme.error,
+                                      backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
+                                      size: 50,
+                                      bottomPadding: 0,
+                                      onPressed: _deleteDish,
+                                    )
+                                  : CircularButton(
+                                      icon: Icons.add,
+                                      iconColor: colorScheme.onPrimary,
+                                      backgroundColor: colorScheme.primary,
+                                      size: 50,
+                                      bottomPadding: 0,
+                                      onPressed: () {
+                                        if (_selectedDateTime == null) {
+                                          CustomAlertDialog.showInfoDialog(
+                                            context: context,
+                                            title: "Warning",
+                                            message: "Select a date and time to proceed.",
+                                            icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                          );
+                                          return;
+                                        }
+
+                                        if (_availabilityStatus == false) {
+                                          CustomAlertDialog.showInfoDialog(
+                                            context: context,
+                                            title: "Warning",
+                                            message: "The dish is not available.",
+                                            icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                          );
+                                          return;
+                                        }
+
+                                        final userProvider = Provider.of<UserProvider>(context, listen: false);
+                                        final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+                                        orderProvider.setContext(context);
+
+                                        if (_dish != null) {
+                                          orderProvider.addOrder(
+                                            userId: userProvider.userData?.id ?? '',
+                                            dishId: _dish!.id,
+                                            dishName: _dish!.name,
+                                            dishPrice: _dish!.price,
+                                            pickupDateTime: _selectedDateTime!,
+                                          ).then((_) {
+                                            CustomAlertDialog.showInfoDialog(
+                                              context: context,
+                                              title: "Dish sent to cart",
+                                              message: "The dish \"${_dish!.name}\" has been correctly added to your cart.",
+                                              icon: Icon(Icons.check_circle, color: colorScheme.primary),
+                                              buttonText: "OK",
+                                            );
+                                          }).catchError((error) {
+                                            CustomAlertDialog.showInfoDialog(
+                                              context: context,
+                                              title: "Error",
+                                              message: orderProvider.errorMessage ?? "Something went wrong. Try again later.",
+                                              icon: Icon(Icons.error_outline, color: colorScheme.error),
+                                            );
+                                          });
+                                        }
+                                      },
+                                    ),
+
+                            const SizedBox(width: 20),
+
+                            widget.isEditable
+                                ? _buildEditablePrice(colorScheme)
+                                : _buildPrice(colorScheme),
+
+                            if (widget.isEditable)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(width: 20),
+
+                                  CircularNumberInput(
+                                    size: 50.0,
+                                    initialValue: minForewarningDays,
+                                    onNumberSubmitted: (value) {
+                                      _currentMinForewarningDays = value;
+                                      _checkForChanges();
+                                    },
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
 
 
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

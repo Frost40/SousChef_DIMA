@@ -120,164 +120,165 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       );
     }
 
-    // Use GestureDetector to dismiss keyboard on tap outside focusable areas
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Scaffold(
-        // No AppBar here, it's moved inside CustomScrollView
-        body: CustomScrollView(
-          slivers: <Widget>[
-            // --- 1. SliverAppBar ---
-            // This app bar will shrink and stick to the top
-            SliverAppBar(
-              backgroundColor: colorScheme.darkGrayBackground,
-              title: isOwner
-                  ? InkWell(
-                onTap: () => _showEditNameDialog(context, restaurant.name),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(restaurant.name),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.edit, size: 16),
+    return ResponsiveLayout(
+      builder: (context, isTablet) {
+        // Use GestureDetector to dismiss keyboard on tap outside focusable areas
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Scaffold(
+            // No AppBar here, it's moved inside CustomScrollView
+            body: CustomScrollView(
+              slivers: <Widget>[
+                // --- 1. SliverAppBar ---
+                // This app bar will shrink and stick to the top
+                SliverAppBar(
+                  backgroundColor: colorScheme.darkGrayBackground,
+                  title: isOwner
+                      ? InkWell(
+                    onTap: () => _showEditNameDialog(context, restaurant.name),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(restaurant.name),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit, size: 16),
+                      ],
+                    ),
+                  )
+                      : Text(restaurant.name),
+                  centerTitle: true,
+                  pinned: true, // Makes the AppBar stick at the top
+                  floating: false, // AppBar doesn't reappear on scrolling down slightly
+                  snap: false, // Doesn't snap into view
+                  automaticallyImplyLeading: false, // Adjust if you need a back button
+                  actions: const [
+                    // Space for future actions
                   ],
                 ),
-              )
-                  : Text(restaurant.name),
-              centerTitle: true,
-              pinned: true, // Makes the AppBar stick at the top
-              floating: false, // AppBar doesn't reappear on scrolling down slightly
-              snap: false, // Doesn't snap into view
-              automaticallyImplyLeading: false, // Adjust if you need a back button
-              actions: const [
-                // Space for future actions
+
+                // --- 2. Restaurant Info Section ---
+                // This is regular content that scrolls away
+                SliverToBoxAdapter(
+                  child: RestaurantInfo(
+                    // Assume restaurant is non-null based on the check above
+                    restaurantImageUrl: restaurant.imageUrl ?? '', // Provide actual URL if available
+                    isOpen: restaurant.isOpen,
+                    isFixedMenu: restaurant.hasRestaurantType(RestaurantType.fixedMenu),
+                    isOnRequest: restaurant.hasRestaurantType(RestaurantType.onRequest),
+                    address: restaurant.address,
+                    isEditable: isOwner,
+
+                    // Callbacks (unchanged)
+                    onOpenStatusChanged: isOwner ? (isOpen) {
+                      restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
+                    } : null,
+                    onFixedMenuToggled: isOwner ? (isEnabled) {
+                      restaurantProvider.updateRestaurantType(
+                          widget.restaurantId,
+                          RestaurantType.fixedMenu
+                      );
+                    } : null,
+                    onOnRequestToggled: isOwner ? (isEnabled) {
+                       restaurantProvider.updateRestaurantType(
+                           widget.restaurantId,
+                           RestaurantType.onRequest
+                       );
+                    } : null,
+                    onAddressChanged: isOwner ? (newAddress) {
+                      debugPrint("New address: $newAddress");
+                      restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
+                    } : null,
+                    onImageUploadPressed: isOwner ? (File? imageFile) {
+                      if (imageFile != null) {
+                          restaurantProvider.updateRestaurantImage(
+                              widget.restaurantId,
+                              imageFile
+                          );
+                      }
+                    } : null,
+                    onImageUrlChanged: isOwner ? (String? imageUrl) {
+                      if (imageUrl != null && imageUrl.isNotEmpty) {
+                        restaurantProvider.updateRestaurantImageUrl(
+                            widget.restaurantId,
+                            imageUrl
+                        );
+                      }
+                    } : null,
+                  ),
+                ),
+
+                // --- 3. Scrollable Space ---
+                // This SizedBox adds vertical space that scrolls away with RestaurantInfo
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 10.0), // Adjust height as needed
+                ),
+
+                // --- 4. Sticky TabBar ---
+                // This header persists below the AppBar
+                SliverPersistentHeader(
+                  pinned: true, // Make the tab bar stick
+                  delegate: _StickyTabBarDelegate(
+                    // Pass necessary data and callbacks to the delegate
+                    tabBar: NavigationTabbar(
+                      tabCount: 2,
+                      tabLabels: const ['Fixed menu', 'On Request'],
+                      height: 40.0, // Adjust height as needed
+                      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      radius: 25.0,
+                      initialIndex: _selectedTabIndex, // Pass current index
+                      onTabSelected: (index) {
+                        // Update state when tab changes
+                        setState(() {
+                          _selectedTabIndex = index;
+                        });
+                        debugPrint('Selected tab $index');
+                      },
+                    ),
+                    backgroundColor: colorScheme.surface, // Background for the tab bar area
+                    // Adatto il padding orizzontale in base alla dimensione e orientamento del dispositivo
+                    padding: (() {
+                      final size = MediaQuery.of(context).size;
+                      final isLandscape = size.width > size.height;
+
+                      // Logica per il padding orizzontale:
+                      // 1. Tablet in orizzontale: padding massimo (200.0) per rendere la TabBar molto stretta
+                      // 2. Tablet in verticale: padding medio (120.0)
+                      // 3. Smartphone: padding originale (50.0)
+                      final horizontalPadding = isTablet
+                          ? (isLandscape ? 220.0 : 120.0)
+                          : 50.0;
+
+                      return EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 8.0
+                      );
+                    })(),
+                    isOwner: isOwner,
+                    actionButton: CircularButton(
+                      icon: Icons.add,
+                      onPressed: () {
+                        _openDishScreen(
+                          isEditable: isOwner,
+                          isNew: true,
+                          isSpecial: _selectedTabIndex == 1,
+                        );
+                      },
+                    ),
+                  )
+                ),
+
+                // --- 5. Menu List ---
+                // This is the main scrollable content area below the sticky tab bar
+                _buildSliverMenuList(
+                  _selectedTabIndex == 0,
+                  isOwner,
+                ),
               ],
             ),
-
-            // --- 2. Restaurant Info Section ---
-            // This is regular content that scrolls away
-            SliverToBoxAdapter(
-              child: RestaurantInfo(
-                // Assume restaurant is non-null based on the check above
-                restaurantImageUrl: restaurant.imageUrl ?? '', // Provide actual URL if available
-                isOpen: restaurant.isOpen,
-                isFixedMenu: restaurant.hasRestaurantType(RestaurantType.fixedMenu),
-                isOnRequest: restaurant.hasRestaurantType(RestaurantType.onRequest),
-                address: restaurant.address,
-                isEditable: isOwner,
-
-                // Callbacks (unchanged)
-                onOpenStatusChanged: isOwner ? (isOpen) {
-                  restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
-                } : null,
-                onFixedMenuToggled: isOwner ? (isEnabled) {
-                  restaurantProvider.updateRestaurantType(
-                      widget.restaurantId,
-                      RestaurantType.fixedMenu
-                  );
-                } : null,
-                onOnRequestToggled: isOwner ? (isEnabled) {
-                   restaurantProvider.updateRestaurantType(
-                       widget.restaurantId,
-                       RestaurantType.onRequest
-                   );
-                } : null,
-                onAddressChanged: isOwner ? (newAddress) {
-                  debugPrint("New address: $newAddress");
-                  restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
-                } : null,
-                onImageUploadPressed: isOwner ? (File? imageFile) {
-                  if (imageFile != null) {
-                      restaurantProvider.updateRestaurantImage(
-                          widget.restaurantId,
-                          imageFile
-                      );
-                  }
-                } : null,
-                onImageUrlChanged: isOwner ? (String? imageUrl) {
-                  if (imageUrl != null && imageUrl.isNotEmpty) {
-                    restaurantProvider.updateRestaurantImageUrl(
-                        widget.restaurantId,
-                        imageUrl
-                    );
-                  }
-                } : null,
-              ),
-            ),
-
-            // --- 3. Scrollable Space ---
-            // This SizedBox adds vertical space that scrolls away with RestaurantInfo
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 10.0), // Adjust height as needed
-            ),
-
-            // --- 4. Sticky TabBar ---
-            // This header persists below the AppBar
-            SliverPersistentHeader(
-              pinned: true, // Make the tab bar stick
-              delegate: _StickyTabBarDelegate(
-                // Pass necessary data and callbacks to the delegate
-                tabBar: NavigationTabbar(
-                  tabCount: 2,
-                  tabLabels: const ['Fixed menu', 'On Request'],
-                  height: 40.0, // Adjust height as needed
-                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                  radius: 25.0,
-                  initialIndex: _selectedTabIndex, // Pass current index
-                  onTabSelected: (index) {
-                    // Update state when tab changes
-                    setState(() {
-                      _selectedTabIndex = index;
-                    });
-                    debugPrint('Selected tab $index');
-                  },
-                ),
-                backgroundColor: colorScheme.surface, // Background for the tab bar area
-                // Adatto il padding orizzontale in base alla dimensione e orientamento del dispositivo
-                padding: (() {
-                  final size = MediaQuery.of(context).size;
-                  final isTablet = size.shortestSide >= 600;
-                  final isLandscape = size.width > size.height;
-
-                  // Logica per il padding orizzontale:
-                  // 1. Tablet in orizzontale: padding massimo (200.0) per rendere la TabBar molto stretta
-                  // 2. Tablet in verticale: padding medio (120.0)
-                  // 3. Smartphone: padding originale (50.0)
-                  final horizontalPadding = isTablet
-                      ? (isLandscape ? 220.0 : 120.0)
-                      : 50.0;
-
-                  return EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: 8.0
-                  );
-                })(),
-                isOwner: isOwner,
-                actionButton: CircularButton(
-                  icon: Icons.add,
-                  onPressed: () {
-                    _openDishScreen(
-                      isEditable: isOwner,
-                      isNew: true,
-                      isSpecial: _selectedTabIndex == 1,
-                    );
-                  },
-                ),
-              )
-            ),
-
-            // --- 5. Menu List ---
-            // This is the main scrollable content area below the sticky tab bar
-            _buildSliverMenuList(
-              _selectedTabIndex == 0,
-              isOwner,
-            ),
-
-
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
