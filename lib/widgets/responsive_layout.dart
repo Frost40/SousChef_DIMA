@@ -8,7 +8,7 @@ class ResponsiveLayout extends StatefulWidget {
   const ResponsiveLayout({
     super.key,
     required this.builder,
-    this.enforceOrientations = true,
+    this.enforceOrientations = false,
   });
 
   @override

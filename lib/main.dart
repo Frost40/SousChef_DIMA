@@ -8,6 +8,7 @@ import 'package:sous_chef/providers/stripe_provider.dart';
 import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/screens/login_screen.dart';
 import 'package:sous_chef/screens/main_layout.dart';
+import 'package:sous_chef/services/orientation_manager.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/services/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
@@ -53,6 +54,12 @@ class MyApp extends StatelessWidget {
                     .themeData, // This will now update when theme changes
             home: const AuthenticationWrapper(),
             onGenerateRoute: router.onGenerateRoute,
+            builder: (context, child) {
+              // Use ResponsiveLayout to enforce orientations
+              OrientationManager().enforceOrientations(context);
+
+              return child!;
+            },
           );
         },
       ),
