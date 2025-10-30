@@ -49,6 +49,11 @@ class ChatFirestore {
     return snapshot.docs.map((doc) => Message.fromFirestore(doc)).toList();
   }
 
+  /// Alias for getChatMessages
+  Future<List<Message>> getMessages(String chatId) async {
+    return getChatMessages(chatId);
+  }
+
   /// Conta i messaggi non letti in una chat per un utente specifico
   Future<int> getUnreadMessagesCount(String chatId, String userId) async {
     // MODIFICATO: Usa la sottocollezione e rimuovi .where('chat_id'...)

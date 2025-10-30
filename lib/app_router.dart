@@ -6,9 +6,9 @@ import 'package:sous_chef/screens/signup_screen.dart';
 import 'package:sous_chef/screens/main_layout.dart';
 import 'package:sous_chef/screens/restaurant_screen.dart';
 import 'package:sous_chef/screens/cart_screen.dart';
-import 'package:sous_chef/screens/messages_screen.dart';
 import 'package:sous_chef/transition_type.dart';
 import 'package:sous_chef/screens/allChats_screen.dart';
+import 'package:sous_chef/screens/chat_screen.dart';
 
 class AppRouter {
   Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -41,6 +41,14 @@ class AppRouter {
           page: const AllChatsScreen(),
           transitionType: transitionType ?? TransitionType.fade,
         );
+      case '/chat':
+        final args = settings.arguments as Map<String, dynamic>?;
+        final String chatId = args?['chatId'] ?? '';
+        final String otherUserName = args?['otherUserName'] ?? '';
+        return CustomPageRoute(
+          page: ChatScreen(chatId: chatId, otherUserName: otherUserName),
+          transitionType: transitionType ?? TransitionType.fade,
+        );
       case '/restaurant':
         final args = settings.arguments as Map<String, dynamic>?;
         final String restaurantId = args?['restaurantId'];
@@ -51,11 +59,6 @@ class AppRouter {
       case '/cart':
         return CustomPageRoute(
           page: const CartScreen(),
-          transitionType: transitionType ?? TransitionType.fade,
-        );
-      case '/messages':
-        return CustomPageRoute(
-          page: const MessagesScreen(),
           transitionType: transitionType ?? TransitionType.fade,
         );
       // Aggiungi in lib/app_router.dart

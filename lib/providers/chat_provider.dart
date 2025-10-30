@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sous_chef/models/chat.dart';
 import 'package:sous_chef/models/message.dart';
 import 'package:sous_chef/models/user.dart';
+import 'package:sous_chef/models/restaurant.dart';
 import 'package:sous_chef/services/database/messages_firestore.dart';
 
 /// Provider that manages chat operations using the ChatFirestore service.
@@ -166,10 +167,20 @@ class ChatProvider with ChangeNotifier {
           currentUserId,
         );
 
+        // Recupera l'immagine del ristorante se l'utente ne ha uno
+        String? restaurantImageUrl;
+        if (otherUserData?.restaurantId != null &&
+            otherUserData!.restaurantId!.isNotEmpty) {
+          restaurantImageUrl = await _getRestaurantImage(
+            otherUserData.restaurantId!,
+          );
+        }
+
         newChats.add(
           ChatInfo(
             chat: chat,
             otherUser: otherUserData,
+            restaurantImageUrl: restaurantImageUrl,
             unreadCount: unreadCount,
           ),
         );
@@ -192,6 +203,21 @@ class ChatProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
+    }
+    return null;
+  }
+
+  /// Get restaurant image URL by restaurant ID
+  Future<String?> _getRestaurantImage(String restaurantId) async {
+    try {
+      final restaurantDoc =
+          await _firestore.collection('restaurants').doc(restaurantId).get();
+      if (restaurantDoc.exists) {
+        final restaurant = Restaurant.fromFirestore(restaurantDoc);
+        return restaurant.imageUrl;
+      }
+    } catch (e) {
+      debugPrint('Error fetching restaurant image: $e');
     }
     return null;
   }
@@ -295,6 +321,16 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
+  /// Get messages for a specific chat (one-time fetch)
+  Future<List<Message>> getMessages(String chatId) async {
+    try {
+      return await _chatFirestore.getMessages(chatId);
+    } catch (e) {
+      debugPrint('Error getting messages: $e');
+      return [];
+    }
+  }
+
   /// Get messages stream for a specific chat
   Stream<List<Message>> getMessagesStream(String chatId) {
     return _chatFirestore.getMessagesStream(chatId);
@@ -320,14 +356,26 @@ class ChatProvider with ChangeNotifier {
 class ChatInfo {
   final Chat chat;
   final User? otherUser;
+  final String? restaurantImageUrl;
   final int unreadCount;
 
-  ChatInfo({required this.chat, required this.otherUser, this.unreadCount = 0});
+  ChatInfo({
+    required this.chat,
+    required this.otherUser,
+    this.restaurantImageUrl,
+    this.unreadCount = 0,
+  });
 
-  ChatInfo copyWith({Chat? chat, User? otherUser, int? unreadCount}) {
+  ChatInfo copyWith({
+    Chat? chat,
+    User? otherUser,
+    String? restaurantImageUrl,
+    int? unreadCount,
+  }) {
     return ChatInfo(
       chat: chat ?? this.chat,
       otherUser: otherUser ?? this.otherUser,
+      restaurantImageUrl: restaurantImageUrl ?? this.restaurantImageUrl,
       unreadCount: unreadCount ?? this.unreadCount,
     );
   }

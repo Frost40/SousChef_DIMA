@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/providers/chat_provider.dart';
+import 'package:sous_chef/screens/chat_screen.dart';
 import 'package:intl/intl.dart';
 
 class AllChatsScreen extends StatefulWidget {
@@ -131,6 +132,7 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
               final otherUser = chatInfo.otherUser;
               final chat = chatInfo.chat;
               final unreadCount = chatInfo.unreadCount;
+              final restaurantImageUrl = chatInfo.restaurantImageUrl;
 
               // Use username or fallback to name if username is not available
               final displayName =
@@ -147,14 +149,23 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                     leading: CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.grey.shade300,
-                      child: Text(
-                        getInitials(displayName),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                      backgroundImage:
+                          restaurantImageUrl != null &&
+                                  restaurantImageUrl.isNotEmpty
+                              ? NetworkImage(restaurantImageUrl)
+                              : null,
+                      child:
+                          restaurantImageUrl == null ||
+                                  restaurantImageUrl.isEmpty
+                              ? Text(
+                                getInitials(displayName),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              )
+                              : null,
                     ),
                     title: Text(
                       displayName.isNotEmpty
@@ -202,16 +213,21 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                       ],
                     ),
                     onTap: () {
-                      // TODO: Navigate to chat conversation screen
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => ChatConversationScreen(
-                      //       chatId: chat.id,
-                      //       otherUser: otherUser,
-                      //     ),
-                      //   ),
-                      // );
+                      debugPrint('Navigating to chat: ${chat.id}');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ChatScreen(
+                                chatId: chat.id,
+                                otherUserName:
+                                    displayName.isNotEmpty
+                                        ? displayName
+                                        : 'Utente Sconosciuto',
+                                otherUserImageUrl: restaurantImageUrl,
+                              ),
+                        ),
+                      );
                     },
                   ),
                   if (index < chatProvider.chats.length - 1)
