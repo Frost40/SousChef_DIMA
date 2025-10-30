@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart),
-            tooltip: 'Carrello',
+            tooltip: 'Shopping Cart',
             onPressed: () {
               Navigator.of(context).pushNamed(
                 '/cart',
@@ -26,6 +26,17 @@ class HomeScreen extends StatelessWidget {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.mail_rounded),
+            tooltip: 'Messagges',
+            onPressed: () {
+              Navigator.of(context).pushNamed(
+                '/allChats',
+                arguments: {'transitionType': TransitionType.slideRight},
+              );
+            },
+          ),
+
         ],
       ),
       body: Center(

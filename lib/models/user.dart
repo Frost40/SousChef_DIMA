@@ -9,6 +9,7 @@ class User {
   final String phone;
   final String? restaurantId;
   final List<String> favourites;
+  final List<String> chats;
 
   User({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     required this.phone,
     this.restaurantId,
     this.favourites = const [],
+    this.chats = const [],
   });
 
   factory User.fromFirestore(DocumentSnapshot doc) {
@@ -30,10 +32,19 @@ class User {
       name: data['name'] ?? '',
       surname: data['surname'] ?? '',
       phone: data['phone'] ?? '',
-      restaurantId: (data['restaurant_id']!= null)? data['restaurant_id'] : '',
-      favourites: (data['favourites'] != null)
-        ? List<String>.from(data['favourites']) // Assicurati che sia una List<String>
-        : <String>[],
+      restaurantId:
+          (data['restaurant_id'] != null) ? data['restaurant_id'] : '',
+      favourites:
+          (data['favourites'] != null)
+              ? List<String>.from(
+                data['favourites'],
+              ) // Assicurati che sia una List<String>
+              : <String>[],
+      chats: (data['chats'] != null)
+              ? List<String>.from(
+                data['chats'],
+              )
+              : <String>[],
     );
   }
 
@@ -46,6 +57,7 @@ class User {
       'phone': phone,
       if (restaurantId != null) 'restaurant_id': restaurantId,
       'favourites': favourites,
+      'chats': chats,
     };
   }
 
@@ -66,7 +78,8 @@ class User {
       name: name ?? this.name,
       surname: surname ?? this.surname,
       phone: phone ?? this.phone,
-      favourites: favourites ?? this.favourites
+      favourites: favourites ?? this.favourites,
+      chats: chats ?? this.chats,
     );
   }
 }

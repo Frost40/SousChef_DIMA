@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/screens/home_screen.dart';
 import 'package:sous_chef/screens/past_orders_screen.dart';
 import 'package:sous_chef/screens/restaurant_screen.dart';
+import 'package:sous_chef/screens/allChats_screen.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_navigation_bar.dart';
 import 'account_screen.dart';
@@ -77,7 +78,10 @@ class _MainLayoutState extends State<MainLayout> {
               transitionType = TransitionType.spotify;
               break;
             case '/cart':
-              page = const CartScreen();  // Dovrai creare questa schermata
+              page = const CartScreen();
+              break;
+            case '/allChats':
+              page = const AllChatsScreen();
               break;
             // Pagine interne mantengono slideRight di default
             case '/account-settings':

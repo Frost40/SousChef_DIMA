@@ -2,17 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
   final String id;
-  final String text;
+  final String message;
   final String senderId;
   final String receiverId;
-  final DateTime sendTime;
+  final DateTime timestamp;
+  final bool isRead;
 
   Message({
     required this.id,
-    required this.text,
+    required this.message,
     required this.senderId,
     required this.receiverId,
-    required this.sendTime,
+    required this.timestamp,
+    this.isRead = false,
   });
 
   factory Message.fromFirestore(DocumentSnapshot doc) {
@@ -20,19 +22,21 @@ class Message {
 
     return Message(
       id: doc.id,
-      text: data['text'] ?? '',
+      message: data['message'] ?? '',
       senderId: data['sender_id'] ?? '',
       receiverId: data['receiver_id'] ?? '',
-      sendTime: (data['send_time'] as Timestamp).toDate(),
+      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      isRead: data['is_read'] ?? false,
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
-      'text': text,
+      'message': message,
       'sender_id': senderId,
       'receiver_id': receiverId,
-      'send_time': Timestamp.fromDate(sendTime),
+      'timestamp': Timestamp.fromDate(timestamp),
+      'is_read': isRead,
     };
   }
 }
