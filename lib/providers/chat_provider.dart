@@ -62,6 +62,18 @@ class ChatProvider with ChangeNotifier {
     super.dispose();
   }
 
+  /// Clears all chat data and resets the provider state
+  void clearAllChats() {
+    _chatsSubscription?.cancel();
+    _isListening = false;
+    _currentUserId = null;
+    _chats = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+    debugPrint('ChatProvider: All chats cleared');
+  }
+
   /// Clears all error states and messages
   void clearErrors({bool notify = true}) {
     _errorMessage = null;

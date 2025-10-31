@@ -202,17 +202,19 @@ class AuthProvider with ChangeNotifier {
           email: email,
           password: password,
           username: username,
-          restaurantId: null, // At the beginning the restaurant ID is not associated
+          restaurantId:
+              null, // At the beginning the restaurant ID is not associated
         );
 
         debugPrint("Temp user created: ${tempUser.id}");
         try {
           // Try to create the restaurant
           final RestaurantFirestore restaurantFirestore = RestaurantFirestore();
-          final String restaurantId = await restaurantFirestore.createRestaurant(
-            restaurantName: restaurantName,
-            ownerId: tempUser.id,
-          );
+          final String restaurantId = await restaurantFirestore
+              .createRestaurant(
+                restaurantName: restaurantName,
+                ownerId: tempUser.id,
+              );
 
           // In case of success, update the user with the restaurant ID
           await _userFirestore.updateUserRestaurant(restaurantId);
@@ -245,9 +247,15 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Signs out the current user and notifies listeners
-  Future<void> signOut() async {
+  Future<void> signOut({Function? onSignOut}) async {
     await _auth.signOut();
     _user = null;
+
+    // Call the callback if provided (useful for clearing other providers)
+    if (onSignOut != null) {
+      onSignOut();
+    }
+
     notifyListeners();
   }
 
@@ -292,7 +300,6 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = false;
       return await _auth.isEmailInUse(email);
-
     } catch (e) {
       _errorMessage = "Error checking email availability";
       notifyListeners();
@@ -327,11 +334,10 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     clearErrors();
 
-    try{
+    try {
       _isLoading = false;
       return await _auth.hasRecentLogin();
-
-    } catch (e){
+    } catch (e) {
       _isLoading = false;
       _errorMessage = _getErrorMessage(e);
       notifyListeners();
@@ -380,7 +386,7 @@ class AuthProvider with ChangeNotifier {
           return 'Invalid email format';
         case 'invalid-credential':
           return 'Invalid credentials';
-        case'requires-recent-login':
+        case 'requires-recent-login':
           return 'This operation requires a recent login. Please sign out and sign in again.';
         default:
           return 'Error: ${error.message}';

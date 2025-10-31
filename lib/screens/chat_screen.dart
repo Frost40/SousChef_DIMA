@@ -26,28 +26,20 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   late ChatProvider _chatProvider;
   late AuthProvider _authProvider;
-  List<Message> _messages = [];
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    _loadMessages();
+    _markMessagesAsRead();
   }
 
-  Future<void> _loadMessages() async {
-    setState(() => _isLoading = true);
+  Future<void> _markMessagesAsRead() async {
     try {
-      final messages = await _chatProvider.getMessages(widget.chatId);
-      setState(() {
-        _messages = messages;
-        _isLoading = false;
-      });
+      await _chatProvider.markMessagesAsRead(widget.chatId);
     } catch (e) {
-      debugPrint('Error loading messages: $e');
-      setState(() => _isLoading = false);
+      debugPrint('Error marking messages as read: $e');
     }
   }
 
@@ -72,7 +64,6 @@ class _ChatScreenState extends State<ChatScreen> {
         receiverId: otherUserId,
         message: messageText,
       );
-      await _loadMessages();
     } catch (e) {
       debugPrint('Error sending message: $e');
       if (mounted) {
@@ -200,29 +191,50 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // Messages list
           Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _messages.isEmpty
-                    ? Center(
-                      child: Text(
-                        'Nessun messaggio. Inizia la conversazione!',
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.5),
-                        ),
+            child: StreamBuilder<List<Message>>(
+              stream: _chatProvider.getMessagesStream(widget.chatId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Errore nel caricamento dei messaggi',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.5),
                       ),
-                    )
-                    : ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.all(8),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[_messages.length - 1 - index];
-                        final isMe = message.senderId == userId;
-                        return _buildMessageBubble(message, isMe);
-                      },
                     ),
+                  );
+                }
+
+                final messages = snapshot.data ?? [];
+
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Nessun messaggio. Inizia la conversazione!',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.all(8),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[messages.length - 1 - index];
+                    final isMe = message.senderId == userId;
+                    return _buildMessageBubble(message, isMe);
+                  },
+                );
+              },
+            ),
           ),
           // Message input
           Container(

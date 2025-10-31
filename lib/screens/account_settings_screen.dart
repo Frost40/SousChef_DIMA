@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/account_settings_field.dart';
 import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 import '../providers/auth_provider.dart';
+import '../providers/chat_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/personalized_button.dart';
@@ -22,22 +23,25 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   String? _phoneNumber;
   String? _email;
   String? _pageError;
-  
+
   // Track modifications for each field separately
   bool _nameModified = false;
   bool _surnameModified = false;
   bool _usernameModified = false;
   bool _phoneNumberModified = false;
   bool _emailModified = false;
-  
+
   bool _hasUsernameError = false;
   bool _hasPhoneNumberError = false;
   bool _hasEmailError = false;
-  
+
   // Helper to check if any field is modified
-  bool get _isAnyFieldModified => 
-      _nameModified || _surnameModified || _usernameModified || 
-      _phoneNumberModified || _emailModified;
+  bool get _isAnyFieldModified =>
+      _nameModified ||
+      _surnameModified ||
+      _usernameModified ||
+      _phoneNumberModified ||
+      _emailModified;
 
   @override
   void initState() {
@@ -52,14 +56,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     setState(() {
       _pageError = null;
     });
-    
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     userProvider.clearErrors(notify: false);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.clearErrors();
   }
-  
+
   // Add this new method to clear page error without triggering a full page rebuild
   void _clearPageError() {
     if (_pageError != null) {
@@ -74,10 +78,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     _clearErrors();
 
     // Navigate to login screen
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushReplacementNamed('/login');
+    Navigator.of(context, rootNavigator: true).pushReplacementNamed('/login');
   }
 
   @override
@@ -97,8 +98,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           },
         ),
         actions: [
-          if (_isAnyFieldModified && !_hasUsernameError && 
-              !_hasPhoneNumberError && !_hasEmailError)
+          if (_isAnyFieldModified &&
+              !_hasUsernameError &&
+              !_hasPhoneNumberError &&
+              !_hasEmailError)
             IconButton(
               icon: const Icon(Icons.save),
               color: colorTheme.primary,
@@ -186,18 +189,18 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             _pageError = error;
                             _hasPhoneNumberError = true;
                           });
-                        }else {
+                        } else {
                           _hasPhoneNumberError = false;
                           _clearPageError();
                         }
                       },
                     ),
                     const SizedBox(height: 40),
-                    
+
                     // Email section with info tooltip
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                      children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 25.0),
                           child: Text(
@@ -208,7 +211,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             ),
                           ),
                         ),
-                        
+
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 25.0),
                           child: Divider(
@@ -216,7 +219,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                             thickness: 0.5,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 10),
                         AccountSettingField(
                           fieldName: "Email",
@@ -245,28 +248,28 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 25.0),
                           child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: colorTheme.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                            child: Text(
-                              "Changing your email will require you to log in again to apply the changes.",
-                              style: TextStyle(
-                              fontSize: 13,
-                              color: colorTheme.onSurfaceVariant,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: colorTheme.primary,
+                                size: 20,
                               ),
-                            ),
-                            ),
-                          ],
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "Changing your email will require you to log in again to apply the changes.",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: colorTheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        )
+                        ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 20),
 
                     if (_pageError != null)
@@ -287,58 +290,83 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     AnimatedButton(
                       onTap: () async {
                         // Show confirmation dialog
-                        final bool confirmDelete = await CustomAlertDialog.showConfirmationDialog(
-                          context: context,
-                          title: "Delete Account",
-                          message: "Are you sure you want to delete your account? This action cannot be undone.",
-                          confirmText: "Delete",
-                          cancelText: "Cancel",
-                          icon: Icon(
-                            Icons.warning_amber_rounded,
-                            color: colorTheme.primary,
-                          ),
-                        );
+                        final bool confirmDelete =
+                            await CustomAlertDialog.showConfirmationDialog(
+                              context: context,
+                              title: "Delete Account",
+                              message:
+                                  "Are you sure you want to delete your account? This action cannot be undone.",
+                              confirmText: "Delete",
+                              cancelText: "Cancel",
+                              icon: Icon(
+                                Icons.warning_amber_rounded,
+                                color: colorTheme.primary,
+                              ),
+                            );
 
                         if (confirmDelete && context.mounted) {
                           try {
-                            final userProvider = Provider.of<UserProvider>(context, listen: false);
-                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            final userProvider = Provider.of<UserProvider>(
+                              context,
+                              listen: false,
+                            );
+                            final authProvider = Provider.of<AuthProvider>(
+                              context,
+                              listen: false,
+                            );
 
                             debugPrint("Starting account deletion process...");
 
-                            if(!await authProvider.hasRecentLogin()){
+                            if (!await authProvider.hasRecentLogin()) {
                               debugPrint("Not recently logged in");
                               throw ("For security reasons, please log in again to delete your account.");
                             }
 
                             // Step 1: Delete all user data from Firestore
-                            debugPrint("Step 1: Deleting user data from Firestore...");
+                            debugPrint(
+                              "Step 1: Deleting user data from Firestore...",
+                            );
                             await userProvider.deleteUserData();
                             if (userProvider.errorMessage != null) {
-                              debugPrint("Error in Step 1: ${userProvider.errorMessage}");
+                              debugPrint(
+                                "Error in Step 1: ${userProvider.errorMessage}",
+                              );
                               throw Exception(userProvider.errorMessage);
                             }
                             debugPrint("Step 1 completed successfully");
 
                             // Step 2: Delete user account from Firebase Auth
-                            debugPrint("Step 2: Deleting user account from Firebase Auth...");
+                            debugPrint(
+                              "Step 2: Deleting user account from Firebase Auth...",
+                            );
                             await authProvider.deleteUserAccount();
                             if (authProvider.errorMessage != null) {
-                              debugPrint("Error in Step 2: ${authProvider.errorMessage}");
+                              debugPrint(
+                                "Error in Step 2: ${authProvider.errorMessage}",
+                              );
                               throw Exception(authProvider.errorMessage);
                             }
                             debugPrint("Step 2 completed successfully");
 
-                            // Step 3: Sign out the user
+                            // Step 3: Sign out the user and clear chat data
                             debugPrint("Step 3: Signing out user...");
-                            await authProvider.signOut();
-                            debugPrint("Account deletion completed successfully");
+                            final chatProvider = Provider.of<ChatProvider>(
+                              context,
+                              listen: false,
+                            );
+                            await authProvider.signOut(
+                              onSignOut: () => chatProvider.clearAllChats(),
+                            );
+                            debugPrint(
+                              "Account deletion completed successfully",
+                            );
 
                             // Step 4: Navigate to login screen
                             _navigateToLogin();
-
                           } catch (e) {
-                            debugPrint("Account deletion failed with error: $e");
+                            debugPrint(
+                              "Account deletion failed with error: $e",
+                            );
                             // Show specific error message
                             if (context.mounted) {
                               CustomAlertDialog.showInfoDialog(
@@ -360,9 +388,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         centralWidget:
                             authProvider.isLoading || userProvider.isLoading
                                 ? LoadingAnimationWidget.staggeredDotsWave(
-                                    color: colorTheme.onPrimary,
-                                    size: 30,
-                                  )
+                                  color: colorTheme.onPrimary,
+                                  size: 30,
+                                )
                                 : null,
                       ),
                     ),
@@ -413,9 +441,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           const SnackBar(content: Text('Profile updated successfully!')),
         );
       }
-    } 
- }
-  
+    }
+  }
 
   Future<String?> _validateUsername(String value) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -463,7 +490,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     }
 
     // Check for valid email format
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
     if (!emailRegex.hasMatch(value)) {
       return "Please enter a valid email address";
     }
@@ -471,7 +500,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     // Check if the email is already in use
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final bool isInUse = await authProvider.isEmailInUse(value);
-    
+
     if (isInUse) {
       // Simply return error message - onValidationError will handle updating _pageError
       return "This email is already registered with another account";

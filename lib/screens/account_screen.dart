@@ -4,6 +4,7 @@ import 'package:sous_chef/widgets/account_screen/account_field.dart';
 import 'package:sous_chef/widgets/animated_button.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
+import 'package:sous_chef/providers/chat_provider.dart';
 import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/widgets/account_screen/theme_switch.dart';
 
@@ -96,8 +97,17 @@ class AccountScreen extends StatelessWidget {
             // Logout button with animation
             AnimatedButton(
               onTap: () async {
+                // Get chat provider to clear chats on logout
+                final chatProvider = Provider.of<ChatProvider>(
+                  context,
+                  listen: false,
+                );
+
                 // Sign out the user through auth provider
-                await authProvider.signOut();
+                await authProvider.signOut(
+                  onSignOut: () => chatProvider.clearAllChats(),
+                );
+
                 // Navigate to login screen after successful logout
                 if (context.mounted) {
                   Navigator.of(
