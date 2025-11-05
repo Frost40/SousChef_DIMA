@@ -50,6 +50,7 @@ dependencies:
   http: ^1.1.0
   flutter_dotenv: ^5.0.2
   cloud_functions: ^5.5.1
+  google_maps_flutter: ^2.13.1
 
 dev_dependencies:
   flutter_test:
