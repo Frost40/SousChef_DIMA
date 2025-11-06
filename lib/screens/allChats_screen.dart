@@ -53,10 +53,10 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
       return DateFormat('HH:mm').format(dateTime);
     } else if (difference.inDays == 1) {
       // Yesterday
-      return 'Yesterday';
+      return 'Ieri';
     } else if (difference.inDays < 7) {
       // This week - show day name
-      return DateFormat('EEEE', 'it').format(dateTime);
+      return DateFormat.EEEE('it').format(dateTime);
     } else {
       // Older - show date
       return DateFormat('dd/MM/yy').format(dateTime);

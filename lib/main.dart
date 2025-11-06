@@ -14,6 +14,7 @@ import 'package:sous_chef/themes/theme_provider.dart';
 import 'package:sous_chef/services/authentication.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'app_router.dart';
 import 'firebase_options.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
@@ -26,6 +27,9 @@ void main() async {
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
   await Stripe.instance.applySettings();
+
+  // Initialize date formatting for Italian locale
+  await initializeDateFormatting('it', null);
 
   runApp(const MyApp());
 }
