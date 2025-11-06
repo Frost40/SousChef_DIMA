@@ -9,11 +9,13 @@ class UserFirestore {
   String? get _uid => firebase_auth.FirebaseAuth.instance.currentUser?.uid;
 
   // Get current authenticated user
-  firebase_auth.User? get _authUser => firebase_auth.FirebaseAuth.instance.currentUser;
+  firebase_auth.User? get _authUser =>
+      firebase_auth.FirebaseAuth.instance.currentUser;
 
   // Firestore collection reference
-  final CollectionReference _usersTable =
-      FirebaseFirestore.instance.collection('users');
+  final CollectionReference _usersTable = FirebaseFirestore.instance.collection(
+    'users',
+  );
 
   /// Updates multiple user profile fields at once
   /// This is more efficient when updating several fields
@@ -44,6 +46,26 @@ class UserFirestore {
     }
   }
 
+  /// Updates the user's saved address
+  Future<void> updateUserAddress({
+    required String address,
+    required double latitude,
+    required double longitude,
+  }) async {
+    if (_uid == null) {
+      throw Exception('No authenticated user');
+    }
+
+    final updates = <String, dynamic>{
+      'saved_address': address,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+
+    // Update data in Firestore
+    await _usersTable.doc(_uid).update(updates);
+  }
+
   /// Function to request update of the user's email in both Firebase Auth and Firestore
   /// This sends a verification email to the new address that the user must click before the change takes effect
   Future<void> updateUserEmail(String newEmail) async {
@@ -57,32 +79,38 @@ class UserFirestore {
 
     // Store the current email to compare later
     final String oldEmail = _authUser!.email!;
-    
+
     // Send verification email to the new email address
     await _authUser!.verifyBeforeUpdateEmail(newEmail);
-    
+
     // Set up a listener to detect when the email has been changed
     // This should be called somewhere that persists beyond this function
     _setupEmailChangeListener(oldEmail, newEmail);
-    
-    debugPrint('Verification email sent to $newEmail. Please check your inbox and verify to complete the update.');
+
+    debugPrint(
+      'Verification email sent to $newEmail. Please check your inbox and verify to complete the update.',
+    );
   }
-  
+
   /// Sets up a listener to detect when email verification is complete
   /// and updates Firestore accordingly
   void _setupEmailChangeListener(String oldEmail, String newEmail) {
     firebase_auth.FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null && user.email != oldEmail && user.email == newEmail) {
         // The email has been changed, update Firestore
-        _usersTable.doc(user.uid).update({'email': newEmail}).then((_) {
-          debugPrint('Email updated in Firestore to $newEmail');
-        }).catchError((error) {
-          debugPrint('Failed to update email in Firestore: $error');
-        });
-        
+        _usersTable
+            .doc(user.uid)
+            .update({'email': newEmail})
+            .then((_) {
+              debugPrint('Email updated in Firestore to $newEmail');
+            })
+            .catchError((error) {
+              debugPrint('Failed to update email in Firestore: $error');
+            });
+
         // Note: Firebase automatically handles the authentication state
         // The user remains logged in after email change
-        
+
         // Optional: You might want to refresh the user's ID token
         // This ensures all Firebase services recognize the updated user info
         user.getIdToken(true); // Force token refresh
@@ -109,9 +137,9 @@ class UserFirestore {
     if (_uid == null) return null;
 
     try {
-      final docSnapshot = await _usersTable.doc(_uid).get(
-          GetOptions(source: Source.server)
-      );
+      final docSnapshot = await _usersTable
+          .doc(_uid)
+          .get(GetOptions(source: Source.server));
       if (!docSnapshot.exists) return null;
       return User.fromFirestore(docSnapshot);
     } catch (e) {
@@ -123,10 +151,7 @@ class UserFirestore {
   //Function to check in the database if an other user with that username already exists
   Future<bool> isUsernameTaken(String username) async {
     final result =
-    await _usersTable
-        .where('username', isEqualTo: username)
-        .limit(1)
-        .get();
+        await _usersTable.where('username', isEqualTo: username).limit(1).get();
     return result.docs.isNotEmpty;
   }
 
@@ -166,19 +191,23 @@ class UserFirestore {
 
     try {
       // 1. Check if user owns a restaurant
-      final restaurantQuery = await db.collection('restaurants')
-          .where('owner_id', isEqualTo: userId)
-          .get();
+      final restaurantQuery =
+          await db
+              .collection('restaurants')
+              .where('owner_id', isEqualTo: userId)
+              .get();
 
       // 2. For each restaurant (should be at most 1 per user)
       for (var restaurantDoc in restaurantQuery.docs) {
         final String restaurantId = restaurantDoc.id;
 
         // 2.1 Delete all dishes in the restaurant
-        final dishesQuery = await db.collection('restaurants')
-            .doc(restaurantId)
-            .collection('dishes')
-            .get();
+        final dishesQuery =
+            await db
+                .collection('restaurants')
+                .doc(restaurantId)
+                .collection('dishes')
+                .get();
 
         for (var dishDoc in dishesQuery.docs) {
           batch.delete(dishDoc.reference);
@@ -189,36 +218,44 @@ class UserFirestore {
       }
 
       // 3. Delete special dishes created by the user in other restaurants
-      final specialDishesQuery = await db.collectionGroup('dishes')
-          .where('user_id', isEqualTo: userId)
-          .where('is_special', isEqualTo: true)
-          .get();
+      final specialDishesQuery =
+          await db
+              .collectionGroup('dishes')
+              .where('user_id', isEqualTo: userId)
+              .where('is_special', isEqualTo: true)
+              .get();
 
       for (var dishDoc in specialDishesQuery.docs) {
         batch.delete(dishDoc.reference);
       }
 
       // 4. Delete user's orders
-      final ordersQuery = await db.collection('orders')
-          .where('user_id', isEqualTo: userId)
-          .get();
+      final ordersQuery =
+          await db
+              .collection('orders')
+              .where('user_id', isEqualTo: userId)
+              .get();
 
       for (var orderDoc in ordersQuery.docs) {
         batch.delete(orderDoc.reference);
       }
 
       // 5. Delete messages sent or received by the user
-      final sentMessagesQuery = await db.collection('messages')
-          .where('sender_id', isEqualTo: userId)
-          .get();
+      final sentMessagesQuery =
+          await db
+              .collection('messages')
+              .where('sender_id', isEqualTo: userId)
+              .get();
 
       for (var messageDoc in sentMessagesQuery.docs) {
         batch.delete(messageDoc.reference);
       }
 
-      final receivedMessagesQuery = await db.collection('messages')
-          .where('receiver_id', isEqualTo: userId)
-          .get();
+      final receivedMessagesQuery =
+          await db
+              .collection('messages')
+              .where('receiver_id', isEqualTo: userId)
+              .get();
 
       for (var messageDoc in receivedMessagesQuery.docs) {
         batch.delete(messageDoc.reference);
@@ -240,7 +277,7 @@ class UserFirestore {
   Future<void> removeFromFavorites(String userId, String restaurantId) async {
     try {
       await _usersTable.doc(userId).update({
-        'favourites': FieldValue.arrayRemove([restaurantId])
+        'favourites': FieldValue.arrayRemove([restaurantId]),
       });
     } catch (e) {
       debugPrint('Error while removing restaurant from favorites: $e');
@@ -254,7 +291,6 @@ class UserFirestore {
     }
 
     // Update the restaurant ID in the user's document
-    _usersTable.doc(_uid).update({'restaurantId': id,});
+    _usersTable.doc(_uid).update({'restaurantId': id});
   }
-
 }

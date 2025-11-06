@@ -142,14 +142,14 @@ class UserProvider with ChangeNotifier {
 
     try {
       await _userFirestore.updateUserEmail(newEmail);
-      
+
       // Instead of fetching all user data, just update the email field
       // This assumes the email verification happens immediately (synchronously)
       // which it doesn't - see the notification system below
-      
+
       // Set up a listener to wait for the email update to complete
       _setupEmailUpdateListener(newEmail);
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -159,24 +159,53 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
+  /// Updates the user's saved address
+  Future<void> updateUserAddress({
+    required String address,
+    required double latitude,
+    required double longitude,
+  }) async {
+    clearErrors();
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _userFirestore.updateUserAddress(
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+      );
+
+      // Update in-memory data
+      _userData = await _userFirestore.getFullUserData();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
   /// Sets up a listener to detect when the email update completes
   void _setupEmailUpdateListener(String newEmail) {
     // Create a subscription that we can cancel later
     late final StreamSubscription<String?> subscription;
-    subscription = 
-        Stream.periodic(const Duration(seconds: 2), (_) => _authentication.getCurrentUserEmail())
-        .listen((currentEmail) {
-          if (currentEmail == newEmail) {
-            // Email has been updated successfully
-            if (_userData != null) {
-              _userData = _userData!.copyWith(email: newEmail);
-              notifyListeners();
-            }
-            subscription.cancel(); // Stop listening once we detect the change
-          }
-        });
-    
+    subscription = Stream.periodic(
+      const Duration(seconds: 2),
+      (_) => _authentication.getCurrentUserEmail(),
+    ).listen((currentEmail) {
+      if (currentEmail == newEmail) {
+        // Email has been updated successfully
+        if (_userData != null) {
+          _userData = _userData!.copyWith(email: newEmail);
+          notifyListeners();
+        }
+        subscription.cancel(); // Stop listening once we detect the change
+      }
+    });
+
     // Cancel the subscription after a reasonable timeout (e.g., 2 minutes)
     Future.delayed(const Duration(minutes: 2), () {
       subscription.cancel();
@@ -279,23 +308,27 @@ class UserProvider with ChangeNotifier {
   }
 
   // Method for toggling favorites with undo capability
-  void toggleFavorite(BuildContext context, String restaurantId, String restaurantName) {
+  void toggleFavorite(
+    BuildContext context,
+    String restaurantId,
+    String restaurantName,
+  ) {
     if (_userData == null) return;
-    
+
     // Remove from local favorites
     _userData!.favourites.remove(restaurantId);
     notifyListeners();
-    
+
     // Cancel existing timers
     _pendingRemovals[restaurantId]?.cancel();
-    
+
     // Create a new timer
     _pendingRemovals[restaurantId] = Timer(Duration(seconds: 3), () async {
       // Remove from Firestore after 3 seconds
       await _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
       _pendingRemovals.remove(restaurantId);
     });
-    
+
     // Show Snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -306,7 +339,7 @@ class UserProvider with ChangeNotifier {
             // Cancel removal
             _pendingRemovals[restaurantId]?.cancel();
             _pendingRemovals.remove(restaurantId);
-            
+
             // Restore to favorites
             if (!_userData!.favourites.contains(restaurantId)) {
               _userData!.favourites.add(restaurantId);
@@ -321,11 +354,11 @@ class UserProvider with ChangeNotifier {
 
   // Synchronize pending changes when user leaves the screen
   void syncPendingChanges() {
-  _pendingRemovals.forEach((restaurantId, timer) {
-    timer.cancel();
-    _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
-  });
-  _pendingRemovals.clear();
+    _pendingRemovals.forEach((restaurantId, timer) {
+      timer.cancel();
+      _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
+    });
+    _pendingRemovals.clear();
   }
 
   /// Sets the appropriate field error flags based on the error type

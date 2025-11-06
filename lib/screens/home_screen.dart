@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sous_chef/widgets/map_viewer.dart';
+import 'package:sous_chef/widgets/address_display.dart';
+import 'package:sous_chef/widgets/distance_selector.dart';
 
 import '../transition_type.dart';
 
@@ -10,7 +12,13 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home Screen'),
+        title: Text(
+          'Sous Chef',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -35,37 +43,78 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Welcome to the Home Screen!',
-              style: TextStyle(
-                fontSize: 24,
-                color: Theme.of(context).colorScheme.onSurface,
+      body: Column(
+        children: [
+          // Row con AddressDisplay (3/4) e DistanceSelector (1/4)
+          SizedBox(
+            height: 125,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+              child: Row(
+                children: [
+                  // AddressDisplay - 3/4 dello schermo
+                  Flexible(
+                    flex: 9,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 0),
+                      child: const AddressDisplay(),
+                    ),
+                  ),
+                  // DistanceSelector - 1/4 dello schermo
+                  Flexible(
+                    flex: 4,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 0),
+                      child: DistanceSelector(
+                        initialDistance: 3,
+                        onDistanceChanged: (distance) {
+                          // TODO: Utilizza la distanza selezionata per filtrare i risultati
+                          debugPrint('Distanza selezionata: $distance km');
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () => _openMap(context),
-              icon: const Icon(Icons.map),
-              label: const Text('Apri Mappa Milano'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+          ),
+
+          // Resto del contenuto
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Welcome to the Home Screen!',
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  ElevatedButton.icon(
+                    onPressed: () => _openMap(context),
+                    icon: const Icon(Icons.map),
+                    label: const Text('Apri Mappa Milano'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
