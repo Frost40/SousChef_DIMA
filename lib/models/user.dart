@@ -11,6 +11,11 @@ class User {
   final List<String> favourites;
   final List<String> chats;
 
+  // Address fields
+  final String? savedAddress;
+  final double? latitude;
+  final double? longitude;
+
   User({
     required this.id,
     required this.email,
@@ -21,6 +26,9 @@ class User {
     this.restaurantId,
     this.favourites = const [],
     this.chats = const [],
+    this.savedAddress,
+    this.latitude,
+    this.longitude,
   });
 
   factory User.fromFirestore(DocumentSnapshot doc) {
@@ -40,11 +48,13 @@ class User {
                 data['favourites'],
               ) // Assicurati che sia una List<String>
               : <String>[],
-      chats: (data['chats'] != null)
-              ? List<String>.from(
-                data['chats'],
-              )
+      chats:
+          (data['chats'] != null)
+              ? List<String>.from(data['chats'])
               : <String>[],
+      savedAddress: data['saved_address'],
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
     );
   }
 
@@ -58,6 +68,9 @@ class User {
       if (restaurantId != null) 'restaurant_id': restaurantId,
       'favourites': favourites,
       'chats': chats,
+      if (savedAddress != null) 'saved_address': savedAddress,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
   }
 
@@ -70,6 +83,9 @@ class User {
     String? surname,
     String? phone,
     List<String>? favourites,
+    String? savedAddress,
+    double? latitude,
+    double? longitude,
   }) {
     return User(
       id: id ?? this.id,
@@ -80,6 +96,9 @@ class User {
       phone: phone ?? this.phone,
       favourites: favourites ?? this.favourites,
       chats: chats ?? this.chats,
+      savedAddress: savedAddress ?? this.savedAddress,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }
