@@ -124,6 +124,25 @@ class RestaurantProvider with ChangeNotifier {
     }
   }
 
+  /// Fetches restaurants within a specified distance from a given location
+  Future<List<Restaurant>> fetchNearbyRestaurants({
+    required double latitude,
+    required double longitude,
+    required double radiusInKm,
+  }) async {
+    try {
+      final restaurants = await _restaurantFirestore.getRestaurantsNearLocation(
+        latitude: latitude,
+        longitude: longitude,
+        radiusInKm: radiusInKm,
+      );
+      return restaurants;
+    } catch (e) {
+      debugPrint('Error fetching nearby restaurants: $e');
+      return [];
+    }
+  }
+
   /// Clears all errors and optionally resets restaurant data
   void clearErrors({bool clearData = false}) {
     _errorMessage = null;

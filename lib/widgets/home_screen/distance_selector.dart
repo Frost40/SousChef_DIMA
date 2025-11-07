@@ -47,7 +47,7 @@ class _DistanceSelectorState extends State<DistanceSelector> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -85,7 +85,7 @@ class _DistanceSelectorState extends State<DistanceSelector> {
                 onTap: _decreaseDistance,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   child: Icon(
                     Icons.keyboard_arrow_down,
                     color:
@@ -96,24 +96,27 @@ class _DistanceSelectorState extends State<DistanceSelector> {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               // Valore distanza
-              Text(
-                '$_distance km',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
+              SizedBox(
+                width: 45,
+                child: Text(
+                  '$_distance km',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               // Pulsante freccia su (destra)
               InkWell(
                 onTap: _increaseDistance,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   child: Icon(
                     Icons.keyboard_arrow_up,
                     color: colorScheme.primary,

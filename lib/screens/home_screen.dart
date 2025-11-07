@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/home_screen/map_viewer.dart';
 import 'package:sous_chef/widgets/home_screen/address_display.dart';
 import 'package:sous_chef/widgets/home_screen/distance_selector.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
+import 'package:sous_chef/providers/user_provider.dart';
+import 'package:sous_chef/providers/restaurant_provider.dart';
+import 'package:sous_chef/models/restaurant.dart';
 
 import '../transition_type.dart';
 
@@ -15,6 +19,42 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isMapView = false;
+  int _selectedDistance = 3;
+  List<Restaurant>? _nearbyRestaurants;
+
+  @override
+  void initState() {
+    super.initState();
+    // Carica i ristoranti vicini all'avvio
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadNearbyRestaurants();
+    });
+  }
+
+  /// Carica i ristoranti entro la distanza selezionata
+  Future<void> _loadNearbyRestaurants() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final restaurantProvider = Provider.of<RestaurantProvider>(
+      context,
+      listen: false,
+    );
+    final userData = userProvider.userData;
+
+    // Solo se l'utente ha un indirizzo con coordinate
+    if (userData?.latitude != null && userData?.longitude != null) {
+      final restaurants = await restaurantProvider.fetchNearbyRestaurants(
+        latitude: userData!.latitude!,
+        longitude: userData.longitude!,
+        radiusInKm: _selectedDistance.toDouble(),
+      );
+
+      if (mounted) {
+        setState(() {
+          _nearbyRestaurants = restaurants;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 0),
                       child: DistanceSelector(
-                        initialDistance: 3,
+                        initialDistance: _selectedDistance,
                         onDistanceChanged: (distance) {
-                          // TODO: Utilizza la distanza selezionata per filtrare i risultati
+                          setState(() {
+                            _selectedDistance = distance;
+                          });
+                          // Ricarica i ristoranti con la nuova distanza
+                          _loadNearbyRestaurants();
                           debugPrint('Distanza selezionata: $distance km');
                         },
                       ),
@@ -141,11 +185,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Costruisce la vista mappa
   Widget _buildMapView() {
-    return const MapViewer(
-      latitude: 45.4642, // Milano
-      longitude: 9.1900,
-      zoom: 12.0,
-      markerTitle: 'Milano',
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userData = userProvider.userData;
+
+    // Se l'utente ha un indirizzo salvato con coordinate, centra sulla sua posizione
+    if (userData?.latitude != null && userData?.longitude != null) {
+      return MapViewer(
+        latitude: userData!.latitude!,
+        longitude: userData.longitude!,
+        zoom: 14.0,
+        markerTitle: userData.savedAddress ?? 'La tua posizione',
+        nearbyRestaurants: _nearbyRestaurants,
+      );
+    }
+
+    // Altrimenti mostra tutta l'Italia
+    return MapViewer(
+      latitude: 41.8719, // Centro dell'Italia (Roma)
+      longitude: 12.5674,
+      zoom: 6.0,
+      markerTitle: null,
+      nearbyRestaurants: _nearbyRestaurants,
     );
   }
 }

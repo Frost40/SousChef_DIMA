@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -101,5 +102,97 @@ class RestaurantFirestore {
     String imageUrl,
   ) async {
     await _restaurantsTable.doc(restaurantId).update({'image_url': imageUrl});
+  }
+
+  /// Retrieves all restaurants within a certain distance from a given location
+  /// Uses a bounding box approximation for efficient querying
+  /// Distance is in kilometers
+  Future<List<Restaurant>> getRestaurantsNearLocation({
+    required double latitude,
+    required double longitude,
+    required double radiusInKm,
+  }) async {
+    // Approximate degrees per kilometer
+    // At equator: 1 degree latitude ≈ 111 km
+    // Longitude varies by latitude, but we use a safe approximation
+    final double latDegreePerKm = 1 / 111.0;
+    final double lonDegreePerKm = 1 / (111.0 * 0.8); // Conservative estimate
+
+    // Calculate bounding box
+    final double minLat = latitude - (radiusInKm * latDegreePerKm);
+    final double maxLat = latitude + (radiusInKm * latDegreePerKm);
+    final double minLon = longitude - (radiusInKm * lonDegreePerKm);
+    final double maxLon = longitude + (radiusInKm * lonDegreePerKm);
+
+    try {
+      // Query restaurants with location field that exists and is within bounds
+      final QuerySnapshot querySnapshot =
+          await _restaurantsTable.where('location', isNotEqualTo: null).get();
+
+      List<Restaurant> restaurants = [];
+
+      for (var doc in querySnapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          final GeoPoint? location = data['location'] as GeoPoint?;
+
+          if (location != null) {
+            // Check if within bounding box
+            if (location.latitude >= minLat &&
+                location.latitude <= maxLat &&
+                location.longitude >= minLon &&
+                location.longitude <= maxLon) {
+              // Calculate actual distance using Haversine formula
+              final distance = _calculateDistance(
+                latitude,
+                longitude,
+                location.latitude,
+                location.longitude,
+              );
+
+              if (distance <= radiusInKm) {
+                restaurants.add(Restaurant.fromFirestore(doc));
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('Error processing restaurant document: $e');
+        }
+      }
+
+      return restaurants;
+    } catch (e) {
+      debugPrint('Error fetching nearby restaurants: $e');
+      return [];
+    }
+  }
+
+  /// Calculate distance between two coordinates using Haversine formula
+  /// Returns distance in kilometers
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const double earthRadiusKm = 6371.0;
+
+    final double dLat = _degreesToRadians(lat2 - lat1);
+    final double dLon = _degreesToRadians(lon2 - lon1);
+
+    final double a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    final double c = 2 * math.asin(math.sqrt(a));
+
+    return earthRadiusKm * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * math.pi / 180;
   }
 }
