@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_storage.dart';
 import '../models/restaurant.dart';
 import '../services/database/restaurant_firestore.dart';
@@ -90,7 +91,9 @@ class RestaurantProvider with ChangeNotifier {
     }
   }
 
-  Future<List<Restaurant>> fetchFavoriteRestaurantsByIds(List<String> restaurantIds) async {
+  Future<List<Restaurant>> fetchFavoriteRestaurantsByIds(
+    List<String> restaurantIds,
+  ) async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -100,7 +103,9 @@ class RestaurantProvider with ChangeNotifier {
         return [];
       }
       final List<Restaurant> restaurants = [];
-      final futures = restaurantIds.map((id) => _restaurantFirestore.getFavouriteInfo(id));
+      final futures = restaurantIds.map(
+        (id) => _restaurantFirestore.getFavouriteInfo(id),
+      );
       final results = await Future.wait(futures);
       for (final result in results) {
         if (result != null) {
@@ -129,13 +134,19 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's open status
-  Future<void> updateRestaurantOpenStatus(String restaurantId, bool isOpen) async {
+  Future<void> updateRestaurantOpenStatus(
+    String restaurantId,
+    bool isOpen,
+  ) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
 
     try {
-      await _restaurantFirestore.updateRestaurantOpenStatus(restaurantId, isOpen);
+      await _restaurantFirestore.updateRestaurantOpenStatus(
+        restaurantId,
+        isOpen,
+      );
 
       // Update local restaurant model
       if (_restaurant != null && _restaurant!.id == restaurantId) {
@@ -161,7 +172,11 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's name
-  Future<void> updateRestaurantName(String restaurantId, String name, {required OrderProvider orderProvider}) async {
+  Future<void> updateRestaurantName(
+    String restaurantId,
+    String name, {
+    required OrderProvider orderProvider,
+  }) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -195,14 +210,24 @@ class RestaurantProvider with ChangeNotifier {
     }
   }
 
-  /// Updates the restaurant's address
-  Future<void> updateRestaurantAddress(String restaurantId, String address) async {
+  /// Updates the restaurant's address and coordinates
+  Future<void> updateRestaurantAddress(
+    String restaurantId,
+    String address,
+    double latitude,
+    double longitude,
+  ) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
 
     try {
-      await _restaurantFirestore.updateRestaurantAddress(restaurantId, address);
+      await _restaurantFirestore.updateRestaurantAddress(
+        restaurantId,
+        address,
+        latitude,
+        longitude,
+      );
 
       // Update local restaurant model
       if (_restaurant != null && _restaurant!.id == restaurantId) {
@@ -213,7 +238,7 @@ class RestaurantProvider with ChangeNotifier {
           isOpen: _restaurant!.isOpen,
           restaurantTypes: _restaurant!.restaurantTypes,
           ownerId: _restaurant!.ownerId,
-          location: _restaurant!.location,
+          location: GeoPoint(latitude, longitude),
           imageUrl: _restaurant!.imageUrl,
         );
       }
@@ -228,7 +253,10 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's type
-  Future<void> updateRestaurantType(String restaurantId, RestaurantType type) async {
+  Future<void> updateRestaurantType(
+    String restaurantId,
+    RestaurantType type,
+  ) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -242,19 +270,21 @@ class RestaurantProvider with ChangeNotifier {
         // Update in Firestore
         await _restaurantFirestore.updateRestaurantType(
           restaurantId,
-          updatedRestaurant.restaurantTypes
+          updatedRestaurant.restaurantTypes,
         );
 
         // Update local model
         _restaurant = updatedRestaurant;
       } else {
         // If restaurant isn't loaded, fetch it first
-        final restaurant = await _restaurantFirestore.getRestaurant(restaurantId);
+        final restaurant = await _restaurantFirestore.getRestaurant(
+          restaurantId,
+        );
         Restaurant updatedRestaurant = restaurant.toggleRestaurantType(type);
 
         await _restaurantFirestore.updateRestaurantType(
           restaurantId,
-          updatedRestaurant.restaurantTypes
+          updatedRestaurant.restaurantTypes,
         );
 
         _restaurant = updatedRestaurant;
@@ -270,7 +300,10 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's image
-  Future<void> updateRestaurantImage(String restaurantId, File imageFile) async {
+  Future<void> updateRestaurantImage(
+    String restaurantId,
+    File imageFile,
+  ) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -278,13 +311,16 @@ class RestaurantProvider with ChangeNotifier {
     try {
       // Update the image in Firebase Storage and retrieve the URL
       final String? imageUrl = await _firebaseStorage.uploadRestaurantImage(
-          restaurantId,
-          imageFile
+        restaurantId,
+        imageFile,
       );
 
       if (imageUrl != null) {
         // Update the image URL in Firestore
-        await _restaurantFirestore.updateRestaurantImage(restaurantId, imageUrl);
+        await _restaurantFirestore.updateRestaurantImage(
+          restaurantId,
+          imageUrl,
+        );
 
         // Updating local restaurant model
         if (_restaurant != null && _restaurant!.id == restaurantId) {
@@ -304,7 +340,10 @@ class RestaurantProvider with ChangeNotifier {
   }
 
   /// Updates the restaurant's image URL directly in Firestore
-  Future<void> updateRestaurantImageUrl(String restaurantId, String imageUrl) async {
+  Future<void> updateRestaurantImageUrl(
+    String restaurantId,
+    String imageUrl,
+  ) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();

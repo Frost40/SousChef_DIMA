@@ -20,7 +20,7 @@ class RestaurantInfo extends StatelessWidget {
   final Function(bool)? onOpenStatusChanged;
   final Function(bool)? onFixedMenuToggled;
   final Function(bool)? onOnRequestToggled;
-  final Function(String)? onAddressChanged;
+  final Function(String, double, double)? onAddressChanged;
   final Function(File)? onImageUploadPressed;
   final Function(String?)? onImageUrlChanged;
 
@@ -58,7 +58,12 @@ class RestaurantInfo extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 25.0, right: 25.0, bottom: 25.0, top: 15.0),
+        padding: const EdgeInsets.only(
+          left: 25.0,
+          right: 25.0,
+          bottom: 25.0,
+          top: 15.0,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -89,29 +94,40 @@ class RestaurantInfo extends StatelessWidget {
                                   width: 100,
                                   height: 100,
                                 );
-                              } else if (urlValue != null && urlValue.isNotEmpty) {
+                              } else if (urlValue != null &&
+                                  urlValue.isNotEmpty) {
                                 return Image.network(
                                   urlValue,
                                   fit: BoxFit.cover,
                                   width: 100,
                                   height: 100,
-                                  loadingBuilder: (context, child, loadingProgress) {
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
                                     if (loadingProgress == null) return child;
                                     return Center(
                                       child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                            : null,
+                                        value:
+                                            loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
                                         color: colorScheme.primary,
                                       ),
                                     );
                                   },
-                                  errorBuilder: (context, error, stackTrace) => Icon(
-                                    Icons.restaurant,
-                                    size: 50,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Icon(
+                                        Icons.restaurant,
+                                        size: 50,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                 );
                               } else if (restaurantImageUrl.isNotEmpty) {
                                 return Image.network(
@@ -119,23 +135,33 @@ class RestaurantInfo extends StatelessWidget {
                                   fit: BoxFit.cover,
                                   width: 100,
                                   height: 100,
-                                  loadingBuilder: (context, child, loadingProgress) {
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
                                     if (loadingProgress == null) return child;
                                     return Center(
                                       child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                            : null,
+                                        value:
+                                            loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
                                         color: colorScheme.primary,
                                       ),
                                     );
                                   },
-                                  errorBuilder: (context, error, stackTrace) => Icon(
-                                    Icons.restaurant,
-                                    size: 50,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                                  errorBuilder:
+                                      (context, error, stackTrace) => Icon(
+                                        Icons.restaurant,
+                                        size: 50,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                 );
                               } else {
                                 return Icon(
@@ -176,7 +202,8 @@ class RestaurantInfo extends StatelessWidget {
                               // Here you could add logic to handle the URL
                             }
                           },
-                          currentImageUrl: tempImageUrl.value ?? restaurantImageUrl,
+                          currentImageUrl:
+                              tempImageUrl.value ?? restaurantImageUrl,
                         ),
                       ),
                   ],
@@ -220,19 +247,23 @@ class RestaurantInfo extends StatelessWidget {
 
                   Row(
                     children: [
-                      Expanded(child: ServiceType(
+                      Expanded(
+                        child: ServiceType(
                           initialValue: isFixedMenu,
                           serviceType: "Fixed Menu",
                           isEditable: isEditable,
                           onToggle: onFixedMenuToggled,
-                      )),
+                        ),
+                      ),
                       const SizedBox(width: 10),
-                      Expanded(child: ServiceType(
+                      Expanded(
+                        child: ServiceType(
                           initialValue: isOnRequest,
                           serviceType: "On Request",
                           isEditable: isEditable,
                           onToggle: onOnRequestToggled,
-                      )),
+                        ),
+                      ),
                     ],
                   ),
 
@@ -261,7 +292,7 @@ class RestaurantInfo extends StatelessWidget {
                   AddressField(
                     isEditable: isEditable,
                     address: address,
-                    onAddressChanged: onAddressChanged,
+                    onAddressWithCoordinatesChanged: onAddressChanged,
                   ),
                 ],
               ),

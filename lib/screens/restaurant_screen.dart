@@ -27,10 +27,7 @@ enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 class RestaurantScreen extends StatefulWidget {
   final String restaurantId;
 
-  const RestaurantScreen({
-    super.key,
-    required this.restaurantId,
-  });
+  const RestaurantScreen({super.key, required this.restaurantId});
 
   @override
   State<RestaurantScreen> createState() => _RestaurantScreenState();
@@ -43,7 +40,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   LayoutType _getLayoutType(BuildContext context) {
     final orientationManager = OrientationManager();
     final bool isTablet = orientationManager.isTablet(context);
-    final bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     if (!isTablet) {
       return LayoutType.mobile;
@@ -60,13 +58,17 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Check if the widget is still mounted before accessing context
       if (mounted) {
-        Provider.of<RestaurantProvider>(context, listen: false)
-            .fetchCompleteRestaurantData(widget.restaurantId);
+        Provider.of<RestaurantProvider>(
+          context,
+          listen: false,
+        ).fetchCompleteRestaurantData(widget.restaurantId);
       }
 
       // Separately fetch restaurant menu
-      Provider.of<DishProvider>(context, listen: false)
-          .fetchDishes(widget.restaurantId);
+      Provider.of<DishProvider>(
+        context,
+        listen: false,
+      ).fetchDishes(widget.restaurantId);
     });
   }
 
@@ -86,14 +88,15 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           showDialog(
             context: context,
             barrierColor: Colors.black54, // Sfondo semi-trasparente
-            builder: (context) => DishPopupDialog(
-              heroTag: heroTag,
-              dishId: dishId,
-              isEditable: isEditable,
-              isNew: isNew,
-              isSpecial: isSpecial,
-              onAvailabilityChanged: onAvailabilityChanged,
-            ),
+            builder:
+                (context) => DishPopupDialog(
+                  heroTag: heroTag,
+                  dishId: dishId,
+                  isEditable: isEditable,
+                  isNew: isNew,
+                  isSpecial: isSpecial,
+                  onAvailabilityChanged: onAvailabilityChanged,
+                ),
           );
         } else {
           // Mostra il DishScreen come pagina separata per smartphone
@@ -127,7 +130,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isOwner = restaurantProvider.restaurant != null &&
+    final bool isOwner =
+        restaurantProvider.restaurant != null &&
         authProvider.user?.id == restaurantProvider.restaurant!.ownerId;
 
     // Handle potential null restaurant during initial load
@@ -159,24 +163,28 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             // This app bar will shrink and stick to the top
             SliverAppBar(
               backgroundColor: colorScheme.darkGrayBackground,
-              title: isOwner
-                  ? InkWell(
-                onTap: () => _showEditNameDialog(context, restaurant.name),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(restaurant.name),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.edit, size: 16),
-                  ],
-                ),
-              )
-                  : Text(restaurant.name),
+              title:
+                  isOwner
+                      ? InkWell(
+                        onTap:
+                            () => _showEditNameDialog(context, restaurant.name),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(restaurant.name),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.edit, size: 16),
+                          ],
+                        ),
+                      )
+                      : Text(restaurant.name),
               centerTitle: true,
               pinned: true, // Makes the AppBar stick at the top
-              floating: false, // AppBar doesn't reappear on scrolling down slightly
+              floating:
+                  false, // AppBar doesn't reappear on scrolling down slightly
               snap: false, // Doesn't snap into view
-              automaticallyImplyLeading: false, // Adjust if you need a back button
+              automaticallyImplyLeading:
+                  false, // Adjust if you need a back button
               actions: const [
                 // Space for future actions
               ],
@@ -187,49 +195,83 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             SliverToBoxAdapter(
               child: RestaurantInfo(
                 // Assume restaurant is non-null based on the check above
-                restaurantImageUrl: restaurant.imageUrl ?? '', // Provide actual URL if available
+                restaurantImageUrl:
+                    restaurant.imageUrl ??
+                    '', // Provide actual URL if available
                 isOpen: restaurant.isOpen,
-                isFixedMenu: restaurant.hasRestaurantType(RestaurantType.fixedMenu),
-                isOnRequest: restaurant.hasRestaurantType(RestaurantType.onRequest),
+                isFixedMenu: restaurant.hasRestaurantType(
+                  RestaurantType.fixedMenu,
+                ),
+                isOnRequest: restaurant.hasRestaurantType(
+                  RestaurantType.onRequest,
+                ),
                 address: restaurant.address,
                 isEditable: isOwner,
 
                 // Callbacks (unchanged)
-                onOpenStatusChanged: isOwner ? (isOpen) {
-                  restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
-                } : null,
-                onFixedMenuToggled: isOwner ? (isEnabled) {
-                  restaurantProvider.updateRestaurantType(
-                      widget.restaurantId,
-                      RestaurantType.fixedMenu
-                  );
-                } : null,
-                onOnRequestToggled: isOwner ? (isEnabled) {
-                   restaurantProvider.updateRestaurantType(
-                       widget.restaurantId,
-                       RestaurantType.onRequest
-                   );
-                } : null,
-                onAddressChanged: isOwner ? (newAddress) {
-                  debugPrint("New address: $newAddress");
-                  restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
-                } : null,
-                onImageUploadPressed: isOwner ? (File? imageFile) {
-                  if (imageFile != null) {
-                      restaurantProvider.updateRestaurantImage(
-                          widget.restaurantId,
-                          imageFile
-                      );
-                  }
-                } : null,
-                onImageUrlChanged: isOwner ? (String? imageUrl) {
-                  if (imageUrl != null && imageUrl.isNotEmpty) {
-                    restaurantProvider.updateRestaurantImageUrl(
-                        widget.restaurantId,
-                        imageUrl
-                    );
-                  }
-                } : null,
+                onOpenStatusChanged:
+                    isOwner
+                        ? (isOpen) {
+                          restaurantProvider.updateRestaurantOpenStatus(
+                            widget.restaurantId,
+                            isOpen,
+                          );
+                        }
+                        : null,
+                onFixedMenuToggled:
+                    isOwner
+                        ? (isEnabled) {
+                          restaurantProvider.updateRestaurantType(
+                            widget.restaurantId,
+                            RestaurantType.fixedMenu,
+                          );
+                        }
+                        : null,
+                onOnRequestToggled:
+                    isOwner
+                        ? (isEnabled) {
+                          restaurantProvider.updateRestaurantType(
+                            widget.restaurantId,
+                            RestaurantType.onRequest,
+                          );
+                        }
+                        : null,
+                onAddressChanged:
+                    isOwner
+                        ? (newAddress, lat, lng) {
+                          debugPrint(
+                            "New address: $newAddress (lat: $lat, lng: $lng)",
+                          );
+                          restaurantProvider.updateRestaurantAddress(
+                            widget.restaurantId,
+                            newAddress,
+                            lat,
+                            lng,
+                          );
+                        }
+                        : null,
+                onImageUploadPressed:
+                    isOwner
+                        ? (File? imageFile) {
+                          if (imageFile != null) {
+                            restaurantProvider.updateRestaurantImage(
+                              widget.restaurantId,
+                              imageFile,
+                            );
+                          }
+                        }
+                        : null,
+                onImageUrlChanged:
+                    isOwner
+                        ? (String? imageUrl) {
+                          if (imageUrl != null && imageUrl.isNotEmpty) {
+                            restaurantProvider.updateRestaurantImageUrl(
+                              widget.restaurantId,
+                              imageUrl,
+                            );
+                          }
+                        }
+                        : null,
               ),
             ),
 
@@ -249,7 +291,10 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   tabCount: 2,
                   tabLabels: const ['Fixed menu', 'On Request'],
                   height: 40.0, // Adjust height as needed
-                  margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 0,
+                    vertical: 0,
+                  ),
                   radius: 25.0,
                   initialIndex: _selectedTabIndex, // Pass current index
                   onTabSelected: (index) {
@@ -260,11 +305,13 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     debugPrint('Selected tab $index');
                   },
                 ),
-                backgroundColor: colorScheme.surface, // Background for the tab bar area
+                backgroundColor:
+                    colorScheme.surface, // Background for the tab bar area
                 padding: EdgeInsets.symmetric(
                   // Tablet verticale usa un padding medio, smartphone usa padding standard
-                  horizontal: layoutType == LayoutType.tabletVertical ? 120.0 : 50.0,
-                  vertical: 8.0
+                  horizontal:
+                      layoutType == LayoutType.tabletVertical ? 120.0 : 50.0,
+                  vertical: 8.0,
                 ),
                 isOwner: isOwner,
                 actionButton: CircularButton(
@@ -277,7 +324,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     );
                   },
                 ),
-              )
+              ),
             ),
 
             // --- 5. Menu List ---
@@ -294,7 +341,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   // Nuovo metodo per costruire il layout specifico per tablet in orizzontale
-  Widget _buildTabletHorizontalLayout(BuildContext context, Restaurant restaurant, bool isOwner) {
+  Widget _buildTabletHorizontalLayout(
+    BuildContext context,
+    Restaurant restaurant,
+    bool isOwner,
+  ) {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -307,91 +358,138 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             // Pannello laterale sinistro (1/3 dello schermo) con info ristorante e nome
             Container(
               width: MediaQuery.of(context).size.width / 3,
-              color: colorScheme.darkGrayBackground, // Colore di sfondo uniforme per tutta la colonna
-              child: Center( // Centra verticalmente tutto il contenuto
-                child: SingleChildScrollView( // Permette lo scrolling solo se necessario
+              color:
+                  colorScheme
+                      .darkGrayBackground, // Colore di sfondo uniforme per tutta la colonna
+              child: Center(
+                // Centra verticalmente tutto il contenuto
+                child: SingleChildScrollView(
+                  // Permette lo scrolling solo se necessario
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center, // Centrato verticalmente
+                    mainAxisAlignment:
+                        MainAxisAlignment.center, // Centrato verticalmente
                     children: [
                       // Header con nome ristorante
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-                        child: isOwner
-                          ? InkWell(
-                              onTap: () => _showEditNameDialog(context, restaurant.name),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      restaurant.name,
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16.0,
+                          horizontal: 8.0,
+                        ),
+                        child:
+                            isOwner
+                                ? InkWell(
+                                  onTap:
+                                      () => _showEditNameDialog(
+                                        context,
+                                        restaurant.name,
+                                      ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          restaurant.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(color: Colors.white),
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.edit,
+                                        size: 16,
                                         color: Colors.white,
                                       ),
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 2,
-                                    ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Icon(Icons.edit, size: 16, color: Colors.white),
-                                ],
-                              ),
-                            )
-                          : Text(
-                              restaurant.name,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
+                                )
+                                : Text(
+                                  restaurant.name,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(color: Colors.white),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
                       ),
 
                       // Informazioni ristorante
                       RestaurantInfo(
                         restaurantImageUrl: restaurant.imageUrl ?? '',
                         isOpen: restaurant.isOpen,
-                        isFixedMenu: restaurant.hasRestaurantType(RestaurantType.fixedMenu),
-                        isOnRequest: restaurant.hasRestaurantType(RestaurantType.onRequest),
+                        isFixedMenu: restaurant.hasRestaurantType(
+                          RestaurantType.fixedMenu,
+                        ),
+                        isOnRequest: restaurant.hasRestaurantType(
+                          RestaurantType.onRequest,
+                        ),
                         address: restaurant.address,
                         isEditable: isOwner,
 
-                        onOpenStatusChanged: isOwner ? (isOpen) {
-                          restaurantProvider.updateRestaurantOpenStatus(widget.restaurantId, isOpen);
-                        } : null,
-                        onFixedMenuToggled: isOwner ? (isEnabled) {
-                          restaurantProvider.updateRestaurantType(
-                              widget.restaurantId,
-                              RestaurantType.fixedMenu
-                          );
-                        } : null,
-                        onOnRequestToggled: isOwner ? (isEnabled) {
-                           restaurantProvider.updateRestaurantType(
-                               widget.restaurantId,
-                               RestaurantType.onRequest
-                           );
-                        } : null,
-                        onAddressChanged: isOwner ? (newAddress) {
-                          restaurantProvider.updateRestaurantAddress(widget.restaurantId, newAddress);
-                        } : null,
-                        onImageUploadPressed: isOwner ? (File? imageFile) {
-                          if (imageFile != null) {
-                              restaurantProvider.updateRestaurantImage(
-                                  widget.restaurantId,
-                                  imageFile
-                              );
-                          }
-                        } : null,
-                        onImageUrlChanged: isOwner ? (String? imageUrl) {
-                          if (imageUrl != null && imageUrl.isNotEmpty) {
-                            restaurantProvider.updateRestaurantImageUrl(
-                                widget.restaurantId,
-                                imageUrl
-                            );
-                          }
-                        } : null,
+                        onOpenStatusChanged:
+                            isOwner
+                                ? (isOpen) {
+                                  restaurantProvider.updateRestaurantOpenStatus(
+                                    widget.restaurantId,
+                                    isOpen,
+                                  );
+                                }
+                                : null,
+                        onFixedMenuToggled:
+                            isOwner
+                                ? (isEnabled) {
+                                  restaurantProvider.updateRestaurantType(
+                                    widget.restaurantId,
+                                    RestaurantType.fixedMenu,
+                                  );
+                                }
+                                : null,
+                        onOnRequestToggled:
+                            isOwner
+                                ? (isEnabled) {
+                                  restaurantProvider.updateRestaurantType(
+                                    widget.restaurantId,
+                                    RestaurantType.onRequest,
+                                  );
+                                }
+                                : null,
+                        onAddressChanged:
+                            isOwner
+                                ? (newAddress, lat, lng) {
+                                  restaurantProvider.updateRestaurantAddress(
+                                    widget.restaurantId,
+                                    newAddress,
+                                    lat,
+                                    lng,
+                                  );
+                                }
+                                : null,
+                        onImageUploadPressed:
+                            isOwner
+                                ? (File? imageFile) {
+                                  if (imageFile != null) {
+                                    restaurantProvider.updateRestaurantImage(
+                                      widget.restaurantId,
+                                      imageFile,
+                                    );
+                                  }
+                                }
+                                : null,
+                        onImageUrlChanged:
+                            isOwner
+                                ? (String? imageUrl) {
+                                  if (imageUrl != null && imageUrl.isNotEmpty) {
+                                    restaurantProvider.updateRestaurantImageUrl(
+                                      widget.restaurantId,
+                                      imageUrl,
+                                    );
+                                  }
+                                }
+                                : null,
                       ),
                     ],
                   ),
@@ -404,7 +502,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               child: CustomScrollView(
                 slivers: [
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: 20.0), // Space between header and menu
+                    child: SizedBox(
+                      height: 20.0,
+                    ), // Space between header and menu
                   ),
 
                   // Sticky TabBar in alto
@@ -415,7 +515,10 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         tabCount: 2,
                         tabLabels: const ['Fixed menu', 'On Request'],
                         height: 40.0,
-                        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 0,
+                        ),
                         radius: 25.0,
                         initialIndex: _selectedTabIndex,
                         onTabSelected: (index) {
@@ -425,7 +528,10 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         },
                       ),
                       backgroundColor: colorScheme.surface,
-                      padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 16.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50.0,
+                        vertical: 16.0,
+                      ),
                       isOwner: isOwner,
                       actionButton: CircularButton(
                         icon: Icons.add,
@@ -479,7 +585,12 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   // Modified function to return a SliverList grouped by course
-  Widget _buildSliverMenuList(bool isFixedMenu, bool isEditable, {LayoutType? layoutType, bool forceColumnView = false}) {
+  Widget _buildSliverMenuList(
+    bool isFixedMenu,
+    bool isEditable, {
+    LayoutType? layoutType,
+    bool forceColumnView = false,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final dishProvider = Provider.of<DishProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -517,9 +628,13 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         dishes = dishProvider.dishes.where((dish) => dish.isSpecial).toList();
       } else {
         // In case the user is not the owner show all special dishes with his username
-        dishes = dishProvider.dishes.where((dish) =>
-        dish.isSpecial && dish.userUsername == currentUsername
-        ).toList();
+        dishes =
+            dishProvider.dishes
+                .where(
+                  (dish) =>
+                      dish.isSpecial && dish.userUsername == currentUsername,
+                )
+                .toList();
       }
     }
 
@@ -575,11 +690,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.primary,
-              ),
+              Divider(height: 1, thickness: 1, color: colorScheme.primary),
             ],
           ),
         ),
@@ -590,7 +701,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
       // Se forceColumnView è true, utilizziamo sempre il layout a colonna singola
       if (forceColumnView) {
-        dishesLayout = _buildSingleColumnLayout(items, isEditable, dishProvider);
+        dishesLayout = _buildSingleColumnLayout(
+          items,
+          isEditable,
+          dishProvider,
+        );
       } else {
         // Altrimenti usiamo ResponsiveLayout per decidere in base al tipo di dispositivo
         dishesLayout = ResponsiveLayout(
@@ -626,18 +741,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
-            return sliverItems[index];
-          },
-          childCount: sliverItems.length,
-        ),
+        delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
+          return sliverItems[index];
+        }, childCount: sliverItems.length),
       ),
     );
   }
 
   // Layout a due colonne per tablet
-  Widget _buildTwoColumnLayout(List<Dish> items, bool isEditable, DishProvider dishProvider) {
+  Widget _buildTwoColumnLayout(
+    List<Dish> items,
+    bool isEditable,
+    DishProvider dishProvider,
+  ) {
     // Creiamo una lista di righe, ognuna contenente fino a due elementi
     List<Widget> rows = [];
 
@@ -645,15 +761,17 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       final List<Widget> rowItems = [];
 
       // Primo piatto nella riga
-      rowItems.add(Expanded(
-        child: _buildMenuItem(items[i], isEditable, dishProvider),
-      ));
+      rowItems.add(
+        Expanded(child: _buildMenuItem(items[i], isEditable, dishProvider)),
+      );
 
       // Secondo piatto nella riga (se presente)
       if (i + 1 < items.length) {
-        rowItems.add(Expanded(
-          child: _buildMenuItem(items[i + 1], isEditable, dishProvider),
-        ));
+        rowItems.add(
+          Expanded(
+            child: _buildMenuItem(items[i + 1], isEditable, dishProvider),
+          ),
+        );
       } else {
         // Placeholder vuoto per mantenere l'allineamento
         rowItems.add(const Expanded(child: SizedBox()));
@@ -674,11 +792,16 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   // Layout a singola colonna per smartphone
-  Widget _buildSingleColumnLayout(List<Dish> items, bool isEditable, DishProvider dishProvider) {
+  Widget _buildSingleColumnLayout(
+    List<Dish> items,
+    bool isEditable,
+    DishProvider dishProvider,
+  ) {
     return Column(
-      children: items.map((dish) =>
-        _buildMenuItem(dish, isEditable, dishProvider)
-      ).toList(),
+      children:
+          items
+              .map((dish) => _buildMenuItem(dish, isEditable, dishProvider))
+              .toList(),
     );
   }
 
@@ -694,54 +817,67 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       isAvailable: dish.isAvailable ?? true,
       course: dish.course ?? Course.other,
       cuisine: dish.cuisine ?? Cuisine.other,
-      onDelete: isEditable
-          ? () {
-              dishProvider.deleteDish(
+      onDelete:
+          isEditable
+              ? () {
+                dishProvider.deleteDish(
                   dishProvider.currentRestaurantId!,
-                  dish.id
-              );
-            }
-          : null,
-      onEdit: isEditable
-        ? (newName, newDescription, newPrice, newCourse, newCuisine, {imageFile, imageUrl, isAvailable}) {
-            debugPrint('Image url: ${imageUrl ?? 'No image URL'}');
-            dishProvider.updateDish(
-              restaurantId: dishProvider.currentRestaurantId!,
-              dishId: dish.id,
-              name: newName,
-              description: newDescription,
-              price: newPrice,
-              course: newCourse,
-              cuisine: newCuisine,
-              imageFile: imageFile,
-              imageUrl: imageUrl,
-            );
-          }
-        : null,
-      onAvailabilityChanged: isEditable
-        ? (newAvailability) {
-          debugPrint('Change availability for dish: ${dish.name}');
-          dishProvider.updateDishAvailability(
-              dishProvider.currentRestaurantId!,
-              dish.id,
-              newAvailability
-          );
-        }
-        : null,
+                  dish.id,
+                );
+              }
+              : null,
+      onEdit:
+          isEditable
+              ? (
+                newName,
+                newDescription,
+                newPrice,
+                newCourse,
+                newCuisine, {
+                imageFile,
+                imageUrl,
+                isAvailable,
+              }) {
+                debugPrint('Image url: ${imageUrl ?? 'No image URL'}');
+                dishProvider.updateDish(
+                  restaurantId: dishProvider.currentRestaurantId!,
+                  dishId: dish.id,
+                  name: newName,
+                  description: newDescription,
+                  price: newPrice,
+                  course: newCourse,
+                  cuisine: newCuisine,
+                  imageFile: imageFile,
+                  imageUrl: imageUrl,
+                );
+              }
+              : null,
+      onAvailabilityChanged:
+          isEditable
+              ? (newAvailability) {
+                debugPrint('Change availability for dish: ${dish.name}');
+                dishProvider.updateDishAvailability(
+                  dishProvider.currentRestaurantId!,
+                  dish.id,
+                  newAvailability,
+                );
+              }
+              : null,
       onDishSelected: ({
         required isEditable,
         dishId,
         heroTag,
         isNew = false,
         isSpecial = false,
-        onAvailabilityChanged
+        onAvailabilityChanged,
       }) {
         _openDishScreen(
           isEditable: isEditable,
           dishId: dishId,
           heroTag: heroTag,
           isNew: isNew,
-          isSpecial: dish.isSpecial, // Passiamo il valore corretto per isSpecial dal dish
+          isSpecial:
+              dish.isSpecial, // Passiamo il valore corretto per isSpecial dal dish
           onAvailabilityChanged: onAvailabilityChanged,
         );
       },
@@ -749,60 +885,70 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }
 
   void _showEditNameDialog(BuildContext context, String currentName) {
-    final TextEditingController nameController = TextEditingController(text: currentName);
-    final restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+    final TextEditingController nameController = TextEditingController(
+      text: currentName,
+    );
+    final restaurantProvider = Provider.of<RestaurantProvider>(
+      context,
+      listen: false,
+    );
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Modify Name'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: 'Restaurant Name',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = nameController.text.trim();
-              if (newName.isNotEmpty) {
-                await restaurantProvider.updateRestaurantName(
-                  widget.restaurantId,
-                  newName,
-                  orderProvider: orderProvider
-                );
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Modify Name'),
+            content: TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Restaurant Name'),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final newName = nameController.text.trim();
+                  if (newName.isNotEmpty) {
+                    await restaurantProvider.updateRestaurantName(
+                      widget.restaurantId,
+                      newName,
+                      orderProvider: orderProvider,
+                    );
 
-                Navigator.of(dialogContext).pop();
+                    Navigator.of(dialogContext).pop();
 
-                // Check for errors after update
-                if (restaurantProvider.errorMessage != null) {
-                  CustomAlertDialog.showInfoDialog(
-                    context: context,
-                    title: 'Error',
-                    message: restaurantProvider.errorMessage!,
-                    icon: Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
-                  );
-                } else if (orderProvider.errorMessage != null) {
-                  CustomAlertDialog.showInfoDialog(
-                    context: context,
-                    title: 'Error updating the orders',
-                    message: orderProvider.errorMessage!,
-                    icon: Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
-                  );
-                }
-              }
-            },
-            child: const Text('Save'),
+                    // Check for errors after update
+                    if (restaurantProvider.errorMessage != null) {
+                      CustomAlertDialog.showInfoDialog(
+                        context: context,
+                        title: 'Error',
+                        message: restaurantProvider.errorMessage!,
+                        icon: Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    } else if (orderProvider.errorMessage != null) {
+                      CustomAlertDialog.showInfoDialog(
+                        context: context,
+                        title: 'Error updating the orders',
+                        message: orderProvider.errorMessage!,
+                        icon: Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -837,13 +983,17 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     // Provide a background color for the area behind the tab bar and button
     return Container(
       color: backgroundColor, // Use the passed background color
       padding: padding, // Apply the specified padding
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center, // Center items vertically
+        crossAxisAlignment:
+            CrossAxisAlignment.center, // Center items vertically
         children: [
           // TabBar takes up available space
           Expanded(
@@ -853,7 +1003,8 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
               tabCount: tabBar.tabCount,
               tabLabels: tabBar.tabLabels,
               height: tabBar.height,
-              margin: EdgeInsets.zero, // Margin is handled by delegate's padding
+              margin:
+                  EdgeInsets.zero, // Margin is handled by delegate's padding
               radius: tabBar.radius,
               onTabSelected: tabBar.onTabSelected,
               initialIndex: tabBar.initialIndex,
@@ -863,9 +1014,11 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
           if (isOwner && actionButton != null) ...[
             const SizedBox(width: 10), // Spacing between tab bar and button
             AnimatedButton(
-              onTap: actionButton!.onPressed ?? () {
-                debugPrint('Button pressed');
-              },
+              onTap:
+                  actionButton!.onPressed ??
+                  () {
+                    debugPrint('Button pressed');
+                  },
               child: actionButton!,
             ),
           ],
@@ -878,9 +1031,9 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
     // Rebuild if any of the properties change
     return tabBar != oldDelegate.tabBar ||
-           backgroundColor != oldDelegate.backgroundColor ||
-           padding != oldDelegate.padding ||
-           isOwner != oldDelegate.isOwner ||
-           actionButton != oldDelegate.actionButton;
+        backgroundColor != oldDelegate.backgroundColor ||
+        padding != oldDelegate.padding ||
+        isOwner != oldDelegate.isOwner ||
+        actionButton != oldDelegate.actionButton;
   }
 }

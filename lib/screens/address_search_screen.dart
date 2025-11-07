@@ -10,7 +10,9 @@ import '../widgets/custom_alert_dialog.dart';
 /// Schermata di ricerca indirizzo con Google Places Autocomplete
 /// Permette all'utente di cercare e selezionare un indirizzo
 class AddressSearchScreen extends StatefulWidget {
-  const AddressSearchScreen({super.key});
+  final bool isForRestaurant;
+
+  const AddressSearchScreen({super.key, this.isForRestaurant = false});
 
   @override
   State<AddressSearchScreen> createState() => _AddressSearchScreenState();
@@ -237,13 +239,34 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     });
 
     try {
-      // Ottieni le coordinate dal prediction
+      final address = prediction.description ?? '';
       final lat = double.tryParse(prediction.lat ?? '0.0') ?? 0.0;
       final lng = double.tryParse(prediction.lng ?? '0.0') ?? 0.0;
-      final address = prediction.description ?? '';
 
-      if (address.isEmpty || lat == 0.0 || lng == 0.0) {
+      if (address.isEmpty) {
         throw Exception('Indirizzo non valido');
+      }
+
+      // Se è per il ristorante, ritorna indirizzo e coordinate
+      if (widget.isForRestaurant) {
+        if (lat == 0.0 || lng == 0.0) {
+          throw Exception('Coordinate non valide');
+        }
+
+        if (mounted) {
+          // Ritorna un Map con indirizzo e coordinate
+          Navigator.pop(context, {
+            'address': address,
+            'latitude': lat,
+            'longitude': lng,
+          });
+        }
+        return;
+      }
+
+      // Altrimenti salva nel profilo utente
+      if (lat == 0.0 || lng == 0.0) {
+        throw Exception('Coordinate non valide');
       }
 
       // Salva l'indirizzo nel profilo utente
