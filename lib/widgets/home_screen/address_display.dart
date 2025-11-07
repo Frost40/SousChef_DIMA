@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/user_provider.dart';
-import '../screens/address_search_screen.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/address_search_screen.dart';
 
 /// Widget che mostra l'indirizzo salvato dell'utente sulla home page
 /// Stato A: Nessun indirizzo salvato - mostra "scegli la tua posizione"
