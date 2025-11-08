@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/user_provider.dart';
+import '../providers/user_provider.dart';
 
 /// Widget che mostra un'icona cuore per aggiungere/rimuovere dai preferiti
 class FavoriteIconButton extends StatelessWidget {

@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../models/restaurant.dart';
-import 'restaurant_list_tile.dart';
+import '../restaurant_list_tile.dart';
 
 /// Widget che mostra una mappa di Google Maps a schermo intero
 /// Centrata su Milano per default

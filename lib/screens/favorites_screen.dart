@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
-import '../widgets/favorite_screen/restaurant_tile.dart';
+import 'package:sous_chef/widgets/restaurant_list_tile.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
@@ -14,55 +14,93 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   List<Restaurant> _favouriteRestaurants = [];
+  bool _isLoading = false;
+  List<String> _lastFavoriteIds = [];
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    // Ritarda il caricamento fino a dopo il primo build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).fetchUserData().then((
-        _,
-      ) async {
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        final restaurantProvider = Provider.of<RestaurantProvider>(
-          context,
-          listen: false,
-        );
-        if (!mounted) return;
-
-        _favouriteRestaurants = await restaurantProvider
-            .fetchFavoriteRestaurantsByIds(userProvider.userData!.favourites);
-
-        if (userProvider.userData != null &&
-            userProvider.userData!.favourites.isNotEmpty) {
-          _favouriteRestaurants = await restaurantProvider
-              .fetchFavoriteRestaurantsByIds(userProvider.userData!.favourites);
-        } else {
-          _favouriteRestaurants = [];
-        }
-      });
+      if (mounted) {
+        _loadFavorites();
+      }
     });
   }
 
   @override
-  void deactivate() {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  userProvider.syncPendingChanges();
-  super.deactivate();
-  } 
-  
-  void _clearErrors() {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Salta il primo controllo (durante l'inizializzazione)
+    if (!_isInitialized) {
+      _isInitialized = true;
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (userProvider.userData != null) {
+        _lastFavoriteIds = List.from(userProvider.userData!.favourites);
+      }
+      return;
+    }
+
+    // Controlla se i preferiti sono cambiati
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.clearErrors();
+    if (userProvider.userData != null) {
+      final currentFavoriteIds = userProvider.userData!.favourites;
+
+      // Se i preferiti sono cambiati, ricarica
+      if (_lastFavoriteIds.length != currentFavoriteIds.length ||
+          !_lastFavoriteIds.every((id) => currentFavoriteIds.contains(id))) {
+        _lastFavoriteIds = List.from(currentFavoriteIds);
+        // Usa addPostFrameCallback per evitare chiamate durante il build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _loadFavorites();
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFavorites() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     final restaurantProvider = Provider.of<RestaurantProvider>(
       context,
       listen: false,
     );
-    restaurantProvider.clearErrors();
+
+    await userProvider.fetchUserData();
+
+    if (!mounted) return;
+
+    if (userProvider.userData != null &&
+        userProvider.userData!.favourites.isNotEmpty) {
+      _favouriteRestaurants = await restaurantProvider
+          .fetchFavoriteRestaurantsByIds(userProvider.userData!.favourites);
+    } else {
+      _favouriteRestaurants = [];
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void deactivate() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    userProvider.syncPendingChanges();
+    super.deactivate();
   }
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
 
     return Scaffold(
@@ -72,7 +110,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       body: Builder(
         builder: (context) {
-          if (userProvider.isLoading || restaurantProvider.isLoading) {
+          if (_isLoading || restaurantProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (restaurantProvider.errorMessage != null) {
             return Center(
@@ -83,24 +121,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Text("No favorite yet!", style: TextStyle(fontSize: 25)),
             );
           } else {
-            return ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 16),
               itemCount: _favouriteRestaurants.length,
               itemBuilder: (context, index) {
                 final restaurant = _favouriteRestaurants[index];
-                // Mock data for now, replace with actual data
-                final mockRestaurantData = {
-                  'id': restaurant.id,
-                  'imagine': "https://i.pravatar.cc/150?img=5",
-                  'restaurantName': restaurant.name,
-                  'available': restaurant.isOpen,
-                  'favorite': true,
-                };
-                return RestaurantTile(restaurant: mockRestaurantData);
+                return RestaurantListTile(restaurant: restaurant);
               },
-              separatorBuilder:
-                  (context, index) =>
-                      const Divider(color: Colors.grey, thickness: 1.0),
             );
           }
         },

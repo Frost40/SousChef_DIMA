@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/home_screen/map_viewer.dart';
 import 'package:sous_chef/widgets/home_screen/address_display.dart';
 import 'package:sous_chef/widgets/home_screen/distance_selector.dart';
-import 'package:sous_chef/widgets/home_screen/restaurant_list_tile.dart';
+import 'package:sous_chef/widgets/restaurant_list_tile.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
 import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';

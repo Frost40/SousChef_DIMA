@@ -337,13 +337,16 @@ class UserProvider with ChangeNotifier {
     _userFirestore
         .removeFromFavorites(_userData!.id, restaurantId)
         .then((_) {
-          // Show success dialog
-          CustomAlertDialog.showInfoDialog(
-            context: context,
-            title: 'Removed from Favorites',
-            message: '$restaurantName has been removed from your favorites.',
-            icon: Icon(Icons.check_circle_outline, color: Colors.green),
-          );
+          // Check if context is still mounted before showing dialog
+          if (context.mounted) {
+            // Show success dialog
+            CustomAlertDialog.showInfoDialog(
+              context: context,
+              title: 'Removed from Favorites',
+              message: '$restaurantName has been removed from your favorites.',
+              icon: Icon(Icons.check_circle_outline, color: Colors.green),
+            );
+          }
         })
         .catchError((e) {
           // If error, restore to favorites
@@ -352,14 +355,17 @@ class UserProvider with ChangeNotifier {
             notifyListeners();
           }
 
-          // Show error dialog
-          CustomAlertDialog.showInfoDialog(
-            context: context,
-            title: 'Error',
-            message:
-                'Failed to remove $restaurantName from favorites. Please try again.',
-            icon: Icon(Icons.error_outline, color: Colors.red),
-          );
+          // Check if context is still mounted before showing dialog
+          if (context.mounted) {
+            // Show error dialog
+            CustomAlertDialog.showInfoDialog(
+              context: context,
+              title: 'Error',
+              message:
+                  'Failed to remove $restaurantName from favorites. Please try again.',
+              icon: Icon(Icons.error_outline, color: Colors.red),
+            );
+          }
         });
   }
 
@@ -380,27 +386,33 @@ class UserProvider with ChangeNotifier {
       _userFirestore
           .addToFavorites(_userData!.id, restaurantId)
           .then((_) {
-            // Show success dialog
-            CustomAlertDialog.showInfoDialog(
-              context: context,
-              title: 'Added to Favorites',
-              message: '$restaurantName has been added to your favorites.',
-              icon: Icon(Icons.favorite, color: Colors.red),
-            );
+            // Check if context is still mounted before showing dialog
+            if (context.mounted) {
+              // Show success dialog
+              CustomAlertDialog.showInfoDialog(
+                context: context,
+                title: 'Added to Favorites',
+                message: '$restaurantName has been added to your favorites.',
+                icon: Icon(Icons.favorite, color: Colors.red),
+              );
+            }
           })
           .catchError((e) {
             // If error, remove from local favorites
             _userData!.favourites.remove(restaurantId);
             notifyListeners();
 
-            // Show error dialog
-            CustomAlertDialog.showInfoDialog(
-              context: context,
-              title: 'Error',
-              message:
-                  'Failed to add $restaurantName to favorites. Please try again.',
-              icon: Icon(Icons.error_outline, color: Colors.red),
-            );
+            // Check if context is still mounted before showing dialog
+            if (context.mounted) {
+              // Show error dialog
+              CustomAlertDialog.showInfoDialog(
+                context: context,
+                title: 'Error',
+                message:
+                    'Failed to add $restaurantName to favorites. Please try again.',
+                icon: Icon(Icons.error_outline, color: Colors.red),
+              );
+            }
           });
     }
   }

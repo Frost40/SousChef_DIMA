@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/restaurant.dart';
+import '../models/restaurant.dart';
 import 'favorite_icon_button.dart';
 
 /// Widget che mostra un ristorante nella lista della home screen
