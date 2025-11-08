@@ -56,6 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _nearbyRestaurants = restaurants;
         });
       }
+    } else {
+      // Se l'utente non ha coordinate, imposta la lista vuota per evitare il loading infinito
+      if (mounted) {
+        setState(() {
+          _nearbyRestaurants = [];
+        });
+      }
     }
   }
 
@@ -178,6 +185,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Costruisce la vista lista (default)
   Widget _buildListView(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userData = userProvider.userData;
+
     // Se non ci sono ristoranti caricati
     if (_nearbyRestaurants == null) {
       return const Center(child: CircularProgressIndicator());
@@ -185,18 +195,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Se non ci sono ristoranti nella zona
     if (_nearbyRestaurants!.isEmpty) {
+      // Verifica se l'utente ha impostato un indirizzo
+      final hasAddress =
+          userData?.latitude != null && userData?.longitude != null;
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.restaurant_menu,
+              hasAddress ? Icons.restaurant_menu : Icons.location_off,
               size: 64,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
             Text(
-              'No restaurants found',
+              hasAddress ? 'No restaurants found' : 'No address set',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -205,11 +219,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Try increasing the distance',
+              hasAddress
+                  ? 'Try increasing the distance'
+                  : 'Please set your address to find restaurants',
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
