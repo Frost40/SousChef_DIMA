@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../models/restaurant.dart';
+import 'restaurant_list_tile.dart';
 
 /// Widget che mostra una mappa di Google Maps a schermo intero
 /// Centrata su Milano per default
@@ -30,11 +31,35 @@ class _MapViewerState extends State<MapViewer> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   BitmapDescriptor? _orangeMarkerIcon;
+  Restaurant? _selectedRestaurant;
 
   @override
   void initState() {
     super.initState();
     _initializeMarkers();
+  }
+
+  @override
+  void didUpdateWidget(MapViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Se la lista dei ristoranti è cambiata, reinizializza i marker
+    if (oldWidget.nearbyRestaurants != widget.nearbyRestaurants) {
+      _initializeMarkers();
+    }
+    // Se la posizione dell'utente è cambiata, anima la mappa alla nuova posizione
+    if (oldWidget.latitude != widget.latitude ||
+        oldWidget.longitude != widget.longitude) {
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(widget.latitude, widget.longitude),
+              zoom: widget.zoom,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   /// Crea un marker personalizzato arancione
@@ -111,6 +136,11 @@ class _MapViewerState extends State<MapViewer> {
               snippet: restaurant.address,
             ),
             icon: orangeIcon,
+            onTap: () {
+              setState(() {
+                _selectedRestaurant = restaurant;
+              });
+            },
           ),
         );
       }
@@ -131,14 +161,12 @@ class _MapViewerState extends State<MapViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final restaurantCount = widget.nearbyRestaurants?.length ?? 0;
+    final restaurantText = restaurantCount == 1 ? 'restaurant' : 'restaurants';
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.nearbyRestaurants != null &&
-                  widget.nearbyRestaurants!.isNotEmpty
-              ? 'Mappa - ${widget.nearbyRestaurants!.length} ristoranti'
-              : 'Mappa',
-        ),
+        title: Text('$restaurantCount $restaurantText found'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -152,20 +180,73 @@ class _MapViewerState extends State<MapViewer> {
           ),
         ],
       ),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: LatLng(widget.latitude, widget.longitude),
-          zoom: widget.zoom,
-        ),
-        markers: _markers,
-        onMapCreated: (GoogleMapController controller) {
-          _mapController = controller;
-        },
-        myLocationButtonEnabled: false,
-        zoomControlsEnabled: true,
-        mapToolbarEnabled: false,
-        compassEnabled: true,
-        buildingsEnabled: true,
+      body: Stack(
+        children: [
+          // Mappa
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: LatLng(widget.latitude, widget.longitude),
+              zoom: widget.zoom,
+            ),
+            markers: _markers,
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+            },
+            onTap: (_) {
+              // Chiudi la tile quando si clicca sulla mappa
+              setState(() {
+                _selectedRestaurant = null;
+              });
+            },
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: true,
+            mapToolbarEnabled: false,
+            compassEnabled: true,
+            buildingsEnabled: true,
+          ),
+
+          // Restaurant tile nella parte inferiore
+          if (_selectedRestaurant != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Barra per chiudere
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Restaurant tile
+                    RestaurantListTile(restaurant: _selectedRestaurant!),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

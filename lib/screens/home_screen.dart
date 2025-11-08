@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sous_chef/widgets/home_screen/map_viewer.dart';
 import 'package:sous_chef/widgets/home_screen/address_display.dart';
 import 'package:sous_chef/widgets/home_screen/distance_selector.dart';
+import 'package:sous_chef/widgets/home_screen/restaurant_list_tile.dart';
 import 'package:sous_chef/widgets/navigation_tabbar.dart';
 import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/providers/restaurant_provider.dart';
@@ -21,6 +22,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isMapView = false;
   int _selectedDistance = 3;
   List<Restaurant>? _nearbyRestaurants;
+  double? _lastLatitude;
+  double? _lastLongitude;
 
   @override
   void initState() {
@@ -58,6 +61,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ascolta i cambiamenti del UserProvider per rilevare modifiche all'indirizzo
+    final userProvider = Provider.of<UserProvider>(context);
+    final userData = userProvider.userData;
+
+    // Se le coordinate dell'utente sono cambiate, ricarica i ristoranti vicini
+    if ((userData?.latitude != _lastLatitude ||
+            userData?.longitude != _lastLongitude) &&
+        userData?.latitude != null &&
+        userData?.longitude != null) {
+      _lastLatitude = userData!.latitude;
+      _lastLongitude = userData.longitude;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadNearbyRestaurants();
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -159,27 +178,52 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Costruisce la vista lista (default)
   Widget _buildListView(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Welcome to the Home Screen!',
-            style: TextStyle(
-              fontSize: 24,
-              color: Theme.of(context).colorScheme.onSurface,
+    // Se non ci sono ristoranti caricati
+    if (_nearbyRestaurants == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Se non ci sono ristoranti nella zona
+    if (_nearbyRestaurants!.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restaurant_menu,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'List view - Restaurant list will appear here',
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            const SizedBox(height: 16),
+            Text(
+              'No restaurants found',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 8),
+            Text(
+              'Try increasing the distance',
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Mostra la lista dei ristoranti
+    return ListView.builder(
+      itemCount: _nearbyRestaurants!.length,
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      itemBuilder: (context, index) {
+        final restaurant = _nearbyRestaurants![index];
+        return RestaurantListTile(restaurant: restaurant);
+      },
     );
   }
 

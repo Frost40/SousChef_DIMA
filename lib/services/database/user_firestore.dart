@@ -285,6 +285,17 @@ class UserFirestore {
     }
   }
 
+  Future<void> addToFavorites(String userId, String restaurantId) async {
+    try {
+      await _usersTable.doc(userId).update({
+        'favourites': FieldValue.arrayUnion([restaurantId]),
+      });
+    } catch (e) {
+      debugPrint('Error while adding restaurant to favorites: $e');
+      rethrow;
+    }
+  }
+
   updateUserRestaurant(String id) {
     if (_uid == null) {
       throw Exception('No authenticated user');

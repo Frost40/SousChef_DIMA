@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
 import 'package:sous_chef/services/authentication.dart'; // Add this import
+import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
@@ -312,44 +313,96 @@ class UserProvider with ChangeNotifier {
     BuildContext context,
     String restaurantId,
     String restaurantName,
-  ) {
+  ) async {
     if (_userData == null) return;
+
+    // Show confirmation dialog before removing
+    final confirmed = await CustomAlertDialog.showConfirmationDialog(
+      context: context,
+      title: 'Remove from Favorites',
+      message: 'Do you want to remove $restaurantName from your favorites?',
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      confirmColor: Colors.red,
+      icon: Icon(Icons.favorite_border, color: Colors.red),
+    );
+
+    if (!confirmed) return;
 
     // Remove from local favorites
     _userData!.favourites.remove(restaurantId);
     notifyListeners();
 
-    // Cancel existing timers
-    _pendingRemovals[restaurantId]?.cancel();
+    // Remove from Firestore
+    _userFirestore
+        .removeFromFavorites(_userData!.id, restaurantId)
+        .then((_) {
+          // Show success dialog
+          CustomAlertDialog.showInfoDialog(
+            context: context,
+            title: 'Removed from Favorites',
+            message: '$restaurantName has been removed from your favorites.',
+            icon: Icon(Icons.check_circle_outline, color: Colors.green),
+          );
+        })
+        .catchError((e) {
+          // If error, restore to favorites
+          if (!_userData!.favourites.contains(restaurantId)) {
+            _userData!.favourites.add(restaurantId);
+            notifyListeners();
+          }
 
-    // Create a new timer
-    _pendingRemovals[restaurantId] = Timer(Duration(seconds: 3), () async {
-      // Remove from Firestore after 3 seconds
-      await _userFirestore.removeFromFavorites(_userData!.id, restaurantId);
-      _pendingRemovals.remove(restaurantId);
-    });
+          // Show error dialog
+          CustomAlertDialog.showInfoDialog(
+            context: context,
+            title: 'Error',
+            message:
+                'Failed to remove $restaurantName from favorites. Please try again.',
+            icon: Icon(Icons.error_outline, color: Colors.red),
+          );
+        });
+  }
 
-    // Show Snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$restaurantName removed from favorites'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            // Cancel removal
-            _pendingRemovals[restaurantId]?.cancel();
-            _pendingRemovals.remove(restaurantId);
+  // Method for adding to favorites
+  void addToFavorites(
+    BuildContext context,
+    String restaurantId,
+    String restaurantName,
+  ) {
+    if (_userData == null) return;
 
-            // Restore to favorites
-            if (!_userData!.favourites.contains(restaurantId)) {
-              _userData!.favourites.add(restaurantId);
-              notifyListeners();
-            }
-          },
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
+    // Add to local favorites immediately
+    if (!_userData!.favourites.contains(restaurantId)) {
+      _userData!.favourites.add(restaurantId);
+      notifyListeners();
+
+      // Add to Firestore
+      _userFirestore
+          .addToFavorites(_userData!.id, restaurantId)
+          .then((_) {
+            // Show success dialog
+            CustomAlertDialog.showInfoDialog(
+              context: context,
+              title: 'Added to Favorites',
+              message: '$restaurantName has been added to your favorites.',
+              icon: Icon(Icons.favorite, color: Colors.red),
+            );
+          })
+          .catchError((e) {
+            // If error, remove from local favorites
+            _userData!.favourites.remove(restaurantId);
+            notifyListeners();
+
+            // Show error dialog
+            CustomAlertDialog.showInfoDialog(
+              context: context,
+              title: 'Error',
+              message:
+                  'Failed to add $restaurantName to favorites. Please try again.',
+              icon: Icon(Icons.error_outline, color: Colors.red),
+            );
+          });
+    }
   }
 
   // Synchronize pending changes when user leaves the screen
