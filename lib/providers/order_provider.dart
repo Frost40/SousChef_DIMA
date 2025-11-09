@@ -295,7 +295,7 @@ class OrderProvider extends ChangeNotifier {
       for (int i = 0; i < _userOrders.length; i++) {
         Order order = _userOrders[i];
         if (order.restaurantId == restaurantId &&
-            order.status == 'pending' &&
+            order.status == 'ready_for_checkout' &&
             _isSameDateTime(order.pickupDateTime, pickupDateTime)) {
           return i; // Returns the index of the order in the local list
         }

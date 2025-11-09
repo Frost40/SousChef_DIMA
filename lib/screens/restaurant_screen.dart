@@ -26,8 +26,13 @@ enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class RestaurantScreen extends StatefulWidget {
   final String restaurantId;
+  final bool showBackButton;
 
-  const RestaurantScreen({super.key, required this.restaurantId});
+  const RestaurantScreen({
+    super.key,
+    required this.restaurantId,
+    this.showBackButton = false,
+  });
 
   @override
   State<RestaurantScreen> createState() => _RestaurantScreenState();
@@ -183,8 +188,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               floating:
                   false, // AppBar doesn't reappear on scrolling down slightly
               snap: false, // Doesn't snap into view
-              automaticallyImplyLeading:
-                  false, // Adjust if you need a back button
+              automaticallyImplyLeading: widget.showBackButton,
               actions: const [
                 // Space for future actions
               ],
@@ -353,6 +357,14 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
       child: Scaffold(
+        appBar:
+            widget.showBackButton
+                ? AppBar(
+                  title: Text(restaurant.name),
+                  centerTitle: true,
+                  automaticallyImplyLeading: true,
+                )
+                : null,
         body: Row(
           children: [
             // Pannello laterale sinistro (1/3 dello schermo) con info ristorante e nome

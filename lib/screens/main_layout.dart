@@ -29,8 +29,8 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     // Making sure the user data is fetched when the app starts
-    Future.microtask(() =>
-      Provider.of<UserProvider>(context, listen: false).fetchUserData()
+    Future.microtask(
+      () => Provider.of<UserProvider>(context, listen: false).fetchUserData(),
     );
   }
 
@@ -38,13 +38,14 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final bool isRestaurantOwner = userProvider.userData?.restaurantId != null &&
-            userProvider.userData!.restaurantId!.isNotEmpty;
-        debugPrint('ID del ristorante: ${userProvider.userData?.restaurantId}');
+    final bool isRestaurantOwner =
+        userProvider.userData?.restaurantId != null &&
+        userProvider.userData!.restaurantId!.isNotEmpty;
 
     // Make sure the _currentIndex is within the bounds of the available screens
     if (!isRestaurantOwner && _currentIndex >= 4) {
-      _currentIndex = 0; // Resets the index to 0 if the user is not a restaurant owner anymore
+      _currentIndex =
+          0; // Resets the index to 0 if the user is not a restaurant owner anymore
     }
 
     return Scaffold(
@@ -66,7 +67,27 @@ class _MainLayoutState extends State<MainLayout> {
               transitionType = TransitionType.spotify;
               break;
             case '/restaurant':
-              page = RestaurantScreen(restaurantId: userProvider.userData!.restaurantId!);
+              // Leggi il restaurantId dagli argomenti, altrimenti usa quello dell'utente (se è proprietario)
+              String? restaurantId;
+              bool showBackButton = false;
+              if (settings.arguments is Map) {
+                final args = settings.arguments as Map;
+                restaurantId = args['restaurantId'] as String?;
+                // Se l'ID viene dagli argomenti, mostra il back button
+                showBackButton = restaurantId != null;
+              }
+              // Se non c'è negli argomenti, usa l'ID del ristorante dell'utente
+              restaurantId ??= userProvider.userData?.restaurantId;
+
+              if (restaurantId == null || restaurantId.isEmpty) {
+                // Se non c'è nessun ID, torna alla home
+                page = const HomeScreen();
+              } else {
+                page = RestaurantScreen(
+                  restaurantId: restaurantId,
+                  showBackButton: showBackButton,
+                );
+              }
               transitionType = TransitionType.spotify;
               break;
             case '/favorites':
@@ -111,21 +132,38 @@ class _MainLayoutState extends State<MainLayout> {
         initialIndex: _currentIndex,
         restaurantOwner: isRestaurantOwner, // Passing the flag to the nav bar
         onTap: (index) {
+          // Defining the routes based on the user type
+          final List<String> routes;
+          if (isRestaurantOwner) {
+            routes = [
+              '/home',
+              '/orders',
+              '/restaurant',
+              '/favorites',
+              '/account',
+            ];
+          } else {
+            routes = ['/home', '/orders', '/favorites', '/account'];
+          }
+
+          final selectedRoute = routes[index];
+
           if (index != _currentIndex) {
+            // Se cambia tab, naviga alla nuova tab ripulendo lo stack
             setState(() {
               _currentIndex = index;
             });
 
-            // Defining the routes based on the user type
-            final List<String> routes;
-            if (isRestaurantOwner) {
-              routes = ['/home', '/orders', '/restaurant', '/favorites', '/account'];
-            } else {
-              routes = ['/home', '/orders', '/favorites', '/account'];
-            }
-
-            navigatorKey.currentState?.pushReplacementNamed(
-              routes[index],
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              selectedRoute,
+              (route) => false, // Rimuove tutte le rotte precedenti
+              arguments: {'transitionType': TransitionType.spotify},
+            );
+          } else {
+            // Se clicchi sulla stessa tab, torna alla home di quella tab
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              selectedRoute,
+              (route) => false, // Rimuove tutte le rotte precedenti
               arguments: {'transitionType': TransitionType.spotify},
             );
           }
