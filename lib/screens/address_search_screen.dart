@@ -183,6 +183,10 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   /// Widget per ogni suggerimento nella lista
   Widget _buildSuggestionItem(Prediction prediction) {
+    if (!mounted) {
+      return const SizedBox.shrink();
+    }
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -277,9 +281,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
         longitude: lng,
       );
 
-      // Torna indietro alla home page
       if (mounted) {
-        Navigator.pop(context);
+        // Nascondi il loading
+        setState(() {
+          _isLoading = false;
+        });
 
         // Mostra messaggio di successo
         await CustomAlertDialog.showInfoDialog(
@@ -288,6 +294,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           message: 'Your address has been saved successfully',
           buttonText: 'OK',
         );
+
+        // Torna indietro alla home page dopo che l'utente ha premuto OK
+        if (mounted) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       setState(() {
