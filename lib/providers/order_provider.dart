@@ -10,7 +10,10 @@ class OrderProvider extends ChangeNotifier {
   RestaurantProvider? _restaurantProvider;
 
   void setContext(BuildContext context) {
-    _restaurantProvider = Provider.of<RestaurantProvider>(context, listen: false);
+    _restaurantProvider = Provider.of<RestaurantProvider>(
+      context,
+      listen: false,
+    );
   }
 
   /// Local state
@@ -36,7 +39,10 @@ class OrderProvider extends ChangeNotifier {
   /// Retrieves all orders for the user
   /// The fetchUserOrders function supports caching and only calls the Firestore
   /// service if the orders are not already loaded or if a forced refresh is requested.
-  Future<void> fetchUserOrders(String userId, {bool forceRefresh = false}) async {
+  Future<void> fetchUserOrders(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
     // If orders are already loaded and not forced to refresh, return early
     if (_ordersLoaded && !forceRefresh && _userOrders.isNotEmpty) {
       return;
@@ -81,6 +87,54 @@ class OrderProvider extends ChangeNotifier {
     return completedOrders;
   }
 
+  Future<List<Order>> fetchUserPaidOrders(String userId) async {
+    List<Order> paidOrders = [];
+
+    try {
+      _isLoading = true;
+      clearErrors();
+      notifyListeners();
+
+      // Fetch only future paid orders
+      paidOrders = await _orderFirestore.getUserPaidOrders(userId);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      debugPrint(_errorMessage);
+    }
+
+    return paidOrders;
+  }
+
+  Future<List<Order>> fetchRestaurantReceivedOrders(String restaurantId) async {
+    List<Order> receivedOrders = [];
+
+    try {
+      _isLoading = true;
+      clearErrors();
+      notifyListeners();
+
+      // Fetch orders received by the restaurant
+      receivedOrders = await _orderFirestore.getRestaurantReceivedOrders(
+        restaurantId,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      debugPrint(_errorMessage);
+    }
+
+    return receivedOrders;
+  }
+
   // Recovers an order from the local list by its ID
   Order? getOrderById(String orderId) {
     try {
@@ -117,10 +171,13 @@ class OrderProvider extends ChangeNotifier {
       }
 
       Map<String, int> orderDishesCount = {};
-       for (final order in _userOrders) {
-          orderDishesCount[order.id] = order.dishes.length;
+      for (final order in _userOrders) {
+        orderDishesCount[order.id] = order.dishes.length;
       }
-      int? orderIndex = await hasPendingOrderDateTime(currentRestaurant.id, pickupDateTime);
+      int? orderIndex = await hasPendingOrderDateTime(
+        currentRestaurant.id,
+        pickupDateTime,
+      );
 
       if (orderIndex != null) {
         // If an order already exists for the restaurant and date, add the dish to that order
@@ -130,7 +187,7 @@ class OrderProvider extends ChangeNotifier {
         OrderItem? existingDish;
         try {
           existingDish = existingOrder.dishes.firstWhere(
-                (item) => item.dishId == dishId,
+            (item) => item.dishId == dishId,
           );
         } catch (e) {
           existingDish = null;
@@ -147,15 +204,15 @@ class OrderProvider extends ChangeNotifier {
 
           // Update the local order with the new total and quantity
           _userOrders[orderIndex] = existingOrder.copyWith(
-              total: existingOrder.total + dishPrice,
-              updatedDishes: {
-                dishId: OrderItem(
-                    dishId: existingDish.dishId,
-                    name: existingDish.name,
-                    quantity: existingDish.quantity + 1,
-                    price: existingDish.price
-                )
-              }
+            total: existingOrder.total + dishPrice,
+            updatedDishes: {
+              dishId: OrderItem(
+                dishId: existingDish.dishId,
+                name: existingDish.name,
+                quantity: existingDish.quantity + 1,
+                price: existingDish.price,
+              ),
+            },
           );
         } else {
           // If the dish is not in the order, add it
@@ -168,7 +225,7 @@ class OrderProvider extends ChangeNotifier {
 
           await _orderFirestore.addDishToOrder(
             orderId: existingOrder.id,
-            orderItem: newDish
+            orderItem: newDish,
           );
 
           existingOrder.dishes.add(newDish);
@@ -200,7 +257,9 @@ class OrderProvider extends ChangeNotifier {
           ],
         );
 
-        final newOrderId = await _orderFirestore.createNewOrder(order: newOrder);
+        final newOrderId = await _orderFirestore.createNewOrder(
+          order: newOrder,
+        );
         if (newOrderId.isEmpty) {
           _isLoading = false;
           _errorMessage = 'Failed to create new order';
@@ -240,7 +299,10 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Update the restaurant name in all pending orders
-  Future<void> updateRestaurantNameInOrders(String restaurantId, String newName) async {
+  Future<void> updateRestaurantNameInOrders(
+    String restaurantId,
+    String newName,
+  ) async {
     try {
       _isLoading = true;
       clearErrors();
@@ -250,7 +312,8 @@ class OrderProvider extends ChangeNotifier {
 
       // Also update the local list of orders if present
       for (int i = 0; i < _userOrders.length; i++) {
-        if (_userOrders[i].restaurantId == restaurantId && _userOrders[i].status != 'completed') {
+        if (_userOrders[i].restaurantId == restaurantId &&
+            _userOrders[i].status != 'completed') {
           _userOrders[i] = _userOrders[i].copyWith(restaurantName: newName);
         }
       }
@@ -289,19 +352,21 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Checks if a pending order exists for a restaurant at the specified pickup date
-  Future<int?> hasPendingOrderDateTime(String restaurantId,
-      DateTime pickupDateTime) async {
-      // Checks if the order is already in the local list
-      for (int i = 0; i < _userOrders.length; i++) {
-        Order order = _userOrders[i];
-        if (order.restaurantId == restaurantId &&
-            order.status == 'ready_for_checkout' &&
-            _isSameDateTime(order.pickupDateTime, pickupDateTime)) {
-          return i; // Returns the index of the order in the local list
-        }
+  Future<int?> hasPendingOrderDateTime(
+    String restaurantId,
+    DateTime pickupDateTime,
+  ) async {
+    // Checks if the order is already in the local list
+    for (int i = 0; i < _userOrders.length; i++) {
+      Order order = _userOrders[i];
+      if (order.restaurantId == restaurantId &&
+          order.status == 'ready_for_checkout' &&
+          _isSameDateTime(order.pickupDateTime, pickupDateTime)) {
+        return i; // Returns the index of the order in the local list
       }
+    }
 
-      return null;
+    return null;
   }
 
   // Helper method to compare dates ignoring seconds and milliseconds
@@ -323,13 +388,16 @@ class OrderProvider extends ChangeNotifier {
     if (errorMessage.contains('permission-denied') ||
         errorMessage.contains('permission')) {
       return 'You do not have permission to complete this operation.';
-    } else if (errorMessage.contains('not-found') || errorMessage.contains('no such')) {
+    } else if (errorMessage.contains('not-found') ||
+        errorMessage.contains('no such')) {
       return 'The requested order was not found.';
-    } else if (errorMessage.contains('network') || errorMessage.contains('connection')) {
+    } else if (errorMessage.contains('network') ||
+        errorMessage.contains('connection')) {
       return 'Connection error. Please check your internet connection.';
     } else if (errorMessage.contains('timeout')) {
       return 'Operation timed out. Please try again later.';
-    } else if (errorMessage.contains('invalid') || errorMessage.contains('validation')) {
+    } else if (errorMessage.contains('invalid') ||
+        errorMessage.contains('validation')) {
       return 'The order data is not valid.';
     } else if (errorMessage.contains('unauthenticated') ||
         errorMessage.contains('unauthorized')) {

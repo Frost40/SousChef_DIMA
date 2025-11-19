@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../models/order.dart';
 
 class OrderFirestore {
-  final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  final firestore.FirebaseFirestore _firestore =
+      firestore.FirebaseFirestore.instance;
 
   // Reference to the orders collection
-  firestore.CollectionReference get _ordersTable => _firestore.collection('orders');
+  firestore.CollectionReference get _ordersTable =>
+      _firestore.collection('orders');
 
   // Get an order by ID
   Future<Order?> getOrderById(String orderId) async {
@@ -18,38 +20,71 @@ class OrderFirestore {
 
   /// Get all orders for a user
   Future<List<Order>> getUserOrders(String userId) async {
-    firestore.QuerySnapshot snapshot = await _ordersTable
-        .where('user_id', isEqualTo: userId)
-        .where('status', isNotEqualTo: "completed")
-        .orderBy('pickup_date_time', descending: true)
-        .get();
+    firestore.QuerySnapshot snapshot =
+        await _ordersTable
+            .where('user_id', isEqualTo: userId)
+            .where('status', isNotEqualTo: "completed")
+            .orderBy('pickup_date_time', descending: true)
+            .get();
 
-    return snapshot.docs
-        .map((doc) => Order.fromFirestore(doc))
-        .toList();
+    return snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
   }
 
   /// Fetch old orders (all the completed) for a user
   Future<List<Order>> getUserCompletedOrders(String userId) async {
-    firestore.QuerySnapshot snapshot = await _ordersTable
-        .where('user_id', isEqualTo: userId)
-        .where('status', isEqualTo: "completed")
-        .orderBy('pickup_date_time', descending: true)
-        .get();
+    firestore.QuerySnapshot snapshot =
+        await _ordersTable
+            .where('user_id', isEqualTo: userId)
+            .where('status', isEqualTo: "completed")
+            .orderBy('pickup_date_time', descending: true)
+            .get();
 
-    return snapshot.docs
-        .map((doc) => Order.fromFirestore(doc))
-        .toList();
+    return snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+  }
+
+  /// Get all paid orders for a user
+  Future<List<Order>> getUserPaidOrders(String userId) async {
+    // Fetch all paid orders for the user
+    firestore.QuerySnapshot snapshot =
+        await _ordersTable
+            .where('user_id', isEqualTo: userId)
+            .where('status', isEqualTo: "paid")
+            .get();
+
+    // Sort by pickup date time
+    List<Order> orders =
+        snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+
+    orders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+
+    return orders;
+  }
+
+  /// Get all paid orders received by a restaurant
+  Future<List<Order>> getRestaurantReceivedOrders(String restaurantId) async {
+    // Fetch all paid orders for the restaurant
+    firestore.QuerySnapshot snapshot =
+        await _ordersTable
+            .where('restaurant_id', isEqualTo: restaurantId)
+            .where('status', isEqualTo: "paid")
+            .get();
+
+    // Sort by pickup date time
+    List<Order> orders =
+        snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+
+    orders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+
+    return orders;
   }
 
   /// Create a new order in the database
   /// @param order - The order to create
   /// @returns Future<String> - The ID of the newly created order
-  Future<String> createNewOrder({
-    required Order order,
-  }) async {
-
-    final firestore.DocumentReference restaurantDoc = await _ordersTable.add(order.toFirestore());
+  Future<String> createNewOrder({required Order order}) async {
+    final firestore.DocumentReference restaurantDoc = await _ordersTable.add(
+      order.toFirestore(),
+    );
 
     // Return the ID of the newly created restaurant
     return restaurantDoc.id;
@@ -94,23 +129,17 @@ class OrderFirestore {
     // Update in a single transaction
     await _firestore.runTransaction((transaction) async {
       // Remove old dish entry
-      transaction.update(
-          _ordersTable.doc(orderId),
-          {
-            'dishes': firestore.FieldValue.arrayRemove([targetDish])
-          }
-      );
+      transaction.update(_ordersTable.doc(orderId), {
+        'dishes': firestore.FieldValue.arrayRemove([targetDish]),
+      });
 
       // Add dish with quantity incremented by 1
       targetDish!['quantity'] = oldQuantity + 1;
-      transaction.update(
-          _ordersTable.doc(orderId),
-          {
-            'dishes': firestore.FieldValue.arrayUnion([targetDish]),
-            // Increment total price by the dish price
-            'total': firestore.FieldValue.increment(dishPrice)
-          }
-      );
+      transaction.update(_ordersTable.doc(orderId), {
+        'dishes': firestore.FieldValue.arrayUnion([targetDish]),
+        // Increment total price by the dish price
+        'total': firestore.FieldValue.increment(dishPrice),
+      });
     });
   }
 
@@ -122,7 +151,6 @@ class OrderFirestore {
     required String orderId,
     required OrderItem orderItem,
   }) async {
-
     // Add new dish to the order and update total in a single operation
     await _ordersTable.doc(orderId).update({
       'dishes': firestore.FieldValue.arrayUnion([
@@ -131,9 +159,9 @@ class OrderFirestore {
           'name': orderItem.name,
           'quantity': orderItem.quantity,
           'price': orderItem.price,
-        }
+        },
       ]),
-      'total': firestore.FieldValue.increment(orderItem.price)
+      'total': firestore.FieldValue.increment(orderItem.price),
     });
   }
 
@@ -143,12 +171,16 @@ class OrderFirestore {
   }
 
   /// Update the restaurant name in all non-completed orders
-  Future<void> updateRestaurantNameInOrders(String restaurantId, String newName) async {
+  Future<void> updateRestaurantNameInOrders(
+    String restaurantId,
+    String newName,
+  ) async {
     // Find all non-completed orders for this restaurant
-    firestore.QuerySnapshot ordersSnapshot = await _ordersTable
-        .where('restaurant_id', isEqualTo: restaurantId)
-        .where('status', isNotEqualTo: 'completed')
-        .get();
+    firestore.QuerySnapshot ordersSnapshot =
+        await _ordersTable
+            .where('restaurant_id', isEqualTo: restaurantId)
+            .where('status', isNotEqualTo: 'completed')
+            .get();
 
     // Batch write to update all documents in a single operation
     final batch = _firestore.batch();

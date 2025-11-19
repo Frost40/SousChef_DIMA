@@ -38,7 +38,7 @@ class _PastOrdersScreenState extends State<PastOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ordini Completati'),
+        title: const Text('Orders completed'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
