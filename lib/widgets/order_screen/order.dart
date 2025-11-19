@@ -4,8 +4,9 @@ import 'package:sous_chef/models/order.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
-class OrderCard extends StatefulWidget {
+class OrderTile extends StatefulWidget {
   final String restaurantName;
+  final String restaurantId;
   final List<OrderItem> dishes;
   final DateTime dateTime;
   final double price;
@@ -13,9 +14,10 @@ class OrderCard extends StatefulWidget {
   final bool initiallyExpanded;
   final String? restaurantAddress;
 
-  const OrderCard({
+  const OrderTile({
     super.key,
     required this.restaurantName,
+    required this.restaurantId,
     required this.dishes,
     required this.dateTime,
     required this.price,
@@ -25,10 +27,10 @@ class OrderCard extends StatefulWidget {
   });
 
   @override
-  State<OrderCard> createState() => _OrderCardState();
+  State<OrderTile> createState() => _OrderTileState();
 }
 
-class _OrderCardState extends State<OrderCard>
+class _OrderTileState extends State<OrderTile>
     with SingleTickerProviderStateMixin {
   late bool isExpanded;
   late AnimationController _controller;
@@ -95,14 +97,25 @@ class _OrderCardState extends State<OrderCard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.restaurantName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pushNamed(
+                              '/restaurant',
+                              arguments: {'restaurantId': widget.restaurantId},
+                            );
+                          },
+                          child: Text(
+                            widget.restaurantName,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                              decorationColor: colorScheme.primary,
+                              color: colorScheme.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
 
                         const SizedBox(height: 8),

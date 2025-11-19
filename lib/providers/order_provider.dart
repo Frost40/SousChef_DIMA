@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
@@ -315,6 +316,47 @@ class OrderProvider extends ChangeNotifier {
         if (_userOrders[i].restaurantId == restaurantId &&
             _userOrders[i].status != 'completed') {
           _userOrders[i] = _userOrders[i].copyWith(restaurantName: newName);
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+    }
+  }
+
+  /// Update the restaurant address in orders with specific statuses
+  Future<void> updateRestaurantAddressInOrders(
+    String restaurantId,
+    String newAddress,
+    firestore.GeoPoint newLocation,
+  ) async {
+    try {
+      _isLoading = true;
+      clearErrors();
+      notifyListeners();
+
+      await _orderFirestore.updateRestaurantAddressInOrders(
+        restaurantId,
+        newAddress,
+        newLocation,
+      );
+
+      // Also update the local list of orders if present
+      for (int i = 0; i < _userOrders.length; i++) {
+        if (_userOrders[i].restaurantId == restaurantId &&
+            [
+              'ready_for_checkout',
+              'pending',
+              'paid',
+            ].contains(_userOrders[i].status)) {
+          _userOrders[i] = _userOrders[i].copyWith(
+            restaurantAddress: newAddress,
+            restaurantLocation: newLocation,
+          );
         }
       }
 

@@ -234,8 +234,9 @@ class RestaurantProvider with ChangeNotifier {
     String restaurantId,
     String address,
     double latitude,
-    double longitude,
-  ) async {
+    double longitude, {
+    required OrderProvider orderProvider,
+  }) async {
     _isLoading = true;
     clearErrors();
     notifyListeners();
@@ -246,6 +247,13 @@ class RestaurantProvider with ChangeNotifier {
         address,
         latitude,
         longitude,
+      );
+
+      // Update address in orders with specific statuses
+      await orderProvider.updateRestaurantAddressInOrders(
+        restaurantId,
+        address,
+        GeoPoint(latitude, longitude),
       );
 
       // Update local restaurant model

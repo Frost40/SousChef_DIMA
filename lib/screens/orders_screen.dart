@@ -272,8 +272,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Column(
         children: [
           ...orders.map((order) {
-            return OrderCard(
+            return OrderTile(
               restaurantName: order.restaurantName,
+              restaurantId: order.restaurantId,
               dishes: order.dishes,
               dateTime: order.pickupDateTime,
               restaurantAddress:

@@ -246,11 +246,16 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                           debugPrint(
                             "New address: $newAddress (lat: $lat, lng: $lng)",
                           );
+                          final orderProvider = Provider.of<OrderProvider>(
+                            context,
+                            listen: false,
+                          );
                           restaurantProvider.updateRestaurantAddress(
                             widget.restaurantId,
                             newAddress,
                             lat,
                             lng,
+                            orderProvider: orderProvider,
                           );
                         }
                         : null,
@@ -472,11 +477,17 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         onAddressChanged:
                             isOwner
                                 ? (newAddress, lat, lng) {
+                                  final orderProvider =
+                                      Provider.of<OrderProvider>(
+                                        context,
+                                        listen: false,
+                                      );
                                   restaurantProvider.updateRestaurantAddress(
                                     widget.restaurantId,
                                     newAddress,
                                     lat,
                                     lng,
+                                    orderProvider: orderProvider,
                                   );
                                 }
                                 : null,

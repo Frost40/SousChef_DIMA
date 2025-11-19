@@ -192,6 +192,37 @@ class OrderFirestore {
     await batch.commit();
   }
 
+  /// Update the restaurant address and location in orders with specific statuses
+  Future<void> updateRestaurantAddressInOrders(
+    String restaurantId,
+    String newAddress,
+    firestore.GeoPoint newLocation,
+  ) async {
+    // Define the statuses to update
+    final statusesToUpdate = ['ready_for_checkout', 'pending', 'paid'];
+
+    final batch = _firestore.batch();
+
+    // For each status, fetch and update the orders
+    for (String status in statusesToUpdate) {
+      firestore.QuerySnapshot ordersSnapshot =
+          await _ordersTable
+              .where('restaurant_id', isEqualTo: restaurantId)
+              .where('status', isEqualTo: status)
+              .get();
+
+      for (var doc in ordersSnapshot.docs) {
+        batch.update(doc.reference, {
+          'restaurant_address': newAddress,
+          'restaurant_location': newLocation,
+        });
+      }
+    }
+
+    // Execute the batch operation
+    await batch.commit();
+  }
+
   /// Delete an order from the database
   /// @param orderId - order to delete
   /// @returns Future<void>
