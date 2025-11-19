@@ -93,10 +93,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
       children: [
         Expanded(
           child: Center(
-            child: Icon(
-              Icons.restaurant,
-              size: 150,
-              color: Theme.of(context).colorScheme.primary,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.matrix([
+                1.5,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.6,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+              ]),
+              child: Image.asset(
+                'assets/logo_nosfondo.png',
+                width: 250,
+                height: 250,
+              ),
             ),
           ),
         ),
@@ -117,10 +141,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
         children: [
           Container(
             margin: EdgeInsets.only(top: 20, bottom: 30),
-            child: Icon(
-              Icons.restaurant,
-              size: 100,
-              color: Theme.of(context).colorScheme.primary,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.matrix([
+                1.5,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.6,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+              ]),
+              child: Image.asset(
+                'assets/logo_nosfondo.png',
+                width: 180,
+                height: 180,
+              ),
             ),
           ),
           ..._buildFormFields(context),
