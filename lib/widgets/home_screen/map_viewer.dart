@@ -167,10 +167,7 @@ class _MapViewerState extends State<MapViewer> {
     return Scaffold(
       appBar: AppBar(
         title: Text('$restaurantCount $restaurantText found'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           // Bottone per centrare la mappa su Milano
           IconButton(
