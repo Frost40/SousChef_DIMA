@@ -272,15 +272,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Column(
         children: [
           ...orders.map((order) {
+            final bool isReceivedOrder = _isRestaurant && _showReceivedOrders;
             return OrderTile(
-              restaurantName: order.restaurantName,
+              displayName:
+                  isReceivedOrder ? order.username : order.restaurantName,
+              isClickable: !isReceivedOrder,
               restaurantId: order.restaurantId,
               dishes: order.dishes,
               dateTime: order.pickupDateTime,
               restaurantAddress:
-                  (_isRestaurant && _showReceivedOrders)
-                      ? null
-                      : order.restaurantAddress,
+                  isReceivedOrder ? null : order.restaurantAddress,
               price: order.total,
             );
           }),

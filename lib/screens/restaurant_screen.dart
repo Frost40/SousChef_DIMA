@@ -20,6 +20,7 @@ import '../widgets/restaurant_screen/menu_item.dart';
 import '../widgets/restaurant_screen/restaurant_info.dart';
 import '../widgets/responsive_layout.dart';
 import '../services/orientation_manager.dart';
+import '../widgets/favorite_icon_button.dart';
 
 // Enum per identificare i tipi di layout possibili
 enum LayoutType { mobile, tabletVertical, tabletHorizontal }
@@ -182,16 +183,25 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                           ],
                         ),
                       )
-                      : Text(restaurant.name),
-              centerTitle: true,
+                      : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(restaurant.name),
+                      ),
+              centerTitle: isOwner,
               pinned: true, // Makes the AppBar stick at the top
               floating:
                   false, // AppBar doesn't reappear on scrolling down slightly
               snap: false, // Doesn't snap into view
               automaticallyImplyLeading: widget.showBackButton,
-              actions: const [
-                // Space for future actions
-              ],
+              actions:
+                  isOwner
+                      ? const []
+                      : [
+                        FavoriteIconButton(
+                          restaurantId: restaurant.id,
+                          restaurantName: restaurant.name,
+                        ),
+                      ],
             ),
 
             // --- 2. Restaurant Info Section ---

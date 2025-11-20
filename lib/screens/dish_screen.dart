@@ -97,7 +97,6 @@ class _DishScreenState extends State<DishScreen> {
   bool _courseFocused = false;
   bool _cuisineFocused = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -114,7 +113,6 @@ class _DishScreenState extends State<DishScreen> {
       _initialUsername = '';
       _initialMinForewarningDays = 0;
     } else {
-
       final dishProvider = Provider.of<DishProvider>(context, listen: false);
       _dish = dishProvider.getDishById(widget.dishId!);
 
@@ -141,7 +139,8 @@ class _DishScreenState extends State<DishScreen> {
     _nameController = TextEditingController(text: _initialName);
     _descriptionController = TextEditingController(text: _initialDescription);
     _priceController = TextEditingController(
-        text: _initialPrice != null ? _initialPrice!.toString() : '');
+      text: _initialPrice != null ? _initialPrice!.toString() : '',
+    );
     _imageUrlController = TextEditingController(text: _initialImageUrl ?? '');
 
     _nameController.addListener(() {
@@ -217,7 +216,8 @@ class _DishScreenState extends State<DishScreen> {
       _descriptionController.text = _currentDescription;
       _descriptionFocus.unfocus();
     } else if (_currentFocus == 'price') {
-      _priceController.text = _currentPrice != null ? _currentPrice!.toString() : '';
+      _priceController.text =
+          _currentPrice != null ? _currentPrice!.toString() : '';
       _priceFocus.unfocus();
     } else if (_currentFocus == 'image') {
       _imageUrlController.text = _initialImageUrl ?? '';
@@ -241,7 +241,8 @@ class _DishScreenState extends State<DishScreen> {
     final usernameChanged = _currentUsername != _initialUsername;
     final String controllerText = _imageUrlController.text;
     final String? initialText = _initialImageUrl;
-    final imageUrlChanged = (initialText == null && controllerText.isNotEmpty) ||
+    final imageUrlChanged =
+        (initialText == null && controllerText.isNotEmpty) ||
         (initialText != null && controllerText != initialText);
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
@@ -249,19 +250,23 @@ class _DishScreenState extends State<DishScreen> {
         _currentMinForewarningDays != _initialMinForewarningDays;
 
     setState(() {
-      _hasChanges = (nameChanged ||
-          descriptionChanged ||
-          priceChanged ||
-          usernameChanged ||
-          imageUrlChanged ||
-          courseChanged ||
-          cuisineChanged ||
-          minForewarningDaysChanged) &&
+      _hasChanges =
+          (nameChanged ||
+              descriptionChanged ||
+              priceChanged ||
+              usernameChanged ||
+              imageUrlChanged ||
+              courseChanged ||
+              cuisineChanged ||
+              minForewarningDaysChanged) &&
           !_hasValidationErrors;
     });
 
-    debugPrint("Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, " "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
-        "cuisine=$cuisineChanged, hasChanges=$_hasChanges");
+    debugPrint(
+      "Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, "
+              "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
+          "cuisine=$cuisineChanged, hasChanges=$_hasChanges",
+    );
   }
 
   double? _parsePrice() {
@@ -320,7 +325,8 @@ class _DishScreenState extends State<DishScreen> {
       _imageUrlError = imageUrlError;
       _courseError = courseError;
       _cuisineError = cuisineError;
-      _hasValidationErrors = nameError != null ||
+      _hasValidationErrors =
+          nameError != null ||
           _usernameError != null ||
           priceError != null ||
           imageUrlError != null ||
@@ -400,7 +406,8 @@ class _DishScreenState extends State<DishScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final String uniqueHeroTag = widget.heroTag ?? 'new_dish_${DateTime.now().millisecondsSinceEpoch}';
+    final String uniqueHeroTag =
+        widget.heroTag ?? 'new_dish_${DateTime.now().millisecondsSinceEpoch}';
 
     return ResponsiveLayout(
       builder: (context, isTablet) {
@@ -434,10 +441,7 @@ class _DishScreenState extends State<DishScreen> {
               actions: [
                 if (widget.isEditable && _hasChanges)
                   IconButton(
-                    icon: Icon(
-                      Icons.save,
-                      color: colorScheme.primary,
-                    ),
+                    icon: Icon(Icons.save, color: colorScheme.primary),
                     onPressed: _saveChanges,
                   ),
               ],
@@ -454,16 +458,18 @@ class _DishScreenState extends State<DishScreen> {
                       bottom: 25,
                     ),
                     child: Center(
-                      child: widget.heroTag != null
-                          ? Hero(
-                        tag: uniqueHeroTag,
-                        child: widget.isEditable
-                            ? _buildEditableImage(colorScheme)
-                            : _buildImage(colorScheme),
-                        )
-                          : widget.isEditable
-                          ? _buildEditableImage(colorScheme)
-                          : _buildImage(colorScheme),
+                      child:
+                          widget.heroTag != null
+                              ? Hero(
+                                tag: uniqueHeroTag,
+                                child:
+                                    widget.isEditable
+                                        ? _buildEditableImage(colorScheme)
+                                        : _buildImage(colorScheme),
+                              )
+                              : widget.isEditable
+                              ? _buildEditableImage(colorScheme)
+                              : _buildImage(colorScheme),
                     ),
                   ),
                   Padding(
@@ -488,7 +494,7 @@ class _DishScreenState extends State<DishScreen> {
                                 color: colorScheme.onSurface,
                               ),
                             ),
-                          )
+                          ),
                         ),
 
                         Divider(
@@ -506,18 +512,18 @@ class _DishScreenState extends State<DishScreen> {
                         const SizedBox(height: 10),
 
                         Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                'Course & Cuisine:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: colorScheme.onSurface,
-                                ),
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              'Course & Cuisine:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
                               ),
-                            )
+                            ),
+                          ),
                         ),
 
                         Divider(
@@ -563,7 +569,10 @@ class _DishScreenState extends State<DishScreen> {
                                   ),
                                   if (_courseError != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 4, left: 8),
+                                      padding: const EdgeInsets.only(
+                                        top: 4,
+                                        left: 8,
+                                      ),
                                       child: Text(
                                         _courseError!,
                                         style: TextStyle(
@@ -609,7 +618,10 @@ class _DishScreenState extends State<DishScreen> {
                                   ),
                                   if (_cuisineError != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 4, left: 8),
+                                      padding: const EdgeInsets.only(
+                                        top: 4,
+                                        left: 8,
+                                      ),
                                       child: Text(
                                         _cuisineError!,
                                         style: TextStyle(
@@ -626,205 +638,250 @@ class _DishScreenState extends State<DishScreen> {
 
                         const SizedBox(height: 40),
 
-
-                          // Username selection for special dishes
-                          if (widget.isEditable && isSpecial)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: Text(
-                                      'Select the username:',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: colorScheme.onSurface,
-                                      ),
+                        // Username selection for special dishes
+                        if (widget.isEditable && isSpecial)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    'Select the username:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSurface,
                                     ),
-                                  )
+                                  ),
                                 ),
-                                Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: colorScheme.onSurface,
-                                ),
-                                const SizedBox(height: 10),
-                                AccountSettingField(
-                                  fieldName: "Username",
-                                  initialValue: _initialUsername,
-                                  padding: 0,
-                                  asyncValidator: _validateUsername,
-                                  onValueChanged: (username, isModified) {
-                                    setState(() {
-                                      _currentUsername = username;
-                                      _usernameFocus.unfocus();
-                                      _checkForChanges();
-                                    });
-                                  },
-                                  onValidationError: (error) {
-                                    setState(() {
-                                      _usernameError = error;
-                                    });
-                                  },
-                                  onTextChanged: () {
-                                    // Cleaning the error when the user starts typing
-                                    setState(() {
-                                      _usernameError = null;
-                                    });
-                                  },
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: colorScheme.onSurface,
+                              ),
+                              const SizedBox(height: 10),
+                              AccountSettingField(
+                                fieldName: "Username",
+                                initialValue: _initialUsername,
+                                padding: 0,
+                                asyncValidator: _validateUsername,
+                                onValueChanged: (username, isModified) {
+                                  setState(() {
+                                    _currentUsername = username;
+                                    _usernameFocus.unfocus();
+                                    _checkForChanges();
+                                  });
+                                },
+                                onValidationError: (error) {
+                                  setState(() {
+                                    _usernameError = error;
+                                  });
+                                },
+                                onTextChanged: () {
+                                  // Cleaning the error when the user starts typing
+                                  setState(() {
+                                    _usernameError = null;
+                                  });
+                                },
+                              ),
+
+                              if (_usernameError != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 4,
+                                    left: 8,
+                                  ),
+                                  child: Text(
+                                    _usernameError!,
+                                    style: TextStyle(
+                                      color: colorScheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
 
-                                if (_usernameError != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4, left: 8),
+                              const SizedBox(height: 10),
+
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
                                     child: Text(
-                                      _usernameError!,
+                                      "Enter the username of the user for whom the dish is created.",
                                       style: TextStyle(
-                                        color: colorScheme.error,
-                                        fontSize: 12,
+                                        fontSize: 13,
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ),
+                                ],
+                              ),
 
-                                const SizedBox(height: 10),
-
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: colorScheme.primary,
-                                      size: 20,
+                              const SizedBox(height: 20),
+                            ],
+                          )
+                        // Date and time selection for ordering a dish
+                        else if (!widget.isEditable)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    'Select pickup date and time:',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: colorScheme.onSurface,
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        "Enter the username of the user for whom the dish is created.",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: colorScheme.onSurface,
+                              ),
+                              const SizedBox(height: 10),
 
-                                const SizedBox(height: 20),
-                              ],
-                            )
-                          // Date and time selection for ordering a dish
-                          else if (!widget.isEditable)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: Text(
-                                      'Select pickup date and time:',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  )
-                                ),
-                                Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: colorScheme.onSurface,
-                                ),
-                                const SizedBox(height: 10),
+                              DateTimePickerWidget(
+                                maxDateDays: minForewarningDays,
+                                onDateTimeSelected: (dateTime) {
+                                  setState(() {
+                                    _selectedDateTime = dateTime;
+                                  });
+                                  debugPrint(
+                                    "Selected date and time: $_selectedDateTime",
+                                  );
+                                },
+                              ),
 
-                                DateTimePickerWidget(
-                                  maxDateDays: minForewarningDays,
-                                  onDateTimeSelected: (dateTime) {
-                                    setState(() {
-                                      _selectedDateTime = dateTime;
-                                    });
-                                    debugPrint("Selected date and time: $_selectedDateTime");
-                                  },
-                                ),
-
-                                const SizedBox(height: 40),
-                              ],
-                            ),
+                              const SizedBox(height: 40),
+                            ],
+                          ),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (!widget.isNew)
-                                widget.isEditable
+                              widget.isEditable
                                   ? CircularButton(
-                                      icon: Icons.delete,
-                                      iconColor: colorScheme.error,
-                                      backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
-                                      size: 50,
-                                      bottomPadding: 0,
-                                      onPressed: _deleteDish,
-                                    )
+                                    icon: Icons.delete,
+                                    iconColor: colorScheme.error,
+                                    backgroundColor: colorScheme.errorContainer
+                                        .withOpacity(0.3),
+                                    size: 50,
+                                    bottomPadding: 0,
+                                    onPressed: _deleteDish,
+                                  )
                                   : CircularButton(
-                                      icon: Icons.add,
-                                      iconColor: colorScheme.onPrimary,
-                                      backgroundColor: colorScheme.primary,
-                                      size: 50,
-                                      bottomPadding: 0,
-                                      onPressed: () {
-                                        if (_selectedDateTime == null) {
-                                          CustomAlertDialog.showInfoDialog(
-                                            context: context,
-                                            title: "Warning",
-                                            message: "Select a date and time to proceed.",
-                                            icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                    icon: Icons.add,
+                                    iconColor: colorScheme.onPrimary,
+                                    backgroundColor: colorScheme.primary,
+                                    size: 50,
+                                    bottomPadding: 0,
+                                    onPressed: () {
+                                      if (_selectedDateTime == null) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Warning",
+                                          message:
+                                              "Select a date and time to proceed.",
+                                          icon: Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (_availabilityStatus == false) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Warning",
+                                          message: "The dish is not available.",
+                                          icon: Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      final userProvider =
+                                          Provider.of<UserProvider>(
+                                            context,
+                                            listen: false,
                                           );
-                                          return;
-                                        }
-
-                                        if (_availabilityStatus == false) {
-                                          CustomAlertDialog.showInfoDialog(
-                                            context: context,
-                                            title: "Warning",
-                                            message: "The dish is not available.",
-                                            icon: Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                                      final orderProvider =
+                                          Provider.of<OrderProvider>(
+                                            context,
+                                            listen: false,
                                           );
-                                          return;
-                                        }
 
-                                        final userProvider = Provider.of<UserProvider>(context, listen: false);
-                                        final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+                                      orderProvider.setContext(context);
 
-                                        orderProvider.setContext(context);
-
-                                        if (_dish != null) {
-                                          orderProvider.addOrder(
-                                            userId: userProvider.userData?.id ?? '',
-                                            dishId: _dish!.id,
-                                            dishName: _dish!.name,
-                                            dishPrice: _dish!.price,
-                                            pickupDateTime: _selectedDateTime!,
-                                          ).then((_) {
-                                            CustomAlertDialog.showInfoDialog(
-                                              context: context,
-                                              title: "Dish sent to cart",
-                                              message: "The dish \"${_dish!.name}\" has been correctly added to your cart.",
-                                              icon: Icon(Icons.check_circle, color: colorScheme.primary),
-                                              buttonText: "OK",
-                                            );
-                                          }).catchError((error) {
-                                            CustomAlertDialog.showInfoDialog(
-                                              context: context,
-                                              title: "Error",
-                                              message: orderProvider.errorMessage ?? "Something went wrong. Try again later.",
-                                              icon: Icon(Icons.error_outline, color: colorScheme.error),
-                                            );
-                                          });
-                                        }
-                                      },
-                                    ),
+                                      if (_dish != null) {
+                                        orderProvider
+                                            .addOrder(
+                                              userId:
+                                                  userProvider.userData?.id ??
+                                                  '',
+                                              username:
+                                                  userProvider
+                                                      .userData
+                                                      ?.username ??
+                                                  '',
+                                              dishId: _dish!.id,
+                                              dishName: _dish!.name,
+                                              dishPrice: _dish!.price,
+                                              pickupDateTime:
+                                                  _selectedDateTime!,
+                                            )
+                                            .then((_) {
+                                              CustomAlertDialog.showInfoDialog(
+                                                context: context,
+                                                title: "Dish sent to cart",
+                                                message:
+                                                    "The dish \"${_dish!.name}\" has been correctly added to your cart.",
+                                                icon: Icon(
+                                                  Icons.check_circle,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                buttonText: "OK",
+                                              );
+                                            })
+                                            .catchError((error) {
+                                              CustomAlertDialog.showInfoDialog(
+                                                context: context,
+                                                title: "Error",
+                                                message:
+                                                    orderProvider
+                                                        .errorMessage ??
+                                                    "Something went wrong. Try again later.",
+                                                icon: Icon(
+                                                  Icons.error_outline,
+                                                  color: colorScheme.error,
+                                                ),
+                                              );
+                                            });
+                                      }
+                                    },
+                                  ),
 
                             const SizedBox(width: 20),
 
@@ -848,8 +905,6 @@ class _DishScreenState extends State<DishScreen> {
                                   ),
                                 ],
                               ),
-
-
                           ],
                         ),
                       ],
@@ -870,25 +925,27 @@ class _DishScreenState extends State<DishScreen> {
         CircleAvatar(
           radius: 60,
           backgroundColor: colorScheme.surface,
-          child: imageUrl != null && imageUrl!.isNotEmpty
-              ? ClipOval(
-                  child: Image.network(
-                    imageUrl!,
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.restaurant_menu,
-                      size: 60,
-                      color: colorScheme.onSurfaceVariant,
+          child:
+              imageUrl != null && imageUrl!.isNotEmpty
+                  ? ClipOval(
+                    child: Image.network(
+                      imageUrl!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Icon(
+                            Icons.restaurant_menu,
+                            size: 60,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                     ),
+                  )
+                  : Icon(
+                    Icons.restaurant_menu,
+                    size: 60,
+                    color: colorScheme.primary,
                   ),
-                )
-              : Icon(
-                  Icons.restaurant_menu,
-                  size: 60,
-                  color: colorScheme.primary,
-                ),
         ),
 
         // Availability button on the bottom-left corner
@@ -914,34 +971,36 @@ class _DishScreenState extends State<DishScreen> {
         CircleAvatar(
           radius: 60,
           backgroundColor: colorScheme.surfaceContainerHighest,
-          child: _imageFile != null
-              ? ClipOval(
-                  child: Image.file(
-                    _imageFile!,
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : _imageUrlController.text.isNotEmpty
+          child:
+              _imageFile != null
                   ? ClipOval(
-                      child: Image.network(
-                        _imageUrlController.text,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.restaurant_menu,
-                          size: 60,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.restaurant_menu,
-                      size: 60,
-                      color: colorScheme.primary,
+                    child: Image.file(
+                      _imageFile!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
                     ),
+                  )
+                  : _imageUrlController.text.isNotEmpty
+                  ? ClipOval(
+                    child: Image.network(
+                      _imageUrlController.text,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Icon(
+                            Icons.restaurant_menu,
+                            size: 60,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  )
+                  : Icon(
+                    Icons.restaurant_menu,
+                    size: 60,
+                    color: colorScheme.primary,
+                  ),
         ),
 
         // Image upload button on the bottom-right corner
@@ -972,32 +1031,39 @@ class _DishScreenState extends State<DishScreen> {
         // Availability button on the bottom-left corner
         if (!isSpecial)
           Positioned(
-          bottom: 0,
-          left: 0,
-          child: DishAvailabilityButton(
-            initialValue: _availabilityStatus,
-            isEditable: widget.isEditable,
-            size: 40,
-            symbolResize: 0.6,
-            onToggle: (value) {
-              debugPrint("Availability changed: $value");
-              setState(() {
-                _availabilityStatus = value;
-              });
+            bottom: 0,
+            left: 0,
+            child: DishAvailabilityButton(
+              initialValue: _availabilityStatus,
+              isEditable: widget.isEditable,
+              size: 40,
+              symbolResize: 0.6,
+              onToggle: (value) {
+                debugPrint("Availability changed: $value");
+                setState(() {
+                  _availabilityStatus = value;
+                });
 
-              if (widget.dishId != null) {
-                final dishProvider = Provider.of<DishProvider>(context, listen: false);
-                final restaurantId = dishProvider.currentRestaurantId;
+                if (widget.dishId != null) {
+                  final dishProvider = Provider.of<DishProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final restaurantId = dishProvider.currentRestaurantId;
 
-                if (restaurantId != null) {
-                  dishProvider.updateDishAvailability(restaurantId, widget.dishId!, value);
+                  if (restaurantId != null) {
+                    dishProvider.updateDishAvailability(
+                      restaurantId,
+                      widget.dishId!,
+                      value,
+                    );
+                  }
                 }
-              }
 
-              widget.onAvailabilityChanged?.call(value);
-            },
+                widget.onAvailabilityChanged?.call(value);
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -1011,10 +1077,7 @@ class _DishScreenState extends State<DishScreen> {
         children: [
           Text(
             dishName,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -1030,7 +1093,10 @@ class _DishScreenState extends State<DishScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: _currentFocus == 'name' ? colorScheme.primary : Colors.transparent,
+              color:
+                  _currentFocus == 'name'
+                      ? colorScheme.primary
+                      : Colors.transparent,
               width: 2,
             ),
           ),
@@ -1039,10 +1105,7 @@ class _DishScreenState extends State<DishScreen> {
             controller: _nameController,
             focusNode: _nameFocus,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               hintText: 'Dish name',
               hintStyle: TextStyle(
@@ -1063,10 +1126,7 @@ class _DishScreenState extends State<DishScreen> {
         if (_nameError != null)
           Text(
             _nameError!,
-            style: TextStyle(
-              color: colorScheme.error,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: colorScheme.error, fontSize: 12),
           ),
       ],
     );
@@ -1079,7 +1139,10 @@ class _DishScreenState extends State<DishScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: _currentFocus == 'description' ? colorScheme.primary : Colors.transparent,
+              color:
+                  _currentFocus == 'description'
+                      ? colorScheme.primary
+                      : Colors.transparent,
               width: 1,
             ),
           ),
@@ -1089,10 +1152,7 @@ class _DishScreenState extends State<DishScreen> {
             focusNode: _descriptionFocus,
             textAlign: TextAlign.left,
             maxLines: 4,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Dish description',
               hintStyle: TextStyle(
@@ -1113,10 +1173,7 @@ class _DishScreenState extends State<DishScreen> {
         if (_descriptionError != null)
           Text(
             _descriptionError!,
-            style: TextStyle(
-              color: colorScheme.error,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: colorScheme.error, fontSize: 12),
           ),
       ],
     );
@@ -1129,7 +1186,10 @@ class _DishScreenState extends State<DishScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
             border: Border.all(
-              color: _currentFocus == 'price' ? colorScheme.primary : Colors.transparent,
+              color:
+                  _currentFocus == 'price'
+                      ? colorScheme.primary
+                      : Colors.transparent,
               width: 2,
             ),
             color: colorScheme.primary.withOpacity(0.2),
@@ -1151,7 +1211,9 @@ class _DishScreenState extends State<DishScreen> {
                 child: TextField(
                   controller: _priceController,
                   focusNode: _priceFocus,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
@@ -1169,7 +1231,9 @@ class _DishScreenState extends State<DishScreen> {
                     contentPadding: EdgeInsets.zero,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,2}'),
+                    ),
                   ],
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) {
@@ -1187,10 +1251,7 @@ class _DishScreenState extends State<DishScreen> {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               _priceError!,
-              style: TextStyle(
-                color: colorScheme.error,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
             ),
           ),
       ],
@@ -1207,10 +1268,7 @@ class _DishScreenState extends State<DishScreen> {
         children: [
           Text(
             description,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.left,
             maxLines: 4,
           ),
@@ -1257,4 +1315,3 @@ class _DishScreenState extends State<DishScreen> {
     return null;
   }
 }
-

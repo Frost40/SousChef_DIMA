@@ -5,7 +5,8 @@ import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
 
 class OrderTile extends StatefulWidget {
-  final String restaurantName;
+  final String displayName;
+  final bool isClickable;
   final String restaurantId;
   final List<OrderItem> dishes;
   final DateTime dateTime;
@@ -16,7 +17,8 @@ class OrderTile extends StatefulWidget {
 
   const OrderTile({
     super.key,
-    required this.restaurantName,
+    required this.displayName,
+    required this.isClickable,
     required this.restaurantId,
     required this.dishes,
     required this.dateTime,
@@ -97,26 +99,39 @@ class _OrderTileState extends State<OrderTile>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushNamed(
-                              '/restaurant',
-                              arguments: {'restaurantId': widget.restaurantId},
-                            );
-                          },
-                          child: Text(
-                            widget.restaurantName,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                              decorationColor: colorScheme.primary,
-                              color: colorScheme.primary,
+                        widget.isClickable
+                            ? GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).pushNamed(
+                                  '/restaurant',
+                                  arguments: {
+                                    'restaurantId': widget.restaurantId,
+                                  },
+                                );
+                              },
+                              child: Text(
+                                widget.displayName,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: colorScheme.primary,
+                                  color: colorScheme.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                            : Text(
+                              widget.displayName,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
 
                         const SizedBox(height: 8),
 

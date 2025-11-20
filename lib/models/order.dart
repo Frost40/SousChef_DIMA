@@ -35,6 +35,7 @@ class OrderItem {
 class Order {
   final String id;
   final String userId;
+  final String username;
   final String restaurantName;
   final String restaurantId;
   final DateTime pickupDateTime;
@@ -48,6 +49,7 @@ class Order {
   Order({
     required this.id,
     required this.userId,
+    required this.username,
     required this.restaurantName,
     required this.restaurantId,
     required this.pickupDateTime,
@@ -64,14 +66,16 @@ class Order {
 
     List<OrderItem> orderItems = [];
     if (data['dishes'] != null) {
-      orderItems = List<Map<String, dynamic>>.from(data['dishes'])
-          .map((item) => OrderItem.fromMap(item))
-          .toList();
+      orderItems =
+          List<Map<String, dynamic>>.from(
+            data['dishes'],
+          ).map((item) => OrderItem.fromMap(item)).toList();
     }
 
     return Order(
       id: doc.id,
       userId: data['user_id'] ?? '',
+      username: data['username'] ?? '',
       restaurantName: data['restaurant_name'] ?? '',
       restaurantId: data['restaurant_id'] ?? '',
       pickupDateTime: (data['pickup_date_time'] as Timestamp).toDate(),
@@ -87,6 +91,7 @@ class Order {
   Map<String, dynamic> toFirestore() {
     return {
       'user_id': userId,
+      'username': username,
       'restaurant_name': restaurantName,
       'restaurant_id': restaurantId,
       'pickup_date_time': Timestamp.fromDate(pickupDateTime),
@@ -102,6 +107,7 @@ class Order {
   Order copyWith({
     String? id,
     String? userId,
+    String? username,
     String? restaurantName,
     String? restaurantId,
     DateTime? pickupDateTime,
@@ -130,6 +136,7 @@ class Order {
     return Order(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      username: username ?? this.username,
       restaurantName: restaurantName ?? this.restaurantName,
       restaurantId: restaurantId ?? this.restaurantId,
       pickupDateTime: pickupDateTime ?? this.pickupDateTime,
