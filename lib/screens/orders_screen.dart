@@ -4,6 +4,7 @@ import '../models/order.dart';
 import '../providers/order_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/order_screen/order.dart';
+import '../widgets/navigation_tabbar.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -131,93 +132,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     // Slider for restaurants only
                     if (_isRestaurant) ...[
                       const SizedBox(height: 8),
-                      Container(
+                      NavigationTabbar(
+                        tabCount: 2,
+                        tabLabels: const ['Received Orders', 'My Orders'],
                         height: 40,
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _showReceivedOrders = true;
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color:
-                                        _showReceivedOrders
-                                            ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                            : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Received Orders',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          _showReceivedOrders
-                                              ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimary
-                                              : Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _showReceivedOrders = false;
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color:
-                                        !_showReceivedOrders
-                                            ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                            : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(25),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'My Orders',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          !_showReceivedOrders
-                                              ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimary
-                                              : Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        margin: EdgeInsets.zero,
+                        radius: 25.0,
+                        initialIndex: _showReceivedOrders ? 0 : 1,
+                        onTabSelected: (index) {
+                          setState(() {
+                            _showReceivedOrders = index == 0;
+                          });
+                        },
                       ),
                       const SizedBox(height: 8),
                     ],

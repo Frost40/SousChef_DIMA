@@ -55,10 +55,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
         ),
         title: Text(
           'Search for address',
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: colorScheme.onSurface),
         ),
       ),
       body: Column(

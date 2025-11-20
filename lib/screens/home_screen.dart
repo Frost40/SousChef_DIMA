@@ -123,33 +123,25 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             height: 125,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 1),
               child: Row(
                 children: [
                   // AddressDisplay - 3/4 dello schermo
-                  Flexible(
-                    flex: 9,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 0),
-                      child: const AddressDisplay(),
-                    ),
-                  ),
+                  Expanded(flex: 9, child: const AddressDisplay()),
+                  const SizedBox(width: 8),
                   // DistanceSelector - 1/4 dello schermo
-                  Flexible(
+                  Expanded(
                     flex: 4,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 0),
-                      child: DistanceSelector(
-                        initialDistance: _selectedDistance,
-                        onDistanceChanged: (distance) {
-                          setState(() {
-                            _selectedDistance = distance;
-                          });
-                          // Ricarica i ristoranti con la nuova distanza
-                          _loadNearbyRestaurants();
-                          debugPrint('Distanza selezionata: $distance km');
-                        },
-                      ),
+                    child: DistanceSelector(
+                      initialDistance: _selectedDistance,
+                      onDistanceChanged: (distance) {
+                        setState(() {
+                          _selectedDistance = distance;
+                        });
+                        // Ricarica i ristoranti con la nuova distanza
+                        _loadNearbyRestaurants();
+                        debugPrint('Distanza selezionata: $distance km');
+                      },
                     ),
                   ),
                 ],

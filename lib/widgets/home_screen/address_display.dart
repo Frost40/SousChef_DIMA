@@ -33,8 +33,7 @@ class AddressDisplay extends StatelessWidget {
             : 'Choose your location';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -49,60 +48,57 @@ class AddressDisplay extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Area testo (non cliccabile)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Selected location:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.6),
-                    fontWeight: FontWeight.w500,
-                  ),
+      child: InkWell(
+        onTap: () => _navigateToSearch(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              // Area testo
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Selected location:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color:
+                            hasSavedAddress
+                                ? Theme.of(context).colorScheme.onSurface
+                                : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.4),
+                        fontWeight:
+                            hasSavedAddress
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  displayText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color:
-                        hasSavedAddress
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.4),
-                    fontWeight:
-                        hasSavedAddress ? FontWeight.w500 : FontWeight.normal,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Area interattiva - Solo l'icona è cliccabile
-          InkWell(
-            onTap: () => _navigateToSearch(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.keyboard_arrow_down,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
               ),
-            ),
+
+              const SizedBox(width: 16),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
