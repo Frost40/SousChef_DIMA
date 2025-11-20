@@ -35,8 +35,7 @@ class AccountScreen extends StatelessWidget {
                     child: Text(
                       'Account',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
                       ),
                     ),
                   ),

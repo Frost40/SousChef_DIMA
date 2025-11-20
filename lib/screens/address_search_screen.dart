@@ -48,6 +48,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),

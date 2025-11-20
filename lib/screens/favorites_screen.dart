@@ -106,6 +106,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Favorites'),
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: Builder(
