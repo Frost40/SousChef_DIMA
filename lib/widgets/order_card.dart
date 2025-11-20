@@ -77,9 +77,7 @@ class _OrderCardState extends State<OrderCard>
       elevation: 2,
       color: colorScheme.darkGrayBackground,
       margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(25),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
       child: InkWell(
         onTap: _toggleExpand,
         borderRadius: BorderRadius.circular(25),
@@ -93,59 +91,58 @@ class _OrderCardState extends State<OrderCard>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Restaurant Info
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.restaurantName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        'Pickup • ${DateFormat('MMM d, yyyy').format(widget.dateTime.toLocal())} at ${DateFormat('HH:mm').format(widget.dateTime.toLocal())}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontStyle: FontStyle.italic,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-
-                      if (widget.restaurantAddress != null) ...[
-                        const SizedBox(height: 4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'Address • ${widget.restaurantAddress!}',
+                          widget.restaurantName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          'Pickup • ${DateFormat('MMM d, yyyy').format(widget.dateTime.toLocal())} at ${DateFormat('HH:mm').format(widget.dateTime.toLocal())}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontStyle: FontStyle.italic,
                             color: colorScheme.onSurface,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
+
+                        if (widget.restaurantAddress != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Address • ${widget.restaurantAddress!}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic,
+                              color: colorScheme.onSurface,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
 
                   // Custom or Default Button
-                  widget.pageSpecificWidget ?? const SizedBox(),
+                  if (widget.pageSpecificWidget != null)
+                    widget.pageSpecificWidget!,
                 ],
               ),
 
               const SizedBox(height: 8),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.onSurface,
-              ),
+              Divider(height: 1, thickness: 1, color: colorScheme.onSurface),
 
               // Expandable Dish List
               SizeTransition(
@@ -156,89 +153,93 @@ class _OrderCardState extends State<OrderCard>
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 85,
-                      child: widget.dishes.length <= 3
-                          ? Column(
-                              children: widget.dishes.map((dish) {
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        '${dish.quantity}x',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                      child:
+                          widget.dishes.length <= 3
+                              ? Column(
+                                children:
+                                    widget.dishes.map((dish) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0,
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          dish.name,
-                                          style: const TextStyle(fontSize: 14),
-                                          overflow: TextOverflow.ellipsis,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              '${dish.quantity}x',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                dish.name,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Text(
+                                              '€${dish.price.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      Text(
-                                        '€${dish.price.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                      );
+                                    }).toList(),
+                              )
+                              : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: widget.dishes.length,
+                                itemBuilder: (context, index) {
+                                  final dish = widget.dishes[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          '${dish.quantity}x',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: widget.dishes.length,
-                              itemBuilder: (context, index) {
-                                final dish = widget.dishes[index];
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        '${dish.quantity}x',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            dish.name,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          dish.name,
-                                          style: const TextStyle(fontSize: 14),
-                                          overflow: TextOverflow.ellipsis,
+                                        Text(
+                                          '€${dish.price.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        '€${dish.price.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                     ),
                     const SizedBox(height: 8),
                   ],
                 ),
               ),
 
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.onSurface,
-              ),
+              Divider(height: 1, thickness: 1, color: colorScheme.onSurface),
               const SizedBox(height: 8),
 
               // Total Price Row (always visible)
@@ -247,10 +248,7 @@ class _OrderCardState extends State<OrderCard>
                 children: [
                   const Text(
                     'Total:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   PriceTag(price: widget.price),
                 ],

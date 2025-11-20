@@ -274,6 +274,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ...orders.map((order) {
             final bool isReceivedOrder = _isRestaurant && _showReceivedOrders;
             return OrderTile(
+              orderId: order.id,
               displayName:
                   isReceivedOrder ? order.username : order.restaurantName,
               isClickable: !isReceivedOrder,
@@ -283,6 +284,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
               restaurantAddress:
                   isReceivedOrder ? null : order.restaurantAddress,
               price: order.total,
+              isRestaurantView: isReceivedOrder,
+              verificationCode: order.verificationCode,
             );
           }),
           const SizedBox(height: 20),

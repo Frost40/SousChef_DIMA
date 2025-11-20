@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:sous_chef/models/order.dart';
 import 'package:sous_chef/themes/theme_extensions.dart';
 import 'package:sous_chef/widgets/restaurant_screen/price_tag.dart';
+import 'package:sous_chef/widgets/order_screen/verification_code_input.dart';
+import 'package:sous_chef/providers/order_provider.dart';
 
 class OrderTile extends StatefulWidget {
+  final String orderId;
   final String displayName;
   final bool isClickable;
   final String restaurantId;
@@ -14,9 +18,12 @@ class OrderTile extends StatefulWidget {
   final Widget? pageSpecificWidget;
   final bool initiallyExpanded;
   final String? restaurantAddress;
+  final bool isRestaurantView;
+  final String verificationCode;
 
   const OrderTile({
     super.key,
+    required this.orderId,
     required this.displayName,
     required this.isClickable,
     required this.restaurantId,
@@ -26,6 +33,8 @@ class OrderTile extends StatefulWidget {
     this.pageSpecificWidget,
     this.initiallyExpanded = false,
     this.restaurantAddress,
+    this.isRestaurantView = false,
+    required this.verificationCode,
   });
 
   @override
@@ -159,6 +168,33 @@ class _OrderTileState extends State<OrderTile>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
+
+                        // Show pickup code for users (not for restaurant received orders)
+                        if (!widget.isRestaurantView &&
+                            widget.verificationCode.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontStyle: FontStyle.italic,
+                                color: colorScheme.onSurface,
+                              ),
+                              children: [
+                                const TextSpan(text: 'Pickup Code • '),
+                                TextSpan(
+                                  text: widget.verificationCode,
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -262,7 +298,50 @@ class _OrderTileState extends State<OrderTile>
                                 },
                               ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
+
+                    // Verification button for restaurant
+                    if (widget.verificationCode.isNotEmpty &&
+                        widget.isRestaurantView) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder:
+                                  (context) => VerificationCodeInput(
+                                    orderId: widget.orderId,
+                                    onVerify: (inputCode) async {
+                                      final orderProvider =
+                                          Provider.of<OrderProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      return await orderProvider
+                                          .verifyAndCompleteOrder(
+                                            widget.orderId,
+                                            inputCode,
+                                          );
+                                    },
+                                  ),
+                            );
+
+                            // Refresh the orders list if verification was successful
+                            if (result == true && mounted) {
+                              // The order will be removed from the list automatically
+                              // because verifyAndCompleteOrder updates the local cache
+                            }
+                          },
+                          icon: const Icon(Icons.verified),
+                          label: const Text('Verify Pickup Code'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ],
                 ),
               ),

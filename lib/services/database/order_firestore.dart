@@ -229,4 +229,32 @@ class OrderFirestore {
   Future<void> deleteOrder(String orderId) async {
     await _ordersTable.doc(orderId).delete();
   }
+
+  /// Verify order code and mark as completed
+  /// @param orderId - ID of the order to verify
+  /// @param inputCode - The verification code entered by restaurant
+  /// @returns Future<bool> - true if code matches and order updated, false otherwise
+  Future<bool> verifyAndCompleteOrder(String orderId, String inputCode) async {
+    try {
+      final orderDoc = await _ordersTable.doc(orderId).get();
+
+      if (!orderDoc.exists) {
+        throw Exception('Order not found');
+      }
+
+      final order = Order.fromFirestore(orderDoc);
+
+      // Check if code matches
+      if (order.verificationCode != inputCode) {
+        return false;
+      }
+
+      // Update order status to completed
+      await _ordersTable.doc(orderId).update({'status': 'completed'});
+
+      return true;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
