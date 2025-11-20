@@ -118,6 +118,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders'),
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body:
