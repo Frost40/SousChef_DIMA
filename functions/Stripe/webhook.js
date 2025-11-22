@@ -51,19 +51,27 @@ async function handleStripeWebhook(req, res, stripeWebhookSecret, db) {
                 for (const orderId of orderIds) {
                     const orderRef = db.collection("orders").doc(orderId);
                     // Fetch and check current status for idempotency for EACH order
-                    const orderDoc = await orderRef.get(); // Or fetch all first in a single query
-                    if (!orderDoc.exists ||
-                        orderDoc.data().status === "paid" ||
-                        orderDoc.data().status === "refunded") {
-                        console.log(`Webhook: Order ${orderId} already processed or invalid status. Skipping.`);
-                        continue; // Skip this specific order in the loop
+                    const orderDoc = await orderRef.get();
+                    
+                    if (!orderDoc.exists) {
+                        console.log(`Webhook: Order ${orderId} does not exist. Skipping.`);
+                        continue;
+                    }
+
+                    const currentStatus = orderDoc.data().status;
+                    
+                    // Only update if status is 'pending' - this ensures payment.js ran first
+                    if (currentStatus !== "pending") {
+                        console.log(
+                            `Webhook: Order ${orderId} has status '${currentStatus}', 
+                            expected 'pending'. Skipping.`
+                        );
+                        continue;
                     }
 
                     batch.update(orderRef, {
                         status: "paid",
-                        // payment_id: paymentIntent.id, // Link to the single Payment Intent
-                        // payment_date: FieldValue.serverTimestamp(),
-                        // Update any other relevant fields
+                        payment_completed_at: require("firebase-admin").firestore.FieldValue.serverTimestamp(),
                     });
                 }
                 await batch.commit(); // Commit all updates in one go
@@ -91,10 +99,28 @@ async function handleStripeWebhook(req, res, stripeWebhookSecret, db) {
 
                 for (const orderId of orderIds) {
                     const orderRef = db.collection("orders").doc(orderId);
-                    // You could add an idempotency check here if needed,
-                    // e.g., check if the status is already 'ready_for_checkout'.
+                    
+                    // Check current status
+                    const orderDoc = await orderRef.get();
+                    if (!orderDoc.exists) {
+                        console.log(`Webhook: Order ${orderId} does not exist. Skipping.`);
+                        continue;
+                    }
+
+                    const currentStatus = orderDoc.data().status;
+                    
+                    // Only revert if status is 'pending' - ensures proper state management
+                    if (currentStatus !== "pending") {
+                        console.log(
+                            `Webhook: Order ${orderId} has status '${currentStatus}', 
+                            expected 'pending'. Skipping revert.`
+                        );
+                        continue;
+                    }
+
                     batch.update(orderRef, {
                         status: "ready_for_checkout", // Revert status to allow another payment attempt
+                        payment_failed_at: require("firebase-admin").firestore.FieldValue.serverTimestamp(),
                     });
                 }
 

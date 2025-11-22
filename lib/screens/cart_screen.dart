@@ -28,7 +28,10 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _loadOrders() {
-    final authProvider = Provider.of<sous_chef_auth.AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<sous_chef_auth.AuthProvider>(
+      context,
+      listen: false,
+    );
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     orderProvider.setContext(context);
@@ -113,15 +116,17 @@ class _CartScreenState extends State<CartScreen> {
                             context,
                             listen: false,
                           );
-                          final authProvider = Provider.of<sous_chef_auth.AuthProvider>(
-                            context,
-                            listen: false,
-                          );
+                          final authProvider =
+                              Provider.of<sous_chef_auth.AuthProvider>(
+                                context,
+                                listen: false,
+                              );
 
                           // **[FIX START]** Force refresh the ID token before proceeding
                           try {
                             // 1. Get the current user directly from FirebaseAuth
-                            final firebaseUser = FirebaseAuth.instance.currentUser;
+                            final firebaseUser =
+                                FirebaseAuth.instance.currentUser;
 
                             if (firebaseUser == null) {
                               // This is the most reliable check for authentication.
@@ -130,14 +135,16 @@ class _CartScreenState extends State<CartScreen> {
 
                             // 2. Call getIdToken() on the firebaseUser object (notice the camelCase)
                             await firebaseUser.getIdToken(true);
-                            print('✅ Firebase ID Token successfully refreshed.');
-
+                            print(
+                              '✅ Firebase ID Token successfully refreshed.',
+                            );
                           } catch (e) {
                             print('Auth token refresh failed: $e');
                             CustomAlertDialog.showInfoDialog(
                               context: context,
                               title: 'Authentication Expired',
-                              message: 'Your session has expired. Please log in again to continue.',
+                              message:
+                                  'Your session has expired. Please log in again to continue.',
                               icon: Icon(
                                 Icons.login,
                                 color: colorScheme.primary,
@@ -201,13 +208,9 @@ class _CartScreenState extends State<CartScreen> {
 
                           if (!confirmCheckout) return;
 
-                          // Update the status to "pending" before processing payment
-                          // This ensures that the orders are marked as pending before payment is processed
-                          for (final order in ordersToCheckout) {
-                            await orderProvider.updateOrderStatus(order.id, 'pending');
-                          }
-
                           // Payment processing
+                          // The backend (payment.js) will update status to 'pending'
+                          // The webhook will update to 'paid' when payment is confirmed
                           final success = await stripeProvider.processPayment(
                             context: context,
                             amount: totalAmount,
@@ -215,7 +218,11 @@ class _CartScreenState extends State<CartScreen> {
                           );
 
                           if (success) {
-                            // Fetch updated orders
+                            // Payment was successful
+                            // Backend has updated orders to 'pending'
+                            // Webhook will update them to 'paid' when confirmed
+
+                            // Fetch updated orders to reflect new status
                             orderProvider.fetchUserOrders(
                               authProvider.user!.id,
                               forceRefresh: true,
@@ -230,21 +237,26 @@ class _CartScreenState extends State<CartScreen> {
                                 color: colorScheme.primary,
                               ),
                             );
-                          } else if (stripeProvider.errorMessage != null) {
-                            // If payment failed, update the status back to "ready_for_checkout"
-                            // This ensures that the orders are available for retrying payment
-                            for (final order in ordersToCheckout) {
-                              await orderProvider.updateOrderStatus(order.id, 'ready_for_checkout');
+                          } else {
+                            // Payment failed or was cancelled
+                            // Orders remain in 'ready_for_checkout' (backend validation failed)
+                            // OR backend already updated to 'pending' but payment sheet was cancelled
+                            if (stripeProvider.errorMessage != null) {
+                              await CustomAlertDialog.showInfoDialog(
+                                context: context,
+                                title: 'Payment Failed',
+                                message: stripeProvider.errorMessage!,
+                                icon: Icon(
+                                  Icons.error_outline,
+                                  color: colorScheme.error,
+                                ),
+                              );
                             }
 
-                            await CustomAlertDialog.showInfoDialog(
-                              context: context,
-                              title: 'Payment Failed',
-                              message: stripeProvider.errorMessage!,
-                              icon: Icon(
-                                Icons.error_outline,
-                                color: colorScheme.error,
-                              ),
+                            // Refresh orders to show correct status
+                            orderProvider.fetchUserOrders(
+                              authProvider.user!.id,
+                              forceRefresh: true,
                             );
                           }
                         },

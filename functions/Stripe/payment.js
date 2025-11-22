@@ -102,9 +102,9 @@ async function createPaymentIntentLogic(
       }
 
       // Check if order is in 'ready_for_checkout' status
-      if (order.status !== "pending") {
+      if (order.status !== "ready_for_checkout") {
         console.error(`Order ${doc.id} is not in 
-        'pending' state, but ${order.status}`);
+        'ready_for_checkout' state, but ${order.status}`);
         throw new HttpsError(
             "failed-precondition",
             "One or more orders are not in the correct state for payment.");
@@ -126,7 +126,57 @@ async function createPaymentIntentLogic(
           "Total amount does not match the sum of orders");
     }
 
-    // 4. Create Payment Intent with Stripe
+    // 4. Update order status to 'pending' BEFORE creating Payment Intent
+    // This ensures the status is updated before any webhook can fire
+    // Use a transaction to ensure atomicity and check the status hasn't changed
+    try {
+      await db.runTransaction(async (transaction) => {
+        // Read all orders first to verify they're still in correct state
+        const orderRefs = validOrderIds.map((id) =>
+          db.collection("orders").doc(id),
+        );
+        const orderDocs = await Promise.all(
+            orderRefs.map((ref) => transaction.get(ref)),
+        );
+
+        // Verify all orders are still in 'ready_for_checkout' state
+        for (let i = 0; i < orderDocs.length; i++) {
+          const orderDoc = orderDocs[i];
+          if (!orderDoc.exists) {
+            throw new Error(
+                `Order ${validOrderIds[i]} was deleted during processing`,
+            );
+          }
+          if (orderDoc.data().status !== "ready_for_checkout") {
+            throw new Error(
+                `Order ${validOrderIds[i]} status changed to 
+                ${orderDoc.data().status} during processing`,
+            );
+          }
+        }
+
+        // Update all orders to 'pending' atomically
+        for (const orderRef of orderRefs) {
+          transaction.update(orderRef, {
+            status: "pending",
+            payment_initiated_at: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+      });
+
+      console.log(
+          `Orders ${validOrderIds.join(", ")} updated to 'pending' status`,
+      );
+    } catch (transactionError) {
+      console.error("Transaction failed:", transactionError);
+      throw new HttpsError(
+          "aborted",
+          "Order status changed during payment initialization. Please try again.",
+      );
+    }
+
+    // 5. Now create Payment Intent with Stripe
+    // Orders are already marked as 'pending', so webhook can safely update them
     const paymentIntent = await stripeInstance.paymentIntents.create({
       amount: data.amount,
       currency: data.currency,
@@ -140,6 +190,16 @@ async function createPaymentIntentLogic(
         `Payment Intent created for orders: 
         ${validOrderIds.join(", ")} - ${paymentIntent.id}`,
     );
+
+    // 6. Update orders with payment_intent_id
+    const batch = db.batch();
+    for (const orderId of validOrderIds) {
+      const orderRef = db.collection("orders").doc(orderId);
+      batch.update(orderRef, {
+        payment_intent_id: paymentIntent.id,
+      });
+    }
+    await batch.commit();
 
     // Return client secret to the client
     return {

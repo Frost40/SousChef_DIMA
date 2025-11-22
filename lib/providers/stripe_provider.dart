@@ -18,7 +18,7 @@ class StripeProvider with ChangeNotifier {
       throw Exception('Chiave pubblicabile di Stripe non trovata');
     }
     Stripe.publishableKey = publishableKey;
-    Stripe.urlScheme = 'souschef-stripe'; 
+    Stripe.urlScheme = 'souschef-stripe';
     await Stripe.instance.applySettings();
   }
 
@@ -56,14 +56,24 @@ class StripeProvider with ChangeNotifier {
       // [FIX] Add a null and type check for the client secret to prevent a native crash.
       // The flutter_stripe plugin can crash the app if this value is not a valid string.
       print('[StripeProvider] Validating client secret...');
-      if (clientSecret == null || clientSecret is! String || clientSecret.isEmpty) {
-        print('[StripeProvider] Client secret is INVALID. Secret: "$clientSecret"');
-        throw Exception(
-            'Il client secret ricevuto dal server non è valido.');
+      if (clientSecret == null ||
+          clientSecret is! String ||
+          clientSecret.isEmpty) {
+        print(
+          '[StripeProvider] Client secret is INVALID. Secret: "$clientSecret"',
+        );
+        throw Exception('Il client secret ricevuto dal server non è valido.');
       }
-      print('[StripeProvider] Client secret is valid. Initializing payment sheet...');
+      print(
+        '[StripeProvider] Client secret is valid. Initializing payment sheet...',
+      );
 
-      // 3. Configura il foglio di pagamento Stripe
+      // Check context is still mounted before proceeding
+      if (!context.mounted) {
+        throw Exception('Context is no longer mounted');
+      }
+
+      // 3. Configura il foglio di pagamento Stripe with minimal configuration
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
@@ -73,14 +83,29 @@ class StripeProvider with ChangeNotifier {
       );
       print('[StripeProvider] Payment sheet initialized. Presenting...');
 
-      // 4. Presenta il foglio di pagamento
-      await Stripe.instance.presentPaymentSheet();
-      print('[StripeProvider] Payment sheet presented successfully.');
+      // 4. Ensure context is valid right before presentation
+      if (!context.mounted) {
+        throw Exception('Context was unmounted during initialization');
+      }
+
+      // 5. Present on main thread with try-catch for iOS specific issues
+      try {
+        await Stripe.instance.presentPaymentSheet();
+        print('[StripeProvider] Payment sheet presented successfully.');
+      } on StripeException catch (e) {
+        // Handle user cancellation gracefully
+        if (e.error.code == FailureCode.Canceled) {
+          print('[StripeProvider] Payment was cancelled by user');
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        rethrow;
+      }
 
       _isLoading = false;
       notifyListeners();
       return true;
-
     } catch (e) {
       print('[StripeProvider] An error occurred in processPayment: $e');
       _isLoading = false;
