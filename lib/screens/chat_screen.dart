@@ -9,12 +9,14 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserName;
   final String? otherUserImageUrl;
+  final String? otherUserId;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUserName,
     this.otherUserImageUrl,
+    this.otherUserId,
   });
 
   @override
@@ -50,15 +52,25 @@ class _ChatScreenState extends State<ChatScreen> {
     final userId = _authProvider.user?.id;
     if (userId == null) return;
 
-    // Get the other user ID from the chat
-    final chatInfo = _chatProvider.chats.firstWhere(
-      (info) => info.chat.id == widget.chatId,
-    );
-    final otherUserId = chatInfo.chat.getOtherUserId(userId);
-
     _messageController.clear();
 
     try {
+      String otherUserId;
+
+      // Use otherUserId if provided, otherwise look it up
+      if (widget.otherUserId != null) {
+        otherUserId = widget.otherUserId!;
+      } else {
+        // Get the other user ID from the chat
+        final chatInfo = _chatProvider.chats.firstWhere(
+          (info) => info.chat.id == widget.chatId,
+          orElse: () {
+            throw Exception('Chat not found in local list');
+          },
+        );
+        otherUserId = chatInfo.chat.getOtherUserId(userId);
+      }
+
       await _chatProvider.sendMessage(
         chatId: widget.chatId,
         receiverId: otherUserId,
@@ -67,9 +79,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Error sending message: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore nell\'invio del messaggio: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending message: $e')));
       }
     }
   }
@@ -201,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (snapshot.hasError) {
                   return Center(
                     child: Text(
-                      'Errore nel caricamento dei messaggi',
+                      'Error loading messages',
                       style: TextStyle(
                         color: colorScheme.onSurface.withOpacity(0.5),
                       ),
@@ -214,7 +226,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (messages.isEmpty) {
                   return Center(
                     child: Text(
-                      'Nessun messaggio. Inizia la conversazione!',
+                      'No messages. Start the conversation!',
                       style: TextStyle(
                         color: colorScheme.onSurface.withOpacity(0.5),
                       ),
@@ -257,7 +269,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
-                        hintText: 'Scrivi un messaggio...',
+                        hintText: 'Write a message...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,

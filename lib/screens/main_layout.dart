@@ -6,6 +6,8 @@ import 'package:sous_chef/screens/past_orders_screen.dart';
 import 'package:sous_chef/screens/restaurant_screen.dart';
 import 'package:sous_chef/screens/allChats_screen.dart';
 import '../providers/user_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/chat_provider.dart';
 import '../widgets/custom_navigation_bar.dart';
 import 'account_screen.dart';
 import 'account_settings_screen.dart';
@@ -29,9 +31,26 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     // Making sure the user data is fetched when the app starts
-    Future.microtask(
-      () => Provider.of<UserProvider>(context, listen: false).fetchUserData(),
-    );
+    Future.microtask(() async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+      // Wait for AuthProvider to initialize if needed
+      if (authProvider.user == null) {
+        await authProvider.init();
+      }
+
+      // Initialize ChatProvider with current user
+      if (authProvider.user != null) {
+        chatProvider.setCurrentUserId(authProvider.user!.id);
+        chatProvider.startListeningToChats();
+        debugPrint(
+          'MainLayout: ChatProvider initialized for user ${authProvider.user!.id}',
+        );
+      }
+
+      await Provider.of<UserProvider>(context, listen: false).fetchUserData();
+    });
   }
 
   // lib/screens/main_layout.dart

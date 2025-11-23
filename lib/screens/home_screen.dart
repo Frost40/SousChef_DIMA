@@ -10,6 +10,7 @@ import 'package:sous_chef/providers/restaurant_provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
 
 import '../transition_type.dart';
+import '../widgets/home_screen/chat_icon_with_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -105,9 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.mail_rounded),
-            tooltip: 'Messagges',
+          ChatIconWithBadge(
             onPressed: () {
               Navigator.of(context).pushNamed(
                 '/allChats',

@@ -116,12 +116,35 @@ class ChatFirestore {
     await batch.commit();
   }
 
-  /// Crea una nuova chat tra due utenti
+  /// Crea una nuova chat tra due utenti (o restituisce quella esistente)
   Future<String> createNewChat({
     required String user1Id,
     required String user2Id,
   }) async {
     debugPrint('ChatFirestore: Creating chat between $user1Id and $user2Id');
+
+    // Check if chat already exists
+    final existingChats =
+        await _chatsTable
+            .where(
+              Filter.or(
+                Filter.and(
+                  Filter('user1_id', isEqualTo: user1Id),
+                  Filter('user2_id', isEqualTo: user2Id),
+                ),
+                Filter.and(
+                  Filter('user1_id', isEqualTo: user2Id),
+                  Filter('user2_id', isEqualTo: user1Id),
+                ),
+              ),
+            )
+            .get();
+
+    if (existingChats.docs.isNotEmpty) {
+      final existingChatId = existingChats.docs.first.id;
+      debugPrint('ChatFirestore: Chat already exists with ID: $existingChatId');
+      return existingChatId;
+    }
 
     final chatData = {
       'user1_id': user1Id,

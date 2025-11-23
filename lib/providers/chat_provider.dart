@@ -37,6 +37,18 @@ class ChatProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<ChatInfo> get chats => _chats;
 
+  /// Get total count of unread messages across all chats
+  int get totalUnreadCount {
+    if (_chats.isEmpty) return 0;
+
+    return _chats.fold<int>(0, (total, chat) {
+      return total + chat.unreadCount;
+    });
+  }
+
+  /// Check if there are any unread messages
+  bool get hasUnreadMessages => totalUnreadCount > 0;
+
   /// Set the current user ID (should be called from outside, typically from AuthProvider)
   void setCurrentUserId(String? userId) {
     if (_currentUserId != userId) {
@@ -276,6 +288,34 @@ class ChatProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error marking messages as read: $e');
+    }
+  }
+
+  /// Find existing chat with another user or return null
+  String? findExistingChat(String otherUserId) {
+    if (_currentUserId == null) return null;
+
+    try {
+      final existingChat = _chats.firstWhere((chatInfo) {
+        final chat = chatInfo.chat;
+        return (chat.user1Id == _currentUserId &&
+                chat.user2Id == otherUserId) ||
+            (chat.user2Id == _currentUserId && chat.user1Id == otherUserId);
+      });
+      return existingChat.chat.id;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Check if a chat has any messages
+  Future<bool> chatHasMessages(String chatId) async {
+    try {
+      final messages = await _chatFirestore.getMessages(chatId);
+      return messages.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking chat messages: $e');
+      return false;
     }
   }
 

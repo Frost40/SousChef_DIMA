@@ -21,17 +21,27 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
     super.initState();
     // Start listening to real-time chat updates
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _chatProvider = Provider.of<ChatProvider>(context, listen: false);
-
-      debugPrint('AllChatsScreen: Current user ID = ${_authProvider.user?.id}');
-
-      // Set the current user ID from AuthProvider
-      _chatProvider.setCurrentUserId(_authProvider.user?.id);
-
-      // Start listening to chats
-      _chatProvider.startListeningToChats();
+      _initializeChat();
     });
+  }
+
+  Future<void> _initializeChat() async {
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    // Wait for AuthProvider to initialize if user is null
+    if (_authProvider.user == null) {
+      debugPrint('AllChatsScreen: Waiting for user to be initialized...');
+      await _authProvider.init();
+    }
+
+    debugPrint('AllChatsScreen: Current user ID = ${_authProvider.user?.id}');
+
+    // Set the current user ID from AuthProvider
+    _chatProvider.setCurrentUserId(_authProvider.user?.id);
+
+    // Start listening to chats
+    _chatProvider.startListeningToChats();
   }
 
   @override

@@ -21,6 +21,8 @@ import '../widgets/restaurant_screen/restaurant_info.dart';
 import '../widgets/responsive_layout.dart';
 import '../services/orientation_manager.dart';
 import '../widgets/favorite_icon_button.dart';
+import '../providers/chat_provider.dart';
+import '../screens/chat_screen.dart';
 
 // Enum per identificare i tipi di layout possibili
 enum LayoutType { mobile, tabletVertical, tabletHorizontal }
@@ -131,6 +133,134 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     super.dispose();
   }
 
+  Future<void> _openChat(
+    BuildContext context,
+    String restaurantOwnerId,
+    String restaurantName,
+  ) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    // Wait for AuthProvider to initialize if user is null
+    if (authProvider.user == null) {
+      await authProvider.init();
+    }
+
+    // Check if user is authenticated
+    if (authProvider.user == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be logged in to chat'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if user is trying to chat with themselves
+    if (authProvider.user!.id == restaurantOwnerId) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You cannot chat with yourself'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Ensure ChatProvider has the current user ID
+    chatProvider.setCurrentUserId(authProvider.user!.id);
+
+    String? chatId;
+    bool isNewChat = false;
+
+    // Check if chat already exists first (no loading needed for this)
+    chatId = chatProvider.findExistingChat(restaurantOwnerId);
+
+    if (chatId == null) {
+      // Only show loading if we need to create a new chat
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (dialogContext) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        // Create temporary chat
+        chatId = await chatProvider.createChat(restaurantOwnerId);
+        isNewChat = true;
+      } catch (e) {
+        // Close loading indicator
+        if (context.mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Close loading indicator
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
+    if (chatId == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to open chat. Please try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Small delay to ensure any dialog is closed
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    if (!context.mounted) return;
+
+    final String finalChatId = chatId;
+
+    // Navigate to chat screen
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => ChatScreen(
+              chatId: finalChatId,
+              otherUserName: restaurantName,
+              otherUserId: restaurantOwnerId,
+            ),
+      ),
+    );
+
+    // After returning from chat, check if we need to delete the chat
+    if (isNewChat && context.mounted) {
+      final hasMessages = await chatProvider.chatHasMessages(finalChatId);
+      if (!hasMessages) {
+        // Delete the chat if no messages were sent
+        debugPrint('Deleting empty chat: $finalChatId');
+        await chatProvider.deleteChat(finalChatId);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
@@ -197,6 +327,18 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   isOwner
                       ? const []
                       : [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: IconButton(
+                            icon: const Icon(Icons.mail_rounded),
+                            onPressed:
+                                () => _openChat(
+                                  context,
+                                  restaurant.ownerId,
+                                  restaurant.name,
+                                ),
+                          ),
+                        ),
                         FavoriteIconButton(
                           restaurantId: restaurant.id,
                           restaurantName: restaurant.name,
