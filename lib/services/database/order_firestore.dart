@@ -55,9 +55,28 @@ class OrderFirestore {
     List<Order> orders =
         snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
 
-    orders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    // Check for expired orders (24 hours past pickup time)
+    final now = DateTime.now();
+    final batch = _firestore.batch();
+    final validOrders = <Order>[];
 
-    return orders;
+    for (var order in orders) {
+      final hoursSincePickup = now.difference(order.pickupDateTime).inHours;
+
+      if (hoursSincePickup >= 24) {
+        // Mark as expired
+        batch.update(_ordersTable.doc(order.id), {'status': 'expired'});
+      } else {
+        validOrders.add(order);
+      }
+    }
+
+    // Commit all status updates
+    await batch.commit();
+
+    validOrders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+
+    return validOrders;
   }
 
   /// Get all paid orders received by a restaurant
@@ -73,9 +92,28 @@ class OrderFirestore {
     List<Order> orders =
         snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
 
-    orders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    // Check for expired orders (24 hours past pickup time)
+    final now = DateTime.now();
+    final batch = _firestore.batch();
+    final validOrders = <Order>[];
 
-    return orders;
+    for (var order in orders) {
+      final hoursSincePickup = now.difference(order.pickupDateTime).inHours;
+
+      if (hoursSincePickup >= 24) {
+        // Mark as expired
+        batch.update(_ordersTable.doc(order.id), {'status': 'expired'});
+      } else {
+        validOrders.add(order);
+      }
+    }
+
+    // Commit all status updates
+    await batch.commit();
+
+    validOrders.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+
+    return validOrders;
   }
 
   /// Create a new order in the database
