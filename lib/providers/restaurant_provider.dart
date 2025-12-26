@@ -11,8 +11,16 @@ import 'order_provider.dart';
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
 class RestaurantProvider with ChangeNotifier {
-  final RestaurantFirestore _restaurantFirestore = RestaurantFirestore();
-  final FirebaseStorage _firebaseStorage = FirebaseStorage();
+  final RestaurantFirestore _restaurantFirestore;
+  final FirebaseStorage _firebaseStorage;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  RestaurantProvider({
+    RestaurantFirestore? restaurantFirestore,
+    FirebaseStorage? firebaseStorage,
+  })  : _restaurantFirestore = restaurantFirestore ?? RestaurantFirestore(),
+        _firebaseStorage = firebaseStorage ?? FirebaseStorage();
 
   // State variables
   bool _isLoading = false;

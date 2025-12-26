@@ -3,9 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/dish.dart';
 
 class DishFirestore {
-  // Firestore collection reference
-  final CollectionReference _restaurantTable =
-  FirebaseFirestore.instance.collection('restaurants');
+  final FirebaseFirestore _firestore;
+  late final CollectionReference _restaurantTable;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firestore instance
+  DishFirestore({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance {
+    _restaurantTable = _firestore.collection('restaurants');
+  }
 
   /// Retrieves all dishes for a specific restaurant
   Future<List<Dish>> getRestaurantDishes(String restaurantId) async {

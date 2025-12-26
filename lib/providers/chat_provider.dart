@@ -11,8 +11,16 @@ import 'package:sous_chef/services/database/messages_firestore.dart';
 /// Implements ChangeNotifier to notify dependent widgets when chat data changes.
 class ChatProvider with ChangeNotifier {
   // Service instances
-  final ChatFirestore _chatFirestore = ChatFirestore();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ChatFirestore _chatFirestore;
+  final FirebaseFirestore _firestore;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  ChatProvider({
+    ChatFirestore? chatFirestore,
+    FirebaseFirestore? firestore,
+  })  : _chatFirestore = chatFirestore ?? ChatFirestore(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Current user ID from AuthProvider
   String? _currentUserId;

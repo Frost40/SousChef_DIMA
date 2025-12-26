@@ -5,17 +5,25 @@ import 'package:flutter/material.dart';
 import '../../models/user.dart';
 
 class UserFirestore {
+  final firebase_auth.FirebaseAuth _firebaseAuth;
+  final FirebaseFirestore _firestore;
+  late final CollectionReference _usersTable;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firebase instances
+  UserFirestore({
+    firebase_auth.FirebaseAuth? firebaseAuth,
+    FirebaseFirestore? firestore,
+  })  : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance {
+    _usersTable = _firestore.collection('users');
+  }
+
   // Get current user ID
-  String? get _uid => firebase_auth.FirebaseAuth.instance.currentUser?.uid;
+  String? get _uid => _firebaseAuth.currentUser?.uid;
 
   // Get current authenticated user
-  firebase_auth.User? get _authUser =>
-      firebase_auth.FirebaseAuth.instance.currentUser;
-
-  // Firestore collection reference
-  final CollectionReference _usersTable = FirebaseFirestore.instance.collection(
-    'users',
-  );
+  firebase_auth.User? get _authUser => _firebaseAuth.currentUser;
 
   /// Updates multiple user profile fields at once
   /// This is more efficient when updating several fields
@@ -95,7 +103,7 @@ class UserFirestore {
   /// Sets up a listener to detect when email verification is complete
   /// and updates Firestore accordingly
   void _setupEmailChangeListener(String oldEmail, String newEmail) {
-    firebase_auth.FirebaseAuth.instance.authStateChanges().listen((user) {
+    _firebaseAuth.authStateChanges().listen((user) {
       if (user != null && user.email != oldEmail && user.email == newEmail) {
         // The email has been changed, update Firestore
         _usersTable

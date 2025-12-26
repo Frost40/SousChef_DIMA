@@ -3,7 +3,12 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 
 class FirebaseStorage {
-  final firebase_storage.FirebaseStorage _storage = firebase_storage.FirebaseStorage.instance;
+  final firebase_storage.FirebaseStorage _storage;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firebase Storage instance
+  FirebaseStorage({firebase_storage.FirebaseStorage? storage})
+      : _storage = storage ?? firebase_storage.FirebaseStorage.instance;
 
   Future<String?> uploadRestaurantImage(String restaurantId, File imageFile) async {
     try {

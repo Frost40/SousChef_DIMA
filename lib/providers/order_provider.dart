@@ -8,8 +8,14 @@ import '../models/order.dart';
 import '../services/database/order_firestore.dart';
 
 class OrderProvider extends ChangeNotifier {
-  final OrderFirestore _orderFirestore = OrderFirestore();
+  final OrderFirestore _orderFirestore;
   RestaurantProvider? _restaurantProvider;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instance
+  OrderProvider({
+    OrderFirestore? orderFirestore,
+  }) : _orderFirestore = orderFirestore ?? OrderFirestore();
 
   void setContext(BuildContext context) {
     _restaurantProvider = Provider.of<RestaurantProvider>(

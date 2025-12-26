@@ -4,7 +4,12 @@ import '../../models/chat.dart';
 import '../../models/message.dart';
 
 class ChatFirestore {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firestore instance
+  ChatFirestore({FirebaseFirestore? firestoreInstance})
+      : _firestore = firestoreInstance ?? FirebaseFirestore.instance;
 
   // Reference alle collections principali
   CollectionReference get _chatsTable => _firestore.collection('chats');

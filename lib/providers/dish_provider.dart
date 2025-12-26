@@ -5,8 +5,16 @@ import '../services/database/dish_firestore.dart';
 import '../services/firebase_storage.dart';
 
 class DishProvider with ChangeNotifier {
-  final DishFirestore _dishFirestore = DishFirestore();
-  final FirebaseStorage _firebaseStorage = FirebaseStorage();
+  final DishFirestore _dishFirestore;
+  final FirebaseStorage _firebaseStorage;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  DishProvider({
+    DishFirestore? dishFirestore,
+    FirebaseStorage? firebaseStorage,
+  })  : _dishFirestore = dishFirestore ?? DishFirestore(),
+        _firebaseStorage = firebaseStorage ?? FirebaseStorage();
 
   // Local state
   bool _isLoading = false;

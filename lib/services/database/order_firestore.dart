@@ -2,8 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../models/order.dart';
 
 class OrderFirestore {
-  final firestore.FirebaseFirestore _firestore =
-      firestore.FirebaseFirestore.instance;
+  final firestore.FirebaseFirestore _firestore;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firestore instance
+  OrderFirestore({firestore.FirebaseFirestore? firestoreInstance})
+      : _firestore = firestoreInstance ?? firestore.FirebaseFirestore.instance;
 
   // Reference to the orders collection
   firestore.CollectionReference get _ordersTable =>
