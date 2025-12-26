@@ -376,6 +376,32 @@ void main() {
         verify(() => mockOrderProvider.updateRestaurantNameInOrders('rest123', 'New Name'))
             .called(1);
       });
+
+      test('should set error on update failure', () async {
+        // Arrange - first load a restaurant
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Old Name',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantName(any(), any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act
+        await restaurantProvider.updateRestaurantName(
+          'rest123',
+          'New Name',
+          orderProvider: mockOrderProvider,
+        );
+
+        // Assert
+        expect(restaurantProvider.hasError, isTrue);
+        expect(restaurantProvider.errorMessage, isNotNull);
+        expect(restaurantProvider.isLoading, isFalse);
+      });
     });
 
     group('updateRestaurantAddress', () {
@@ -411,6 +437,36 @@ void main() {
         verify(() => mockRestaurantFirestore.updateRestaurantAddress(
               'rest123', 'New Address', 45.0, 9.0))
             .called(1);
+      });
+
+      test('should set error on update failure', () async {
+        // Arrange - first load a restaurant
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+          address: 'Old Address',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantAddress(
+              any(), any(), any(), any()))
+            .thenThrow(Exception('Address update failed'));
+
+        // Act
+        await restaurantProvider.updateRestaurantAddress(
+          'rest123',
+          'New Address',
+          45.0,
+          9.0,
+          orderProvider: mockOrderProvider,
+        );
+
+        // Assert
+        expect(restaurantProvider.hasError, isTrue);
+        expect(restaurantProvider.errorMessage, isNotNull);
+        expect(restaurantProvider.isLoading, isFalse);
       });
     });
 
@@ -455,6 +511,29 @@ void main() {
         // Assert
         expect(restaurantProvider.errorMessage, contains('Impossible to upload'));
       });
+
+      test('should set error on upload exception', () async {
+        // Arrange - first load a restaurant
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        final mockFile = MockFile();
+        when(() => mockFirebaseStorage.uploadRestaurantImage(any(), any()))
+            .thenThrow(Exception('Upload failed'));
+
+        // Act
+        await restaurantProvider.updateRestaurantImage('rest123', mockFile);
+
+        // Assert
+        expect(restaurantProvider.hasError, isTrue);
+        expect(restaurantProvider.errorMessage, isNotNull);
+        expect(restaurantProvider.isLoading, isFalse);
+      });
     });
 
     group('updateRestaurantImageUrl', () {
@@ -482,6 +561,170 @@ void main() {
         verify(() => mockRestaurantFirestore.updateRestaurantImage(
               'rest123', 'https://example.com/new_image.png'))
             .called(1);
+      });
+
+      test('should set error on update failure', () async {
+        // Arrange - first load a restaurant
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantImage(any(), any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act
+        await restaurantProvider.updateRestaurantImageUrl(
+          'rest123',
+          'https://example.com/new_image.png',
+        );
+
+        // Assert
+        expect(restaurantProvider.hasError, isTrue);
+        expect(restaurantProvider.errorMessage, isNotNull);
+        expect(restaurantProvider.isLoading, isFalse);
+      });
+    });
+
+    group('updateRestaurantType', () {
+      test('should toggle restaurant type when restaurant is loaded', () async {
+        // Arrange - first load a restaurant with no types
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+          restaurantTypes: [],
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantType(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act - add a type
+        await restaurantProvider.updateRestaurantType(
+          'rest123',
+          RestaurantType.fixedMenu,
+        );
+
+        // Assert
+        expect(restaurantProvider.restaurant!.restaurantTypes, contains(RestaurantType.fixedMenu));
+        expect(restaurantProvider.isLoading, isFalse);
+        verify(() => mockRestaurantFirestore.updateRestaurantType('rest123', any()))
+            .called(1);
+      });
+
+      test('should toggle off existing restaurant type', () async {
+        // Arrange - first load a restaurant with an existing type
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+          restaurantTypes: [RestaurantType.fixedMenu],
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantType(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act - toggle off the existing type
+        await restaurantProvider.updateRestaurantType(
+          'rest123',
+          RestaurantType.fixedMenu,
+        );
+
+        // Assert
+        expect(restaurantProvider.restaurant!.restaurantTypes, isNot(contains(RestaurantType.fixedMenu)));
+        expect(restaurantProvider.isLoading, isFalse);
+      });
+
+      test('should fetch restaurant first when not loaded', () async {
+        // Arrange - restaurant is NOT loaded (null)
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+          restaurantTypes: [],
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        when(() => mockRestaurantFirestore.updateRestaurantType(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act - call without loading restaurant first
+        await restaurantProvider.updateRestaurantType(
+          'rest123',
+          RestaurantType.onRequest,
+        );
+
+        // Assert
+        expect(restaurantProvider.restaurant, isNotNull);
+        expect(restaurantProvider.restaurant!.restaurantTypes, contains(RestaurantType.onRequest));
+        expect(restaurantProvider.isLoading, isFalse);
+        // Should fetch restaurant first
+        verify(() => mockRestaurantFirestore.getRestaurant('rest123')).called(1);
+        verify(() => mockRestaurantFirestore.updateRestaurantType('rest123', any()))
+            .called(1);
+      });
+
+      test('should fetch restaurant when loaded ID does not match', () async {
+        // Arrange - load a different restaurant first
+        final loadedRestaurant = MockModels.createMockRestaurant(
+          id: 'different123',
+          name: 'Different Restaurant',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('different123'))
+            .thenAnswer((_) async => loadedRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('different123');
+
+        // Now set up for the target restaurant
+        final targetRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Target Restaurant',
+          restaurantTypes: [],
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => targetRestaurant);
+        when(() => mockRestaurantFirestore.updateRestaurantType(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act - update type on a restaurant that's not currently loaded
+        await restaurantProvider.updateRestaurantType(
+          'rest123',
+          RestaurantType.fixedMenu,
+        );
+
+        // Assert
+        expect(restaurantProvider.restaurant!.id, 'rest123');
+        expect(restaurantProvider.restaurant!.restaurantTypes, contains(RestaurantType.fixedMenu));
+      });
+
+      test('should set error on update failure', () async {
+        // Arrange - load a restaurant first
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+        );
+        when(() => mockRestaurantFirestore.getRestaurant('rest123'))
+            .thenAnswer((_) async => mockRestaurant);
+        await restaurantProvider.fetchCompleteRestaurantData('rest123');
+
+        when(() => mockRestaurantFirestore.updateRestaurantType(any(), any()))
+            .thenThrow(Exception('Type update failed'));
+
+        // Act
+        await restaurantProvider.updateRestaurantType(
+          'rest123',
+          RestaurantType.fixedMenu,
+        );
+
+        // Assert
+        expect(restaurantProvider.hasError, isTrue);
+        expect(restaurantProvider.errorMessage, isNotNull);
+        expect(restaurantProvider.isLoading, isFalse);
       });
     });
 

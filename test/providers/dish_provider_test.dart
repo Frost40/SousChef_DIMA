@@ -223,6 +223,71 @@ void main() {
         verifyNever(() => mockFirebaseStorage.deleteDishImage(any(), any()));
       });
 
+      test('should skip image deletion when dish has empty string image', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          name: 'Pasta',
+          imageUrl: '',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.deleteDish(any(), any()))
+            .thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.deleteDish('restaurant123', 'dish1');
+
+        // Assert
+        verifyNever(() => mockFirebaseStorage.deleteDishImage(any(), any()));
+      });
+
+      test('should continue deletion even if image deletion fails', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          name: 'Pasta',
+          imageUrl: 'https://example.com/image.jpg',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockFirebaseStorage.deleteDishImage(any(), any()))
+            .thenThrow(Exception('Storage error'));
+        when(() => mockDishFirestore.deleteDish(any(), any()))
+            .thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.deleteDish('restaurant123', 'dish1');
+
+        // Assert - should succeed even if image deletion failed
+        expect(dishProvider.dishes, isEmpty);
+        expect(dishProvider.isLoading, false);
+        expect(dishProvider.errorMessage, null);
+        verify(() => mockDishFirestore.deleteDish('restaurant123', 'dish1')).called(1);
+      });
+
+      test('should set error when dish not found in local state', () async {
+        // Arrange - fetch dishes without the one we want to delete
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [MockModels.createMockDish(id: 'dish1')]);
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act - try to delete a dish that doesn't exist locally
+        await dishProvider.deleteDish('restaurant123', 'nonexistent');
+
+        // Assert
+        expect(dishProvider.errorMessage, isNotNull);
+        expect(dishProvider.errorMessage, contains('Dish not found'));
+        expect(dishProvider.isLoading, false);
+      });
+
       test('should set error message on deletion failure', () async {
         // Arrange
         when(() => mockDishFirestore.getRestaurantDishes(any()))
@@ -375,6 +440,45 @@ void main() {
         expect(dishProvider.dishes, isEmpty);
       });
 
+      test('should fail when special dish has empty username', () async {
+        // Act
+        await dishProvider.createDish(
+          restaurantId: 'restaurant123',
+          name: 'Special Dish',
+          description: 'A special request',
+          price: 25.00,
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+          isSpecial: true,
+          userUsername: '', // Empty string
+        );
+
+        // Assert
+        expect(dishProvider.errorMessage, isNotNull);
+        expect(dishProvider.errorMessage, contains('username'));
+        expect(dishProvider.dishes, isEmpty);
+      });
+
+      test('should fail when regular dish missing isAvailable', () async {
+        // Act
+        await dishProvider.createDish(
+          restaurantId: 'restaurant123',
+          name: 'Regular Dish',
+          description: 'A regular dish',
+          price: 15.00,
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+          isSpecial: false,
+          isAvailable: null, // Missing required field for regular dishes
+        );
+
+        // Assert
+        expect(dishProvider.errorMessage, isNotNull);
+        expect(dishProvider.errorMessage, contains('isAvailable'));
+        expect(dishProvider.dishes, isEmpty);
+        expect(dishProvider.isLoading, false);
+      });
+
       test('should upload image when imageFile provided', () async {
         // Arrange
         final mockFile = MockFile();
@@ -405,6 +509,81 @@ void main() {
 
         // Assert
         verify(() => mockFirebaseStorage.uploadDishImage('restaurant123', 'newDishId', mockFile)).called(1);
+      });
+
+      test('should set error on createDish service failure', () async {
+        // Arrange
+        when(() => mockDishFirestore.createDish(
+              restaurantId: any(named: 'restaurantId'),
+              dish: any(named: 'dish'),
+            )).thenThrow(Exception('Create failed'));
+
+        // Act
+        await dishProvider.createDish(
+          restaurantId: 'restaurant123',
+          name: 'New Pasta',
+          description: 'Delicious pasta',
+          price: 12.99,
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+          isSpecial: false,
+          isAvailable: true,
+        );
+
+        // Assert
+        expect(dishProvider.errorMessage, isNotNull);
+        expect(dishProvider.dishes, isEmpty);
+        expect(dishProvider.isLoading, false);
+      });
+
+      test('should create dish with custom minForewarningDays', () async {
+        // Arrange
+        when(() => mockDishFirestore.createDish(
+              restaurantId: any(named: 'restaurantId'),
+              dish: any(named: 'dish'),
+            )).thenAnswer((_) async => 'newDishId');
+
+        // Act
+        await dishProvider.createDish(
+          restaurantId: 'restaurant123',
+          name: 'Special Order',
+          description: 'Requires advance notice',
+          price: 50.00,
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+          isSpecial: false,
+          isAvailable: true,
+          minForewarningDays: 3,
+        );
+
+        // Assert
+        expect(dishProvider.dishes.length, 1);
+        expect(dishProvider.dishes[0].minForewarningDays, 3);
+      });
+
+      test('should create dish with imageUrl', () async {
+        // Arrange
+        when(() => mockDishFirestore.createDish(
+              restaurantId: any(named: 'restaurantId'),
+              dish: any(named: 'dish'),
+            )).thenAnswer((_) async => 'newDishId');
+
+        // Act
+        await dishProvider.createDish(
+          restaurantId: 'restaurant123',
+          name: 'New Pasta',
+          description: 'Delicious pasta',
+          price: 12.99,
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+          isSpecial: false,
+          isAvailable: true,
+          imageUrl: 'https://example.com/existing-image.jpg',
+        );
+
+        // Assert
+        expect(dishProvider.dishes.length, 1);
+        expect(dishProvider.dishes[0].imageUrl, 'https://example.com/existing-image.jpg');
       });
     });
 
@@ -441,6 +620,183 @@ void main() {
         expect(dishProvider.isLoading, false);
       });
 
+      test('should update dish description', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          description: 'Old description',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          description: 'New description',
+        );
+
+        // Assert
+        expect(dishProvider.dishes[0].description, 'New description');
+      });
+
+      test('should update dish course and cuisine', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          course: Course.mainDish,
+          cuisine: Cuisine.italian,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          course: Course.appetizer,
+          cuisine: Cuisine.japanese,
+        );
+
+        // Assert
+        expect(dishProvider.dishes[0].course, Course.appetizer);
+        expect(dishProvider.dishes[0].cuisine, Cuisine.japanese);
+      });
+
+      test('should update dish minForewarningDays', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          minForewarningDays: 0,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          minForewarningDays: 5,
+        );
+
+        // Assert
+        expect(dishProvider.dishes[0].minForewarningDays, 5);
+      });
+
+      test('should update availability for regular dish', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          isSpecial: false,
+          isAvailable: true,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          isAvailable: false,
+        );
+
+        // Assert
+        expect(dishProvider.dishes[0].isAvailable, false);
+      });
+
+      test('should update userUsername for special dish', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          isSpecial: true,
+          userUsername: 'oldUser',
+          isAvailable: null,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          userUsername: 'newUser',
+        );
+
+        // Assert
+        expect(dishProvider.dishes[0].userUsername, 'newUser');
+      });
+
+      test('should preserve existing userUsername when not updating special dish', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          isSpecial: true,
+          userUsername: 'existingUser',
+          isAvailable: null,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act - update name only, not userUsername
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          name: 'Updated Name',
+        );
+
+        // Assert - should preserve userUsername
+        expect(dishProvider.dishes[0].userUsername, 'existingUser');
+        expect(dishProvider.dishes[0].name, 'Updated Name');
+      });
+
       test('should handle image update', () async {
         // Arrange
         final mockDish = MockModels.createMockDish(id: 'dish1');
@@ -470,6 +826,35 @@ void main() {
         expect(dishProvider.dishes[0].imageUrl, 'https://example.com/updated-image.jpg');
       });
 
+      test('should update imageUrl without file upload', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(
+          id: 'dish1',
+          imageUrl: 'https://example.com/old-image.jpg',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenAnswer((_) async {});
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          imageUrl: 'https://example.com/new-image.jpg',
+        );
+
+        // Assert
+        verifyNever(() => mockFirebaseStorage.uploadDishImage(any(), any(), any()));
+        expect(dishProvider.dishes[0].imageUrl, 'https://example.com/new-image.jpg');
+      });
+
       test('should set error when dish not found locally', () async {
         // Arrange
         when(() => mockDishFirestore.getRestaurantDishes(any()))
@@ -486,6 +871,32 @@ void main() {
 
         // Assert
         expect(dishProvider.errorMessage, isNotNull);
+      });
+
+      test('should set error on updateDish service failure', () async {
+        // Arrange
+        final mockDish = MockModels.createMockDish(id: 'dish1');
+
+        when(() => mockDishFirestore.getRestaurantDishes(any()))
+            .thenAnswer((_) async => [mockDish]);
+        when(() => mockDishFirestore.updateDish(
+              restaurantId: any(named: 'restaurantId'),
+              dishId: any(named: 'dishId'),
+              updates: any(named: 'updates'),
+            )).thenThrow(Exception('Update failed'));
+
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Act
+        await dishProvider.updateDish(
+          restaurantId: 'restaurant123',
+          dishId: 'dish1',
+          name: 'New Name',
+        );
+
+        // Assert
+        expect(dishProvider.errorMessage, isNotNull);
+        expect(dishProvider.isLoading, false);
       });
     });
 
