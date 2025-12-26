@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sous_chef/providers/chat_provider.dart';
@@ -7,17 +8,27 @@ import 'package:sous_chef/models/message.dart';
 import '../mocks/mock_services.dart';
 import '../mocks/mock_models.dart';
 
+/// Mock Firestore classes for ChatProvider tests
+class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
+class MockCollectionReference extends Mock implements CollectionReference<Map<String, dynamic>> {}
+class MockDocumentReference extends Mock implements DocumentReference<Map<String, dynamic>> {}
+class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
+
 void main() {
   group('ChatProvider Tests', () {
     late ChatProvider chatProvider;
     late MockChatFirestore mockChatFirestore;
+    late MockFirebaseFirestore mockFirestore;
 
     setUp(() {
       mockChatFirestore = MockChatFirestore();
+      mockFirestore = MockFirebaseFirestore();
       
-      // Note: Current ChatProvider creates its own service instances
-      // For proper testing, refactor to accept dependencies
-      chatProvider = ChatProvider();
+      // Use dependency injection to inject mock services
+      chatProvider = ChatProvider(
+        chatFirestore: mockChatFirestore,
+        firestore: mockFirestore,
+      );
       
       // Register fallback values
       registerFallbackValue(MockModels.createMockChat());
@@ -32,7 +43,7 @@ void main() {
       test('initial state should have empty chats list and not loading', () {
         expect(chatProvider.chats, isEmpty);
         expect(chatProvider.isLoading, false);
-        expect(chatProvider.errorMessage, null);
+        expect(chatProvider.errorMessage, isNull);
       });
 
       test('totalUnreadCount should be 0 initially', () {
@@ -42,281 +53,375 @@ void main() {
     });
 
     group('setCurrentUserId', () {
-      test('should set user ID and initialize chats', () {
-        // Expected flow:
-        // 1. Call setCurrentUserId
-        // 2. Should trigger initialization
-        
-        expect(true, true); // Placeholder
+      test('should set user ID', () {
+        // Act
+        chatProvider.setCurrentUserId('user123');
+
+        // No exception means success - internal state changed
+        expect(true, true);
       });
 
-      test('should clear chats when user ID changes', () {
-        // Test user change:
-        // 1. Set userId1, load chats
-        // 2. Set userId2
-        // 3. Previous chats should be cleared
-        
-        expect(true, true); // Placeholder
+      test('should clear chats when user ID set to null', () {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+
+        // Act
+        chatProvider.setCurrentUserId(null);
+
+        // Assert
+        expect(chatProvider.chats, isEmpty);
       });
     });
 
     group('loadUserChats', () {
-      test('should load user chats successfully', () async {
-        // Expected flow:
-        // 1. Call loadUserChats
-        // 2. mockChatFirestore.getUserChats returns list
-        // 3. chatProvider.chats populated with ChatInfo
-        // 4. Each chat enriched with user data
-        
-        expect(true, true); // Placeholder
+      test('should set error when no user is authenticated', () async {
+        // Act (no user ID set)
+        await chatProvider.loadUserChats();
+
+        // Assert
+        expect(chatProvider.errorMessage, 'No authenticated user');
       });
 
-      test('should calculate unread count for each chat', () async {
-        // Test unread count:
-        // 1. Load chats
-        // 2. Each ChatInfo should have correct unreadCount
+      test('should load user chats successfully', () async {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        final mockChats = [
+          MockModels.createMockChat(id: 'chat1', user1Id: 'user123', user2Id: 'user456'),
+          MockModels.createMockChat(id: 'chat2', user1Id: 'user123', user2Id: 'user789'),
+        ];
         
-        expect(true, true); // Placeholder
+        when(() => mockChatFirestore.getUserChats(any()))
+            .thenAnswer((_) async => mockChats);
+        when(() => mockChatFirestore.getUnreadMessagesCount(any(), any()))
+            .thenAnswer((_) async => 0);
+
+        // Setup mock Firestore for user data
+        final mockCollection = MockCollectionReference();
+        final mockDoc = MockDocumentReference();
+        final mockDocSnapshot = MockDocumentSnapshot();
+        
+        when(() => mockFirestore.collection('users')).thenReturn(mockCollection);
+        when(() => mockCollection.doc(any())).thenReturn(mockDoc);
+        when(() => mockDoc.get()).thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(false);
+
+        // Act
+        await chatProvider.loadUserChats();
+
+        // Assert
+        expect(chatProvider.isLoading, false);
+        verify(() => mockChatFirestore.getUserChats('user123')).called(1);
       });
 
       test('should set error message on load failure', () async {
-        // Test error handling
-        expect(true, true); // Placeholder
-      });
-    });
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.getUserChats(any()))
+            .thenThrow(Exception('Network error'));
 
-    group('Unread Messages', () {
-      test('totalUnreadCount should sum all chat unread counts', () {
-        // Test calculation:
-        // 1. Multiple chats with unread messages
-        // 2. totalUnreadCount = sum of all
-        
-        expect(true, true); // Placeholder
-      });
+        // Act
+        await chatProvider.loadUserChats();
 
-      test('hasUnreadMessages should be true when totalUnreadCount > 0', () {
-        // Test boolean flag
-        expect(true, true); // Placeholder
+        // Assert
+        expect(chatProvider.isLoading, false);
+        expect(chatProvider.errorMessage, isNotNull);
       });
     });
 
     group('sendMessage', () {
-      test('should send message successfully', () async {
-        // Expected flow:
-        // 1. Call sendMessage
-        // 2. mockChatFirestore.sendMessage called
-        // 3. Message sent with correct data
-        
-        expect(true, true); // Placeholder
+      test('should not send when no user is authenticated', () async {
+        // Act (no user ID set)
+        await chatProvider.sendMessage(
+          chatId: 'chat123',
+          receiverId: 'user456',
+          message: 'Hello',
+        );
+
+        // Assert
+        expect(chatProvider.errorMessage, 'No authenticated user');
       });
 
-      test('should update last message in chat', () async {
-        // Test chat update:
-        // 1. Send message
-        // 2. Chat's lastMessage should update
-        // 3. Chat's lastMessageTime should update
-        
-        expect(true, true); // Placeholder
+      test('should send message successfully', () async {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.sendMessage(
+          chatId: any(named: 'chatId'),
+          senderId: any(named: 'senderId'),
+          receiverId: any(named: 'receiverId'),
+          message: any(named: 'message'),
+        )).thenAnswer((_) async => MockModels.createMockMessage());
+
+        // Act
+        await chatProvider.sendMessage(
+          chatId: 'chat123',
+          receiverId: 'user456',
+          message: 'Hello',
+        );
+
+        // Assert
+        expect(chatProvider.errorMessage, isNull);
+        verify(() => mockChatFirestore.sendMessage(
+          chatId: 'chat123',
+          senderId: 'user123',
+          receiverId: 'user456',
+          message: 'Hello',
+        )).called(1);
       });
 
       test('should set error message on send failure', () async {
-        // Test error handling
-        expect(true, true); // Placeholder
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.sendMessage(
+          chatId: any(named: 'chatId'),
+          senderId: any(named: 'senderId'),
+          receiverId: any(named: 'receiverId'),
+          message: any(named: 'message'),
+        )).thenThrow(Exception('Send failed'));
+
+        // Act
+        await chatProvider.sendMessage(
+          chatId: 'chat123',
+          receiverId: 'user456',
+          message: 'Hello',
+        );
+
+        // Assert
+        expect(chatProvider.errorMessage, isNotNull);
       });
     });
 
     group('markMessagesAsRead', () {
-      test('should mark messages as read', () async {
-        // Expected flow:
-        // 1. Call markMessagesAsRead
-        // 2. mockChatFirestore.markMessagesAsRead called
-        // 3. Unread count should decrease
-        
-        expect(true, true); // Placeholder
+      test('should not mark when no user is authenticated', () async {
+        // Act (no user ID set)
+        await chatProvider.markMessagesAsRead('chat123');
+
+        // No error, just silent return
+        verifyNever(() => mockChatFirestore.markMessagesAsRead(any(), any()));
       });
 
-      test('should update unread count in local state', () async {
-        // Test local state update:
-        // 1. Chat has unread messages
-        // 2. Mark as read
-        // 3. ChatInfo.unreadCount should be 0
-        
-        expect(true, true); // Placeholder
+      test('should mark messages as read successfully', () async {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.markMessagesAsRead(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act
+        await chatProvider.markMessagesAsRead('chat123');
+
+        // Assert
+        verify(() => mockChatFirestore.markMessagesAsRead('chat123', 'user123')).called(1);
       });
     });
 
     group('findExistingChat', () {
-      test('should return chat ID when chat exists', () {
-        // Test finding chat:
-        // 1. Chat exists with otherUserId
-        // 2. Returns chatId
-        
-        expect(true, true); // Placeholder
+      test('should return null when no user is authenticated', () {
+        // Act
+        final result = chatProvider.findExistingChat('user456');
+
+        // Assert
+        expect(result, isNull);
+      });
+    });
+
+    group('chatHasMessages', () {
+      test('should return true when chat has messages', () async {
+        // Arrange
+        final mockMessages = [MockModels.createMockMessage()];
+        when(() => mockChatFirestore.getMessages(any()))
+            .thenAnswer((_) async => mockMessages);
+
+        // Act
+        final result = await chatProvider.chatHasMessages('chat123');
+
+        // Assert
+        expect(result, true);
+        verify(() => mockChatFirestore.getMessages('chat123')).called(1);
       });
 
-      test('should return null when chat does not exist', () {
-        final result = chatProvider.findExistingChat('nonexistent');
-        expect(result, null);
+      test('should return false when chat has no messages', () async {
+        // Arrange
+        when(() => mockChatFirestore.getMessages(any()))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await chatProvider.chatHasMessages('chat123');
+
+        // Assert
+        expect(result, false);
+      });
+
+      test('should return false on error', () async {
+        // Arrange
+        when(() => mockChatFirestore.getMessages(any()))
+            .thenThrow(Exception('Error'));
+
+        // Act
+        final result = await chatProvider.chatHasMessages('chat123');
+
+        // Assert
+        expect(result, false);
       });
     });
 
     group('createChat', () {
-      test('should create new chat successfully', () async {
-        // Expected flow:
-        // 1. Call createChat
-        // 2. mockChatFirestore.createNewChat returns chatId
-        // 3. Returns chatId
-        
-        expect(true, true); // Placeholder
+      test('should not create when no user is authenticated', () async {
+        // Act
+        final result = await chatProvider.createChat('user456');
+
+        // Assert
+        expect(result, isNull);
+        expect(chatProvider.errorMessage, 'No authenticated user');
       });
 
-      test('should return existing chat if already exists', () async {
-        // Test duplicate prevention:
-        // 1. Chat already exists
-        // 2. Returns existing chatId instead of creating new
-        
-        expect(true, true); // Placeholder
+      test('should create chat successfully', () async {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.createNewChat(
+          user1Id: any(named: 'user1Id'),
+          user2Id: any(named: 'user2Id'),
+        )).thenAnswer((_) async => 'newChat123');
+
+        // Act
+        final result = await chatProvider.createChat('user456');
+
+        // Assert
+        expect(result, 'newChat123');
+        expect(chatProvider.isLoading, false);
+        verify(() => mockChatFirestore.createNewChat(
+          user1Id: 'user123',
+          user2Id: 'user456',
+        )).called(1);
       });
 
-      test('should set error message on creation failure', () async {
-        // Test error handling
-        expect(true, true); // Placeholder
+      test('should set error on creation failure', () async {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+        when(() => mockChatFirestore.createNewChat(
+          user1Id: any(named: 'user1Id'),
+          user2Id: any(named: 'user2Id'),
+        )).thenThrow(Exception('Creation failed'));
+
+        // Act
+        final result = await chatProvider.createChat('user456');
+
+        // Assert
+        expect(result, isNull);
+        expect(chatProvider.errorMessage, isNotNull);
       });
     });
 
     group('deleteChat', () {
-      test('should delete chat and remove from local list', () async {
-        // Expected flow:
-        // 1. Call deleteChat
-        // 2. mockChatFirestore.deleteChat called
-        // 3. Chat removed from chats list
-        
-        expect(true, true); // Placeholder
+      test('should delete chat successfully', () async {
+        // Arrange
+        when(() => mockChatFirestore.deleteChat(any()))
+            .thenAnswer((_) async {});
+
+        // Act
+        await chatProvider.deleteChat('chat123');
+
+        // Assert
+        expect(chatProvider.isLoading, false);
+        verify(() => mockChatFirestore.deleteChat('chat123')).called(1);
       });
 
-      test('should set error message on deletion failure', () async {
-        // Test error handling
-        expect(true, true); // Placeholder
+      test('should set error on deletion failure', () async {
+        // Arrange
+        when(() => mockChatFirestore.deleteChat(any()))
+            .thenThrow(Exception('Delete failed'));
+
+        // Act
+        await chatProvider.deleteChat('chat123');
+
+        // Assert
+        expect(chatProvider.errorMessage, isNotNull);
       });
     });
 
     group('getMessages', () {
-      test('should return messages for a chat', () async {
-        // Expected flow:
-        // 1. Call getMessages
-        // 2. mockChatFirestore.getMessages returns list
-        // 3. Returns List<Message>
-        
-        expect(true, true); // Placeholder
-      });
-    });
+      test('should return messages for chat', () async {
+        // Arrange
+        final mockMessages = [
+          MockModels.createMockMessage(id: 'msg1', message: 'Hello'),
+          MockModels.createMockMessage(id: 'msg2', message: 'Hi there'),
+        ];
+        when(() => mockChatFirestore.getMessages(any()))
+            .thenAnswer((_) async => mockMessages);
 
-    group('getMessagesStream', () {
-      test('should return stream of messages', () {
-        // Test stream:
-        // 1. Call getMessagesStream
-        // 2. Returns Stream<List<Message>>
-        
-        expect(true, true); // Placeholder
-      });
-    });
+        // Act
+        final result = await chatProvider.getMessages('chat123');
 
-    group('Real-time Updates', () {
-      test('startListeningToChats should subscribe to chat updates', () {
-        // Test real-time subscription
-        expect(true, true); // Placeholder
+        // Assert
+        expect(result.length, 2);
+        expect(result[0].id, 'msg1');
+        verify(() => mockChatFirestore.getMessages('chat123')).called(1);
       });
 
-      test('stopListeningToChats should unsubscribe', () {
-        // Test unsubscribe
-        expect(true, true); // Placeholder
-      });
+      test('should return empty list on error', () async {
+        // Arrange
+        when(() => mockChatFirestore.getMessages(any()))
+            .thenThrow(Exception('Error'));
 
-      test('should update chats when new message arrives', () {
-        // Test real-time update:
-        // 1. Subscribe to chats
-        // 2. New message arrives
-        // 3. Chats list updates automatically
-        
-        expect(true, true); // Placeholder
+        // Act
+        final result = await chatProvider.getMessages('chat123');
+
+        // Assert
+        expect(result, isEmpty);
       });
     });
 
     group('clearAllChats', () {
-      test('should clear all chats and reset state', () {
-        // Test cleanup:
-        // 1. Call clearAllChats
-        // 2. chats list should be empty
-        // 3. currentUserId should be null
-        // 4. Subscription should be cancelled
-        
+      test('should clear all chat data', () {
+        // Arrange
+        chatProvider.setCurrentUserId('user123');
+
+        // Act
         chatProvider.clearAllChats();
+
+        // Assert
         expect(chatProvider.chats, isEmpty);
+        expect(chatProvider.isLoading, false);
+        expect(chatProvider.errorMessage, isNull);
       });
     });
 
     group('clearErrors', () {
       test('should clear error message', () {
+        // Act
         chatProvider.clearErrors();
-        expect(chatProvider.errorMessage, null);
+
+        // Assert
+        expect(chatProvider.errorMessage, isNull);
       });
     });
 
-    group('ChangeNotifier', () {
-      test('should notify listeners on state changes', () {
-        var notifyCount = 0;
-        chatProvider.addListener(() {
-          notifyCount++;
-        });
+    group('Unread Messages', () {
+      test('totalUnreadCount should return 0 when no chats', () {
+        expect(chatProvider.totalUnreadCount, 0);
+      });
 
-        chatProvider.clearErrors();
+      test('hasUnreadMessages should be false when no unread', () {
+        expect(chatProvider.hasUnreadMessages, false);
+      });
+    });
 
-        expect(notifyCount, greaterThan(0));
+    group('startListeningToChats', () {
+      test('should set error when no user is authenticated', () {
+        // Act
+        chatProvider.startListeningToChats();
+
+        // Assert
+        expect(chatProvider.errorMessage, 'No authenticated user');
+      });
+    });
+
+    group('stopListeningToChats', () {
+      test('should stop listening without error', () {
+        // Act
+        chatProvider.stopListeningToChats();
+
+        // No exception means success
+        expect(true, true);
       });
     });
   });
 }
-
-/*
-REFACTORING NEEDED:
-===================
-To make these tests work, refactor ChatProvider:
-
-class ChatProvider with ChangeNotifier {
-  final ChatFirestore _chatFirestore;
-  final FirebaseFirestore _firestore;
-
-  ChatProvider({
-    ChatFirestore? chatFirestore,
-    FirebaseFirestore? firestore,
-  }) : _chatFirestore = chatFirestore ?? ChatFirestore(),
-       _firestore = firestore ?? FirebaseFirestore.instance;
-  
-  // ... rest of implementation
-}
-
-Example test implementation:
-final mockChatFirestore = MockChatFirestore();
-final chatProvider = ChatProvider(
-  chatFirestore: mockChatFirestore,
-);
-
-// Setup
-final mockChats = [
-  MockModels.createMockChat(),
-  MockModels.createMockChat(id: 'chat2'),
-];
-when(() => mockChatFirestore.getUserChats(any()))
-  .thenAnswer((_) async => mockChats);
-when(() => mockChatFirestore.getUnreadMessagesCount(any(), any()))
-  .thenAnswer((_) async => 3);
-
-// Test
-chatProvider.setCurrentUserId('user123');
-await chatProvider.loadUserChats();
-
-// Verify
-expect(chatProvider.chats.length, 2);
-expect(chatProvider.totalUnreadCount, greaterThan(0));
-verify(() => mockChatFirestore.getUserChats('user123')).called(1);
-*/

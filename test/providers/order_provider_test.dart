@@ -14,9 +14,8 @@ void main() {
     setUp(() {
       mockOrderFirestore = MockOrderFirestore();
       
-      // Note: Current OrderProvider creates its own service instances
-      // For proper testing, refactor to accept dependencies
-      orderProvider = OrderProvider();
+      // Use dependency injection to inject mock service
+      orderProvider = OrderProvider(orderFirestore: mockOrderFirestore);
       
       // Register fallback values
       registerFallbackValue(MockModels.createMockOrder());
@@ -32,256 +31,390 @@ void main() {
         expect(orderProvider.isLoading, false);
         expect(orderProvider.errorMessage, null);
       });
+
+      test('clearErrors should clear error message', () {
+        orderProvider.clearErrors();
+        expect(orderProvider.errorMessage, isNull);
+      });
     });
 
     group('fetchUserOrders', () {
-      test('should set loading to true during fetch', () async {
-        // Expected behavior:
-        // 1. isLoading = true while fetching
-        // 2. isLoading = false when complete
-        
-        expect(true, true); // Placeholder
-      });
-
       test('should populate orders list on successful fetch', () async {
-        // Expected flow:
-        // 1. Call fetchUserOrders
-        // 2. mockOrderFirestore.getUserOrders returns list
-        // 3. orderProvider.userOrders should be populated
-        // 4. errorMessage should be null
+        // Arrange
+        final mockOrders = [
+          MockModels.createMockOrder(id: 'order1', total: 25.0),
+          MockModels.createMockOrder(id: 'order2', total: 35.0),
+        ];
         
-        expect(true, true); // Placeholder
-      });
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
 
-      test('should use cache when forceRefresh is false', () async {
-        // Test caching:
-        // 1. Fetch orders (ordersLoaded = true)
-        // 2. Call again without forceRefresh
-        // 3. Should not call service again
-        
-        expect(true, true); // Placeholder
-      });
+        // Act
+        await orderProvider.fetchUserOrders('user123');
 
-      test('should bypass cache when forceRefresh is true', () async {
-        // Test force refresh:
-        // 1. Fetch orders (ordersLoaded = true)
-        // 2. Call again with forceRefresh = true
-        // 3. Should call service again
-        
-        expect(true, true); // Placeholder
+        // Assert
+        expect(orderProvider.userOrders.length, 2);
+        expect(orderProvider.userOrders[0].id, 'order1');
+        expect(orderProvider.userOrders[1].id, 'order2');
+        expect(orderProvider.isLoading, false);
+        expect(orderProvider.errorMessage, isNull);
+        verify(() => mockOrderFirestore.getUserOrders('user123')).called(1);
       });
 
       test('should set error message on fetch failure', () async {
-        // Test error handling:
-        // 1. mockOrderFirestore throws error
-        // 2. errorMessage should be set
+        // Arrange
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenThrow(Exception('Network error'));
+
+        // Act
+        await orderProvider.fetchUserOrders('user123');
+
+        // Assert
+        expect(orderProvider.isLoading, false);
+        expect(orderProvider.errorMessage, isNotNull);
+        expect(orderProvider.errorMessage, contains('error'));
+      });
+
+      test('should refresh orders when forceRefresh is true', () async {
+        // Arrange
+        final mockOrders = [MockModels.createMockOrder(id: 'order1')];
+        final newMockOrders = [MockModels.createMockOrder(id: 'order2')];
         
-        expect(true, true); // Placeholder
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+
+        // First fetch
+        await orderProvider.fetchUserOrders('user123');
+        expect(orderProvider.userOrders.length, 1);
+
+        // Setup new return value
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => newMockOrders);
+
+        // Force refresh
+        await orderProvider.fetchUserOrders('user123', forceRefresh: true);
+
+        // Assert - should have called service twice
+        verify(() => mockOrderFirestore.getUserOrders('user123')).called(2);
       });
     });
 
     group('fetchUserCompletedOrders', () {
-      test('should return only completed orders', () async {
-        // Expected flow:
-        // 1. Call fetchUserCompletedOrders
-        // 2. mockOrderFirestore.getUserCompletedOrders returns filtered list
-        // 3. Returns only orders with status = 'completed'
+      test('should return completed orders', () async {
+        // Arrange
+        final completedOrders = [
+          MockModels.createMockOrder(id: 'order1', status: 'completed'),
+          MockModels.createMockOrder(id: 'order2', status: 'completed'),
+        ];
         
-        expect(true, true); // Placeholder
+        when(() => mockOrderFirestore.getUserCompletedOrders(any()))
+            .thenAnswer((_) async => completedOrders);
+
+        // Act
+        final result = await orderProvider.fetchUserCompletedOrders('user123');
+
+        // Assert
+        expect(result.length, 2);
+        expect(result.every((o) => o.status == 'completed'), true);
+        verify(() => mockOrderFirestore.getUserCompletedOrders('user123')).called(1);
       });
 
       test('should return empty list when no completed orders', () async {
-        // Test empty case
-        expect(true, true); // Placeholder
+        // Arrange
+        when(() => mockOrderFirestore.getUserCompletedOrders(any()))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await orderProvider.fetchUserCompletedOrders('user123');
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should set error message on failure', () async {
+        // Arrange
+        when(() => mockOrderFirestore.getUserCompletedOrders(any()))
+            .thenThrow(Exception('Database error'));
+
+        // Act
+        final result = await orderProvider.fetchUserCompletedOrders('user123');
+
+        // Assert
+        expect(result, isEmpty);
+        expect(orderProvider.errorMessage, isNotNull);
       });
     });
 
     group('fetchUserPaidOrders', () {
       test('should return paid orders', () async {
-        // Expected flow:
-        // 1. Call fetchUserPaidOrders
-        // 2. Returns orders with status = 'paid'
+        // Arrange
+        final paidOrders = [
+          MockModels.createMockOrder(id: 'order1', status: 'paid'),
+        ];
         
-        expect(true, true); // Placeholder
+        when(() => mockOrderFirestore.getUserPaidOrders(any()))
+            .thenAnswer((_) async => paidOrders);
+
+        // Act
+        final result = await orderProvider.fetchUserPaidOrders('user123');
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].status, 'paid');
+        verify(() => mockOrderFirestore.getUserPaidOrders('user123')).called(1);
+      });
+
+      test('should handle empty paid orders', () async {
+        // Arrange
+        when(() => mockOrderFirestore.getUserPaidOrders(any()))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await orderProvider.fetchUserPaidOrders('user123');
+
+        // Assert
+        expect(result, isEmpty);
       });
     });
 
     group('fetchRestaurantReceivedOrders', () {
       test('should return orders for restaurant', () async {
-        // Expected flow:
-        // 1. Call fetchRestaurantReceivedOrders
-        // 2. Returns orders for specific restaurantId
+        // Arrange
+        final restaurantOrders = [
+          MockModels.createMockOrder(id: 'order1', restaurantId: 'rest123'),
+          MockModels.createMockOrder(id: 'order2', restaurantId: 'rest123'),
+        ];
         
-        expect(true, true); // Placeholder
+        when(() => mockOrderFirestore.getRestaurantReceivedOrders(any()))
+            .thenAnswer((_) async => restaurantOrders);
+
+        // Act
+        final result = await orderProvider.fetchRestaurantReceivedOrders('rest123');
+
+        // Assert
+        expect(result.length, 2);
+        verify(() => mockOrderFirestore.getRestaurantReceivedOrders('rest123')).called(1);
+      });
+
+      test('should handle empty restaurant orders', () async {
+        // Arrange
+        when(() => mockOrderFirestore.getRestaurantReceivedOrders(any()))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await orderProvider.fetchRestaurantReceivedOrders('rest123');
+
+        // Assert
+        expect(result, isEmpty);
       });
     });
 
     group('getOrderById', () {
-      test('should return order when it exists', () {
-        // Test retrieval from local list
-        expect(true, true); // Placeholder
+      test('should return order when it exists in local list', () async {
+        // Arrange
+        final mockOrders = [
+          MockModels.createMockOrder(id: 'order1'),
+          MockModels.createMockOrder(id: 'order2'),
+        ];
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+        await orderProvider.fetchUserOrders('user123');
+
+        // Act
+        final result = orderProvider.getOrderById('order1');
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.id, 'order1');
       });
 
       test('should return null when order does not exist', () {
         final result = orderProvider.getOrderById('nonexistent');
-        expect(result, null);
-      });
-    });
-
-    group('addOrder', () {
-      test('should create new order when no pending order exists', () async {
-        // Expected flow:
-        // 1. Call addOrder
-        // 2. No existing order for (restaurantId, pickupDateTime)
-        // 3. Create new order with dish
-        // 4. Add to local list
-        
-        expect(true, true); // Placeholder
-      });
-
-      test('should add dish to existing order when pending order exists', () async {
-        // Expected flow:
-        // 1. Call addOrder
-        // 2. Pending order exists for same (restaurantId, pickupDateTime)
-        // 3. Add dish to existing order
-        // 4. Update total price
-        
-        expect(true, true); // Placeholder
-      });
-
-      test('should calculate total price correctly', () async {
-        // Test price calculation:
-        // 1. Add multiple dishes
-        // 2. Verify totalPrice = sum of (quantity * price)
-        
-        expect(true, true); // Placeholder
-      });
-
-      test('should generate verification code for new orders', () async {
-        // Test verification code:
-        // 1. Create new order
-        // 2. Verify it has a verificationCode
-        
-        expect(true, true); // Placeholder
+        expect(result, isNull);
       });
     });
 
     group('updateOrderStatus', () {
-      test('should update status to paid', () async {
-        // Expected flow:
-        // 1. Call updateOrderStatus with 'paid'
-        // 2. mockOrderFirestore.updateOrderStatus called
-        // 3. Local order status updated
-        
-        expect(true, true); // Placeholder
+      test('should update order status successfully', () async {
+        // Arrange
+        when(() => mockOrderFirestore.updateOrderStatus(any(), any()))
+            .thenAnswer((_) async {});
+
+        // Act
+        await orderProvider.updateOrderStatus('order123', 'completed');
+
+        // Assert
+        expect(orderProvider.isLoading, false);
+        expect(orderProvider.errorMessage, isNull);
+        verify(() => mockOrderFirestore.updateOrderStatus('order123', 'completed')).called(1);
       });
 
-      test('should update status to completed', () async {
-        // Test status transition to completed
-        expect(true, true); // Placeholder
-      });
+      test('should set error on status update failure', () async {
+        // Arrange
+        when(() => mockOrderFirestore.updateOrderStatus(any(), any()))
+            .thenThrow(Exception('Update failed'));
 
-      test('should update status to expired', () async {
-        // Test status transition to expired
-        expect(true, true); // Placeholder
-      });
+        // Act
+        await orderProvider.updateOrderStatus('order123', 'completed');
 
-      test('should update local state after status change', () async {
-        // Test local state sync
-        expect(true, true); // Placeholder
+        // Assert
+        expect(orderProvider.isLoading, false);
+        expect(orderProvider.errorMessage, isNotNull);
       });
     });
 
     group('deleteOrder', () {
       test('should delete order and remove from local list', () async {
-        // Expected flow:
-        // 1. Call deleteOrder
-        // 2. mockOrderFirestore.deleteOrder called
-        // 3. Order removed from userOrders list
-        
-        expect(true, true); // Placeholder
+        // Arrange
+        final mockOrders = [
+          MockModels.createMockOrder(id: 'order1'),
+          MockModels.createMockOrder(id: 'order2'),
+        ];
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+        when(() => mockOrderFirestore.deleteOrder(any()))
+            .thenAnswer((_) async {});
+        await orderProvider.fetchUserOrders('user123');
+        expect(orderProvider.userOrders.length, 2);
+
+        // Act
+        await orderProvider.deleteOrder('order1');
+
+        // Assert
+        expect(orderProvider.userOrders.length, 1);
+        expect(orderProvider.userOrders.first.id, 'order2');
+        verify(() => mockOrderFirestore.deleteOrder('order1')).called(1);
       });
 
-      test('should set error message on deletion failure', () async {
-        // Test error handling
-        expect(true, true); // Placeholder
-      });
-    });
+      test('should set error on delete failure', () async {
+        // Arrange
+        when(() => mockOrderFirestore.deleteOrder(any()))
+            .thenThrow(Exception('Delete failed'));
 
-    group('hasPendingOrderDateTime', () {
-      test('should return order index when pending order exists', () async {
-        // Test finding pending order:
-        // 1. Pending order exists for (restaurantId, pickupDateTime)
-        // 2. Returns index in list
-        
-        expect(true, true); // Placeholder
-      });
+        // Act
+        await orderProvider.deleteOrder('order123');
 
-      test('should return null when no pending order exists', () async {
-        // Test not finding order:
-        // 1. No order for given (restaurantId, pickupDateTime)
-        // 2. Returns null
-        
-        expect(true, true); // Placeholder
-      });
-
-      test('should match exact pickup date time', () async {
-        // Test datetime comparison:
-        // 1. Only match when date and time are exactly the same
-        
-        expect(true, true); // Placeholder
+        // Assert
+        expect(orderProvider.isLoading, false);
+        expect(orderProvider.errorMessage, isNotNull);
       });
     });
 
     group('verifyAndCompleteOrder', () {
-      test('should return true and update status when code matches', () async {
-        // Expected flow:
-        // 1. Call verifyAndCompleteOrder with correct code
-        // 2. mockOrderFirestore.verifyAndCompleteOrder returns true
-        // 3. Returns true
-        // 4. Local status updated to 'completed'
-        
-        expect(true, true); // Placeholder
+      test('should return true on successful verification', () async {
+        // Arrange
+        final mockOrders = [MockModels.createMockOrder(id: 'order1', status: 'paid')];
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+        when(() => mockOrderFirestore.verifyAndCompleteOrder(any(), any()))
+            .thenAnswer((_) async => true);
+        await orderProvider.fetchUserOrders('user123');
+
+        // Act
+        final result = await orderProvider.verifyAndCompleteOrder('order1', '1234');
+
+        // Assert
+        expect(result, true);
+        expect(orderProvider.userOrders, isEmpty);
+        verify(() => mockOrderFirestore.verifyAndCompleteOrder('order1', '1234')).called(1);
       });
 
-      test('should return false when code does not match', () async {
-        // Test incorrect code:
-        // 1. Call with wrong code
-        // 2. Returns false
-        // 3. Status unchanged
-        
-        expect(true, true); // Placeholder
+      test('should return false on failed verification', () async {
+        // Arrange
+        when(() => mockOrderFirestore.verifyAndCompleteOrder(any(), any()))
+            .thenAnswer((_) async => false);
+
+        // Act
+        final result = await orderProvider.verifyAndCompleteOrder('order1', 'wrong');
+
+        // Assert
+        expect(result, false);
+      });
+
+      test('should handle verification error', () async {
+        // Arrange
+        when(() => mockOrderFirestore.verifyAndCompleteOrder(any(), any()))
+            .thenThrow(Exception('Verification failed'));
+
+        // Act & Assert
+        expect(
+          () => orderProvider.verifyAndCompleteOrder('order1', '1234'),
+          throwsException,
+        );
+      });
+    });
+
+    group('hasPendingOrderDateTime', () {
+      test('should return index when pending order exists', () async {
+        // Arrange
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final mockOrders = [
+          MockModels.createMockOrder(
+            id: 'order1',
+            restaurantId: 'rest123',
+            status: 'ready_for_checkout',
+            pickupDateTime: pickupTime,
+          ),
+        ];
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+        await orderProvider.fetchUserOrders('user123');
+
+        // Act
+        final result = await orderProvider.hasPendingOrderDateTime('rest123', pickupTime);
+
+        // Assert
+        expect(result, 0);
+      });
+
+      test('should return null when no pending order for datetime', () async {
+        // Arrange
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final differentTime = DateTime.now().add(const Duration(hours: 5));
+        final mockOrders = [
+          MockModels.createMockOrder(
+            id: 'order1',
+            restaurantId: 'rest123',
+            status: 'ready_for_checkout',
+            pickupDateTime: pickupTime,
+          ),
+        ];
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => mockOrders);
+        await orderProvider.fetchUserOrders('user123');
+
+        // Act
+        final result = await orderProvider.hasPendingOrderDateTime('rest123', differentTime);
+
+        // Assert
+        expect(result, isNull);
       });
     });
 
     group('updateRestaurantNameInOrders', () {
-      test('should update restaurant name in all relevant orders', () async {
-        // Test batch update:
-        // 1. Call updateRestaurantNameInOrders
-        // 2. All pending orders for restaurant updated
-        
-        expect(true, true); // Placeholder
-      });
-    });
+      test('should update restaurant name successfully', () async {
+        // Arrange
+        when(() => mockOrderFirestore.updateRestaurantNameInOrders(any(), any()))
+            .thenAnswer((_) async {});
 
-    group('updateRestaurantAddressInOrders', () {
-      test('should update address in relevant orders', () async {
-        // Test batch address update
-        expect(true, true); // Placeholder
-      });
-    });
+        // Act
+        await orderProvider.updateRestaurantNameInOrders('rest123', 'New Name');
 
-    group('clearErrors', () {
-      test('should clear error message', () {
-        orderProvider.clearErrors();
-        expect(orderProvider.errorMessage, null);
+        // Assert
+        verify(() => mockOrderFirestore.updateRestaurantNameInOrders('rest123', 'New Name')).called(1);
+        expect(orderProvider.isLoading, false);
       });
-    });
 
-    group('Error Messages', () {
-      test('should provide user-friendly error messages', () {
-        // Test error message formatting
-        expect(true, true); // Placeholder
+      test('should set error on update failure', () async {
+        // Arrange
+        when(() => mockOrderFirestore.updateRestaurantNameInOrders(any(), any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act
+        await orderProvider.updateRestaurantNameInOrders('rest123', 'New Name');
+
+        // Assert
+        expect(orderProvider.errorMessage, isNotNull);
       });
     });
 
@@ -299,41 +432,3 @@ void main() {
     });
   });
 }
-
-/*
-REFACTORING NEEDED:
-===================
-To make these tests work, refactor OrderProvider:
-
-class OrderProvider extends ChangeNotifier {
-  final OrderFirestore _orderFirestore;
-
-  OrderProvider({
-    OrderFirestore? orderFirestore,
-  }) : _orderFirestore = orderFirestore ?? OrderFirestore();
-  
-  // ... rest of implementation
-}
-
-Example test implementation:
-final mockOrderFirestore = MockOrderFirestore();
-final orderProvider = OrderProvider(
-  orderFirestore: mockOrderFirestore,
-);
-
-// Setup
-final mockOrders = [
-  MockModels.createMockOrder(status: 'pending'),
-  MockModels.createMockOrder(id: 'order2', status: 'paid'),
-];
-when(() => mockOrderFirestore.getUserOrders(any()))
-  .thenAnswer((_) async => mockOrders);
-
-// Test
-await orderProvider.fetchUserOrders('user123');
-
-// Verify
-expect(orderProvider.userOrders.length, 2);
-expect(orderProvider.isLoading, false);
-verify(() => mockOrderFirestore.getUserOrders('user123')).called(1);
-*/

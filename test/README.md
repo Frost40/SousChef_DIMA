@@ -1,42 +1,34 @@
-# Unit Testing Guide for SousChef
+# SousChef Unit Testing Suite
 
-This directory contains unit tests for the SousChef application, following Flutter best practices and focusing on pure logic testing in a mock environment.
+Complete unit testing infrastructure for the SousChef Flutter application.
 
 ## 📁 Directory Structure
 
 ```
 test/
+├── README.md                    # This file - complete testing guide
+├── run_tests.sh                 # Test runner script
+│
 ├── mocks/
-│   ├── mock_services.dart      # Mock implementations of all services
+│   ├── mock_services.dart       # Mock classes for all services
 │   └── mock_models.dart         # Helper functions to create mock model instances
+│
 ├── services/
-│   ├── authentication_test.dart
-│   ├── dish_firestore_test.dart
-│   └── order_firestore_test.dart
-├── providers/
-│   ├── auth_provider_test.dart
-│   ├── dish_provider_test.dart
-│   ├── order_provider_test.dart
-│   ├── chat_provider_test.dart
-│   └── stripe_provider_test.dart
-└── README.md
+│   ├── authentication_test.dart # Tests for Authentication service
+│   ├── dish_firestore_test.dart # Tests for DishFirestore service
+│   └── order_firestore_test.dart # Tests for OrderFirestore service (Order model)
+│
+└── providers/
+    ├── auth_provider_test.dart  # Tests for AuthProvider
+    ├── dish_provider_test.dart  # Tests for DishProvider
+    ├── order_provider_test.dart # Tests for OrderProvider
+    ├── chat_provider_test.dart  # Tests for ChatProvider
+    └── stripe_provider_test.dart # Tests for StripeProvider
 ```
 
-## 🎯 Testing Philosophy
+## 🚀 Quick Start
 
-### What We Test
-1. **Services**: Verify data parsing, error handling, and HTTP/Firestore interactions
-2. **Providers (State Management)**: Verify state changes, loading states, and error states
-
-### What We DON'T Test (Widget/Integration Testing)
-- UI rendering
-- User interactions
-- Navigation
-- Full end-to-end flows
-
-## 🛠️ Setup and Installation
-
-### 1. Add Test Dependencies
+### Prerequisites
 
 Ensure your `pubspec.yaml` has the following dependencies:
 
@@ -45,224 +37,273 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.0
-  fake_cloud_firestore: ^2.4.0  # Optional: for Firestore testing
 ```
-
-### 2. Install Dependencies
-
-```bash
-flutter pub get
-```
-
-## 🚀 Running Tests
 
 ### Run All Tests
+
 ```bash
+cd SousChef_DIMA
 flutter test
 ```
 
-### Run Specific Test File
+### Run Specific Test Files
+
 ```bash
+# All provider tests
+flutter test test/providers/
+
+# All service tests
+flutter test test/services/
+
+# Specific test file
 flutter test test/providers/auth_provider_test.dart
 ```
 
-### Run Tests with Coverage
+### Run with Coverage
+
 ```bash
 flutter test --coverage
-```
 
-### View Coverage Report (requires lcov)
-```bash
-# Install lcov (macOS)
-brew install lcov
-
-# Generate HTML report
+# Generate HTML report (requires lcov)
+brew install lcov  # macOS only
 genhtml coverage/lcov.info -o coverage/html
-
-# Open in browser
 open coverage/html/index.html
 ```
 
-## 📝 Test Structure
+## 🎯 Testing Philosophy
 
-### Service Tests Example
+### What We Test
+- **Services**: Data parsing, error handling, Firestore interactions
+- **Providers (State Management)**: State changes, loading states, error handling, ChangeNotifier behavior
+
+### What We DON'T Test (Widget/Integration Testing)
+- UI rendering
+- User interactions
+- Navigation
+- Full end-to-end flows
+
+## 🔧 Dependency Injection Pattern
+
+All providers and services support dependency injection for testability.
+
+### Production Usage (Unchanged)
 
 ```dart
-group('DishFirestore Service Tests', () {
-  late DishFirestore dishFirestore;
-  late MockFirebaseFirestore mockFirestore;
+// App code - no changes needed!
+final authProvider = AuthProvider();
+final dishProvider = DishProvider();
+```
+
+### Test Usage (Inject Mocks)
+
+```dart
+// Test code - inject mocks!
+final mockAuth = MockAuthentication();
+final mockUserFirestore = MockUserFirestore();
+
+final authProvider = AuthProvider(
+  auth: mockAuth,
+  userFirestore: mockUserFirestore,
+);
+```
+
+## 📊 Test Coverage Summary
+
+### Provider Tests
+
+| Provider | Tests | Description |
+|----------|-------|-------------|
+| AuthProvider | 24 | Sign in, sign up, sign out, password reset, account deletion |
+| DishProvider | 25 | CRUD operations, availability updates, image handling |
+| OrderProvider | 24 | Fetch, create, update, delete orders, verification |
+| ChatProvider | 27 | Load chats, send messages, mark read, create/delete chats |
+| StripeProvider | 15 | Payment processing, refunds, error handling |
+
+### Service Tests
+
+| Service | Tests | Description |
+|---------|-------|-------------|
+| Authentication | 26 | Firebase Auth operations, Google Sign-in |
+| DishFirestore | 13 | Firestore CRUD for dishes |
+| OrderFirestore | 22 | Order model tests |
+
+## 📝 Test Structure Example
+
+### Typical Test Pattern
+
+```dart
+group('FeatureName Tests', () {
+  late Provider provider;
+  late MockService mockService;
 
   setUp(() {
-    // Initialize mocks and service
+    mockService = MockService();
+    provider = Provider(service: mockService);
+    registerFallbackValue(MockModels.createMockEntity());
   });
 
-  group('getRestaurantDishes', () {
-    test('should return list of dishes when dishes exist', () async {
-      // Arrange: Setup mock data
-      // Act: Call service method
-      // Assert: Verify results
+  tearDown(() {
+    provider.dispose();
+  });
+
+  group('methodName', () {
+    test('should do expected thing when condition', () async {
+      // Arrange
+      when(() => mockService.someMethod(any()))
+          .thenAnswer((_) async => expectedResult);
+
+      // Act
+      await provider.methodUnderTest();
+
+      // Assert
+      expect(provider.someState, expectedValue);
+      verify(() => mockService.someMethod(any())).called(1);
+    });
+
+    test('should handle errors gracefully', () async {
+      // Arrange
+      when(() => mockService.someMethod(any()))
+          .thenThrow(Exception('Error'));
+
+      // Act
+      await provider.methodUnderTest();
+
+      // Assert
+      expect(provider.errorMessage, isNotNull);
     });
   });
 });
 ```
 
-### Provider Tests Example
+## 🛠️ Mock Classes
+
+### Available Mock Services (mock_services.dart)
 
 ```dart
-group('AuthProvider Tests', () {
-  late AuthProvider authProvider;
-  late MockAuthentication mockAuth;
-
-  setUp(() {
-    mockAuth = MockAuthentication();
-    authProvider = AuthProvider(auth: mockAuth);
-  });
-
-  test('should set user and isAuthenticated on successful sign in', () async {
-    // Arrange
-    when(() => mockAuth.signIn(any(), any()))
-      .thenAnswer((_) async => mockUser);
-    
-    // Act
-    await authProvider.signIn('test@test.com', 'password');
-    
-    // Assert
-    expect(authProvider.isAuthenticated, true);
-    expect(authProvider.user, isNotNull);
-    verify(() => mockAuth.signIn('test@test.com', 'password')).called(1);
-  });
-});
+class MockAuthentication extends Mock implements Authentication {}
+class MockDishFirestore extends Mock implements DishFirestore {}
+class MockChatFirestore extends Mock implements ChatFirestore {}
+class MockOrderFirestore extends Mock implements OrderFirestore {}
+class MockRestaurantFirestore extends Mock implements RestaurantFirestore {}
+class MockUserFirestore extends Mock implements UserFirestore {}
+class MockFirebaseStorage extends Mock implements FirebaseStorage {}
+class MockStripeService extends Mock implements StripeService {}
 ```
 
-## ⚠️ Important: Required Refactoring
+### Available Mock Model Helpers (mock_models.dart)
 
-**The test files are currently STRUCTURAL EXAMPLES.** To make them fully functional, you need to refactor your services and providers to support **Dependency Injection**.
-
-### Why Dependency Injection?
-
-Current implementation:
 ```dart
-class DishProvider with ChangeNotifier {
-  final DishFirestore _dishFirestore = DishFirestore(); // ❌ Hard to test
-  final FirebaseStorage _firebaseStorage = FirebaseStorage();
-}
+MockModels.createMockUser(id: 'user123', email: 'test@example.com')
+MockModels.createMockDish(id: 'dish123', name: 'Pizza', price: 12.50)
+MockModels.createMockOrder(id: 'order123', status: 'pending')
+MockModels.createMockRestaurant(id: 'rest123', name: 'Test Restaurant')
+MockModels.createMockChat(id: 'chat123', user1Id: 'user1', user2Id: 'user2')
+MockModels.createMockMessage(id: 'msg123', message: 'Hello')
 ```
 
-Refactored for testability:
-```dart
-class DishProvider with ChangeNotifier {
-  final DishFirestore _dishFirestore;
-  final FirebaseStorage _firebaseStorage;
-
-  DishProvider({
-    DishFirestore? dishFirestore,
-    FirebaseStorage? firebaseStorage,
-  }) : _dishFirestore = dishFirestore ?? DishFirestore(),
-       _firebaseStorage = firebaseStorage ?? FirebaseStorage(); // ✅ Easy to test
-}
-```
-
-### Files That Need Refactoring
-
-1. **Providers:**
-   - `lib/providers/auth_provider.dart`
-   - `lib/providers/dish_provider.dart`
-   - `lib/providers/order_provider.dart`
-   - `lib/providers/chat_provider.dart`
-   - `lib/providers/stripe_provider.dart`
-
-2. **Services:**
-   - `lib/services/authentication.dart`
-   - `lib/services/database/dish_firestore.dart`
-   - `lib/services/database/order_firestore.dart`
-   - `lib/services/database/messages_firestore.dart`
-   - `lib/services/stripe.dart`
-
-## 🧪 Testing Checklist
-
-### For Each Provider
-- [ ] Initial state is correct
-- [ ] Loading state changes during async operations
-- [ ] Success state updates correctly
-- [ ] Error state is set on failure
-- [ ] Error messages are user-friendly
-- [ ] ChangeNotifier notifies listeners
-- [ ] Multiple operations can be chained
-- [ ] State persists across operations
-
-### For Each Service
-- [ ] Correct Firestore/API calls are made
-- [ ] Data is parsed correctly
-- [ ] Errors are thrown appropriately
-- [ ] Edge cases are handled (empty data, null values)
-- [ ] Return types are correct
-
-## 📊 Test Coverage Goals
-
-- **Providers:** Aim for 80%+ coverage
-- **Services:** Aim for 70%+ coverage
-- **Models:** 90%+ coverage (add model tests if needed)
-
-## 🔍 Debugging Tests
+## 🐛 Debugging Tests
 
 ### Common Issues
 
-1. **"Bad state: No method stub was called"**
-   - Ensure you register fallback values: `registerFallbackValue(mockObject);`
-
-2. **"Type mismatch"**
-   - Verify mock class extends/implements correct interface
-   - Check that `when()` matches actual method signature
-
-3. **"Null check operator used on null value"**
-   - Mock dependencies might not be set up
-   - Check that all required mocks are initialized in `setUp()`
-
-### Enable Verbose Logging
-
+**1. "No stub found" error**
 ```dart
-test('my test', () async {
-  // Add debug prints
-  print('Before action');
-  await provider.someMethod();
-  print('After action: ${provider.state}');
-  
-  expect(provider.state, expectedValue);
+// Make sure to register fallback values for any() matchers
+registerFallbackValue(MockModels.createMockOrder());
+```
+
+**2. "Type 'Null' is not a subtype" error**
+```dart
+// Ensure mocks return non-null values
+when(() => mockService.getData()).thenAnswer((_) async => []);
+```
+
+**3. Tests hanging**
+```dart
+// Use async/await properly
+test('async test', () async {
+  await provider.asyncMethod();  // Don't forget await!
 });
 ```
 
-## 📚 Additional Resources
+### Verbose Test Output
 
-- [Flutter Testing Documentation](https://docs.flutter.dev/testing)
-- [Mocktail Package](https://pub.dev/packages/mocktail)
-- [Effective Dart: Testing](https://dart.dev/guides/language/effective-dart/testing)
-- [Flutter Test Best Practices](https://docs.flutter.dev/testing/best-practices)
+```bash
+flutter test --reporter expanded
+```
 
-## 🎓 Learning Path
+### Run Single Test
 
-1. Start with **Service Tests** (simpler, no state management)
-2. Move to **Provider Tests** (state management complexity)
-3. Refactor one provider at a time to use DI
-4. Implement actual test logic incrementally
-5. Aim for high coverage on critical paths
+```bash
+flutter test --name "should return User when sign in is successful"
+```
 
-## 💡 Tips
+## 📂 Refactored Files
 
-- **Keep tests isolated**: Each test should be independent
-- **Use descriptive names**: Test names should explain what they verify
-- **Follow AAA pattern**: Arrange, Act, Assert
-- **Mock external dependencies**: Never call real Firebase/APIs in unit tests
-- **Test edge cases**: Null values, empty lists, network errors
-- **Keep tests fast**: Unit tests should run in milliseconds
+### Providers (with DI support)
 
-## 🏁 Next Steps
+| File | Injectable Parameters |
+|------|----------------------|
+| `lib/providers/auth_provider.dart` | `Authentication?`, `UserFirestore?` |
+| `lib/providers/dish_provider.dart` | `DishFirestore?`, `FirebaseStorage?` |
+| `lib/providers/order_provider.dart` | `OrderFirestore?` |
+| `lib/providers/chat_provider.dart` | `ChatFirestore?`, `FirebaseFirestore?` |
+| `lib/providers/stripe_provider.dart` | `StripeService?` |
 
-1. **Refactor your first provider** (recommended: AuthProvider)
-2. **Implement one test group** completely
-3. **Run tests and iterate** until they pass
-4. **Expand to other providers** using the same pattern
-5. **Set up CI/CD** to run tests automatically
+### Services (with DI support)
+
+| File | Injectable Parameters |
+|------|----------------------|
+| `lib/services/authentication.dart` | `FirebaseAuth?`, `FirebaseFirestore?`, `GoogleSignIn?` |
+| `lib/services/database/dish_firestore.dart` | `FirebaseFirestore?` |
+| `lib/services/database/order_firestore.dart` | `FirebaseFirestore?` |
+| `lib/services/database/messages_firestore.dart` | `FirebaseFirestore?` |
+| `lib/services/database/user_firestore.dart` | `FirebaseAuth?`, `FirebaseFirestore?` |
+| `lib/services/firebase_storage.dart` | `FirebaseStorage?` |
+
+## ⚡ Test Runner Script
+
+Make the script executable (first time only):
+```bash
+chmod +x test/run_tests.sh
+```
+
+Usage:
+```bash
+./test/run_tests.sh all          # All tests
+./test/run_tests.sh providers    # Provider tests only
+./test/run_tests.sh services     # Service tests only
+./test/run_tests.sh coverage     # Generate coverage report
+./test/run_tests.sh help         # Show all options
+```
+
+## 📋 Test Checklist
+
+When adding new tests:
+
+- [ ] Create mock class in `mock_services.dart` if needed
+- [ ] Add mock model helper in `mock_models.dart` if needed
+- [ ] Register fallback values for complex types
+- [ ] Test happy path scenarios
+- [ ] Test error handling
+- [ ] Test edge cases (empty lists, null values)
+- [ ] Verify ChangeNotifier behavior (listeners notified)
+- [ ] Clean up in `tearDown`
+
+## 🎯 Best Practices
+
+1. **One assertion per test** - Make tests focused and clear
+2. **Descriptive names** - Test names should explain the expected behavior
+3. **AAA pattern** - Arrange, Act, Assert
+4. **Isolated tests** - Each test should be independent
+5. **Mock external dependencies** - Never hit real Firebase in unit tests
+6. **Test edge cases** - Empty lists, null values, errors
+7. **Keep tests fast** - Unit tests should run in milliseconds
 
 ---
 
-**Remember:** These tests are an investment in code quality. They make refactoring safer and catch bugs early!
+## 📞 Need Help?
+
+For Flutter testing documentation:
+- [Flutter Testing Docs](https://docs.flutter.dev/testing)
+- [Mocktail Package](https://pub.dev/packages/mocktail)
+
