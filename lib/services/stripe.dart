@@ -1,7 +1,12 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
 class StripeService {
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseFunctions _functions;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firebase Functions instance
+  StripeService({FirebaseFunctions? functions})
+      : _functions = functions ?? FirebaseFunctions.instance;
 
   Future<Map<String, dynamic>> createPaymentIntent({
     required int amount,

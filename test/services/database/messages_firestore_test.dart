@@ -16,6 +16,7 @@ class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Ma
 class MockWriteBatch extends Mock implements WriteBatch {}
 class MockQuery extends Mock implements Query<Map<String, dynamic>> {}
 class MockFilter extends Mock implements Filter {}
+class MockSnapshots extends Mock implements Stream<QuerySnapshot<Map<String, dynamic>>> {}
 
 void main() {
   setUpAll(() {
@@ -357,6 +358,27 @@ void main() {
         expect(result, 'newChat123');
         verify(() => mockChatsCollection.add(any())).called(1);
       });
+
+      test('should rethrow error when chat creation fails', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQuery = MockQuery();
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get())
+            .thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+        
+        when(() => mockChatsCollection.add(any()))
+            .thenThrow(FirebaseException(plugin: 'firestore', message: 'Network error'));
+
+        // Act & Assert
+        expect(
+          () => chatFirestore.createNewChat(user1Id: 'user1', user2Id: 'user2'),
+          throwsA(isA<FirebaseException>()),
+        );
+      });
     });
 
     group('deleteChat', () {
@@ -388,6 +410,264 @@ void main() {
         verify(() => mockBatch.delete(mockMsgRef2)).called(1);
         verify(() => mockBatch.delete(mockChatDoc)).called(1);
         verify(() => mockBatch.commit()).called(1);
+      });
+    });
+
+    group('getMessagesStream', () {
+      test('should return stream of messages ordered by timestamp', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockMessage1 = MockQueryDocumentSnapshot();
+
+        when(() => mockMessagesCollection.orderBy('timestamp', descending: false))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.snapshots())
+            .thenAnswer((_) => Stream.value(mockQuerySnapshot));
+        when(() => mockQuerySnapshot.docs).thenReturn([mockMessage1]);
+        
+        when(() => mockMessage1.id).thenReturn('msg1');
+        when(() => mockMessage1.data()).thenReturn({
+          'sender_id': 'user1',
+          'receiver_id': 'user2',
+          'message': 'Hello stream',
+          'timestamp': Timestamp.now(),
+          'is_read': false,
+        });
+
+        // Act
+        final stream = chatFirestore.getMessagesStream('chat123');
+        final result = await stream.first;
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].message, 'Hello stream');
+        verify(() => mockMessagesCollection.orderBy('timestamp', descending: false)).called(1);
+      });
+
+      test('should return empty list when no messages in stream', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+
+        when(() => mockMessagesCollection.orderBy('timestamp', descending: false))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.snapshots())
+            .thenAnswer((_) => Stream.value(mockQuerySnapshot));
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+
+        // Act
+        final stream = chatFirestore.getMessagesStream('chat123');
+        final result = await stream.first;
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    group('getUserChatsStream', () {
+      test('should return stream of chats for user', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.snapshots())
+            .thenAnswer((_) => Stream.value(mockQuerySnapshot));
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1]);
+        
+        when(() => mockDoc1.id).thenReturn('chat1');
+        when(() => mockDoc1.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user456',
+          'last_message': 'Hello',
+          'last_message_time': Timestamp.now(),
+        });
+
+        // Act
+        final stream = chatFirestore.getUserChatsStream('user123');
+        final result = await stream.first;
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].user1Id, 'user123');
+      });
+
+      test('should sort chats by lastMessageTime with null handling', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockDoc2 = MockQueryDocumentSnapshot();
+        final mockDoc3 = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+        final now = Timestamp.now();
+        final earlier = Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 1)));
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.snapshots())
+            .thenAnswer((_) => Stream.value(mockQuerySnapshot));
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1, mockDoc2, mockDoc3]);
+        
+        // Chat with null lastMessageTime (should be last)
+        when(() => mockDoc1.id).thenReturn('chat1');
+        when(() => mockDoc1.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user456',
+          'last_message': null,
+          'last_message_time': null,
+        });
+        
+        // Chat with earlier timestamp (should be second)
+        when(() => mockDoc2.id).thenReturn('chat2');
+        when(() => mockDoc2.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user789',
+          'last_message': 'Earlier',
+          'last_message_time': earlier,
+        });
+        
+        // Chat with recent timestamp (should be first)
+        when(() => mockDoc3.id).thenReturn('chat3');
+        when(() => mockDoc3.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user111',
+          'last_message': 'Recent',
+          'last_message_time': now,
+        });
+
+        // Act
+        final stream = chatFirestore.getUserChatsStream('user123');
+        final result = await stream.first;
+
+        // Assert - chats should be sorted: most recent first, null last
+        expect(result.length, 3);
+        expect(result[0].lastMessage, 'Recent'); // Most recent first
+        expect(result[1].lastMessage, 'Earlier'); // Earlier second
+        expect(result[2].lastMessage, null); // Null last
+      });
+
+      test('should handle both chats having null lastMessageTime', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockDoc2 = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.snapshots())
+            .thenAnswer((_) => Stream.value(mockQuerySnapshot));
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1, mockDoc2]);
+        
+        when(() => mockDoc1.id).thenReturn('chat1');
+        when(() => mockDoc1.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user456',
+          'last_message': null,
+          'last_message_time': null,
+        });
+        
+        when(() => mockDoc2.id).thenReturn('chat2');
+        when(() => mockDoc2.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user789',
+          'last_message': null,
+          'last_message_time': null,
+        });
+
+        // Act
+        final stream = chatFirestore.getUserChatsStream('user123');
+        final result = await stream.first;
+
+        // Assert - both have null, order should be preserved
+        expect(result.length, 2);
+      });
+    });
+
+    group('getUserChats sorting edge cases', () {
+      test('should sort chats with null lastMessageTime to end', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockDoc2 = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+        final now = Timestamp.now();
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get())
+            .thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1, mockDoc2]);
+        
+        // First chat has null timestamp
+        when(() => mockDoc1.id).thenReturn('chat1');
+        when(() => mockDoc1.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user456',
+          'last_message': null,
+          'last_message_time': null,
+        });
+        
+        // Second chat has valid timestamp
+        when(() => mockDoc2.id).thenReturn('chat2');
+        when(() => mockDoc2.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user789',
+          'last_message': 'Hello',
+          'last_message_time': now,
+        });
+
+        // Act
+        final result = await chatFirestore.getUserChats('user123');
+
+        // Assert - chat with timestamp should come first
+        expect(result.length, 2);
+        expect(result[0].lastMessage, 'Hello');
+        expect(result[1].lastMessage, null);
+      });
+
+      test('should handle second chat having null lastMessageTime', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockDoc2 = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+        final now = Timestamp.now();
+
+        when(() => mockChatsCollection.where(any<Filter>()))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get())
+            .thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1, mockDoc2]);
+        
+        // First chat has valid timestamp
+        when(() => mockDoc1.id).thenReturn('chat1');
+        when(() => mockDoc1.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user456',
+          'last_message': 'Hello',
+          'last_message_time': now,
+        });
+        
+        // Second chat has null timestamp
+        when(() => mockDoc2.id).thenReturn('chat2');
+        when(() => mockDoc2.data()).thenReturn({
+          'user1_id': 'user123',
+          'user2_id': 'user789',
+          'last_message': null,
+          'last_message_time': null,
+        });
+
+        // Act
+        final result = await chatFirestore.getUserChats('user123');
+
+        // Assert - chat with timestamp should come first
+        expect(result.length, 2);
+        expect(result[0].lastMessage, 'Hello');
+        expect(result[1].lastMessage, null);
       });
     });
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,213 +6,402 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:sous_chef/services/firebase_storage.dart' as app_storage;
 
 /// Mock classes
-class MockFirebaseStorage extends Mock implements firebase_storage.FirebaseStorage {}
+class MockFirebaseStorage extends Mock
+    implements firebase_storage.FirebaseStorage {}
+
 class MockReference extends Mock implements firebase_storage.Reference {}
-class MockUploadTask extends Mock implements firebase_storage.UploadTask {}
+
 class MockTaskSnapshot extends Mock implements firebase_storage.TaskSnapshot {}
-class MockFile extends Mock implements File {
+
+/// Custom mock UploadTask that properly implements Future<TaskSnapshot>
+class MockUploadTask extends Mock implements firebase_storage.UploadTask {
+  final Future<firebase_storage.TaskSnapshot> _future;
+
+  MockUploadTask(this._future);
+
   @override
-  String get path => '/test/path/image.jpg';
+  Future<S> then<S>(
+    FutureOr<S> Function(firebase_storage.TaskSnapshot) onValue, {
+    Function? onError,
+  }) =>
+      _future.then(onValue, onError: onError);
+
+  @override
+  Future<firebase_storage.TaskSnapshot> whenComplete(
+          FutureOr<void> Function() action) =>
+      _future.whenComplete(action);
+
+  @override
+  Future<firebase_storage.TaskSnapshot> catchError(Function onError,
+          {bool Function(Object error)? test}) =>
+      _future.catchError(onError, test: test);
+
+  @override
+  Stream<firebase_storage.TaskSnapshot> asStream() => _future.asStream();
+
+  @override
+  Future<firebase_storage.TaskSnapshot> timeout(Duration timeLimit,
+          {FutureOr<firebase_storage.TaskSnapshot> Function()? onTimeout}) =>
+      _future.timeout(timeLimit, onTimeout: onTimeout);
 }
 
+/// Custom mock file that allows setting the path
+class MockFile extends Mock implements File {
+  final String _path;
+  MockFile(this._path);
+
+  @override
+  String get path => _path;
+}
+
+/// Fake class for registerFallbackValue
+class FakeFile extends Fake implements File {}
+
 void main() {
+  // Register fallback values for mocktail
+  setUpAll(() {
+    registerFallbackValue(FakeFile());
+  });
+
   group('FirebaseStorage Service Tests', () {
     late app_storage.FirebaseStorage storageService;
     late MockFirebaseStorage mockStorage;
-    late MockReference mockRef;
+    late MockReference mockRootRef;
     late MockReference mockChildRef;
+    late MockTaskSnapshot mockTaskSnapshot;
 
     setUp(() {
       mockStorage = MockFirebaseStorage();
-      mockRef = MockReference();
+      mockRootRef = MockReference();
       mockChildRef = MockReference();
+      mockTaskSnapshot = MockTaskSnapshot();
 
       // Setup reference chain
-      when(() => mockStorage.ref()).thenReturn(mockRef);
-      when(() => mockRef.child(any())).thenReturn(mockChildRef);
+      when(() => mockStorage.ref()).thenReturn(mockRootRef);
+      when(() => mockRootRef.child(any())).thenReturn(mockChildRef);
 
       storageService = app_storage.FirebaseStorage(storage: mockStorage);
     });
 
+    /// Helper to create a successful upload mock
+    void setupSuccessfulUpload(String expectedUrl) {
+      when(() => mockTaskSnapshot.ref).thenReturn(mockChildRef);
+      when(() => mockChildRef.getDownloadURL())
+          .thenAnswer((_) async => expectedUrl);
+      when(() => mockChildRef.putFile(any())).thenAnswer(
+          (_) => MockUploadTask(Future.value(mockTaskSnapshot)));
+    }
+
     group('uploadRestaurantImage', () {
-      test('should validate file extension - jpg is valid', () {
-        final mockFile = MockFile();
-        
-        final extension = mockFile.path.split('.').last.toLowerCase();
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
-        expect(validExtensions.contains(extension), isTrue);
-      });
-
-      test('should reject invalid file extension', () {
-        // Create a mock file with invalid extension
-        final invalidPath = '/test/path/image.pdf';
-        final extension = invalidPath.split('.').last.toLowerCase();
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
-        expect(validExtensions.contains(extension), isFalse);
-      });
-
-      test('should construct correct storage path', () {
+      test('should upload image and return download URL on success', () async {
+        // Arrange
         const restaurantId = 'rest123';
-        const expectedPath = 'images/restaurants/$restaurantId/profile_image.png';
-        
-        expect(expectedPath, 'images/restaurants/rest123/profile_image.png');
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.jpg');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        // Act
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        // Assert
+        expect(result, equals(expectedUrl));
+        verify(() => mockRootRef
+            .child('images/restaurants/$restaurantId/profile_image.png')).called(1);
+        verify(() => mockChildRef.putFile(mockFile)).called(1);
       });
 
-      test('valid extensions should include jpg', () {
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        expect(validExtensions.contains('jpg'), isTrue);
+      test('should return null for invalid file extension', () async {
+        // Arrange
+        const restaurantId = 'rest123';
+        final mockFile = MockFile('/test/path/image.pdf');
+
+        // Act
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        // Assert
+        expect(result, isNull);
+        verifyNever(() => mockChildRef.putFile(any()));
       });
 
-      test('valid extensions should include jpeg', () {
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        expect(validExtensions.contains('jpeg'), isTrue);
+      test('should return null for .txt file extension', () async {
+        const restaurantId = 'rest123';
+        final mockFile = MockFile('/test/path/document.txt');
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, isNull);
+        verifyNever(() => mockChildRef.putFile(any()));
       });
 
-      test('valid extensions should include png', () {
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        expect(validExtensions.contains('png'), isTrue);
+      test('should accept jpg extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.jpg');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
       });
 
-      test('valid extensions should include gif', () {
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        expect(validExtensions.contains('gif'), isTrue);
+      test('should accept jpeg extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.jpeg');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
       });
 
-      test('valid extensions should include webp', () {
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        expect(validExtensions.contains('webp'), isTrue);
+      test('should accept png extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.png');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
+      });
+
+      test('should accept gif extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.gif');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
+      });
+
+      test('should accept webp extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.webp');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
+      });
+
+      test('should handle uppercase extension', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.JPG');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, equals(expectedUrl));
+      });
+
+      test('should return null when upload throws exception', () async {
+        const restaurantId = 'rest123';
+        final mockFile = MockFile('/test/path/image.jpg');
+
+        when(() => mockChildRef.putFile(any()))
+            .thenThrow(Exception('Upload failed'));
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, isNull);
+      });
+
+      test('should construct correct storage path', () async {
+        const restaurantId = 'rest123';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
+        final mockFile = MockFile('/test/path/image.jpg');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        verify(() => mockRootRef
+            .child('images/restaurants/rest123/profile_image.png')).called(1);
       });
     });
 
     group('uploadDishImage', () {
-      test('should construct correct storage path for dish', () {
+      test('should upload dish image and return download URL on success',
+          () async {
         const restaurantId = 'rest123';
         const dishId = 'dish456';
-        const expectedPath = 'images/restaurants/$restaurantId/dishes/$dishId.png';
-        
-        expect(expectedPath, 'images/restaurants/rest123/dishes/dish456.png');
+        const expectedUrl = 'https://storage.googleapis.com/bucket/dish.png';
+        final mockFile = MockFile('/test/path/dish.png');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        final result = await storageService.uploadDishImage(
+            restaurantId, dishId, mockFile);
+
+        expect(result, equals(expectedUrl));
+        verify(() => mockRootRef.child(
+            'images/restaurants/$restaurantId/dishes/$dishId.png')).called(1);
       });
 
-      test('should validate file extension for dish images', () {
-        final validPath = '/test/path/dish.png';
-        final extension = validPath.split('.').last.toLowerCase();
-        final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
-        expect(validExtensions.contains(extension), isTrue);
+      test('should return null for invalid dish image extension', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+        final mockFile = MockFile('/test/path/dish.pdf');
+
+        final result = await storageService.uploadDishImage(
+            restaurantId, dishId, mockFile);
+
+        expect(result, isNull);
+        verifyNever(() => mockChildRef.putFile(any()));
+      });
+
+      test('should return null when dish upload throws exception', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+        final mockFile = MockFile('/test/path/dish.jpg');
+
+        when(() => mockChildRef.putFile(any()))
+            .thenThrow(Exception('Upload failed'));
+
+        final result = await storageService.uploadDishImage(
+            restaurantId, dishId, mockFile);
+
+        expect(result, isNull);
+      });
+
+      test('should construct correct storage path for dish image', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/dish.png';
+        final mockFile = MockFile('/test/path/dish.jpg');
+
+        setupSuccessfulUpload(expectedUrl);
+
+        await storageService.uploadDishImage(restaurantId, dishId, mockFile);
+
+        verify(() => mockRootRef
+            .child('images/restaurants/rest123/dishes/dish456.png')).called(1);
+      });
+
+      test('should accept valid image extensions for dish', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+        const expectedUrl = 'https://storage.googleapis.com/bucket/dish.png';
+
+        for (final ext in ['jpg', 'jpeg', 'png', 'gif', 'webp']) {
+          final mockFile = MockFile('/test/path/dish.$ext');
+
+          setupSuccessfulUpload(expectedUrl);
+
+          final result = await storageService.uploadDishImage(
+              restaurantId, dishId, mockFile);
+
+          expect(result, equals(expectedUrl),
+              reason: 'Extension $ext should be accepted');
+        }
       });
     });
 
     group('deleteDishImage', () {
-      test('should construct correct path for deletion', () {
+      test('should delete dish image successfully', () async {
         const restaurantId = 'rest123';
         const dishId = 'dish456';
-        const expectedPath = 'images/restaurants/$restaurantId/dishes/$dishId.png';
-        
-        expect(expectedPath, contains(restaurantId));
-        expect(expectedPath, contains(dishId));
+
+        when(() => mockChildRef.delete()).thenAnswer((_) async {});
+
+        await storageService.deleteDishImage(restaurantId, dishId);
+
+        verify(() => mockRootRef.child(
+            'images/restaurants/$restaurantId/dishes/$dishId.png')).called(1);
+        verify(() => mockChildRef.delete()).called(1);
       });
 
-      test('should handle object-not-found error gracefully', () {
-        // This tests the expected behavior when an image doesn't exist
-        const errorCode = 'object-not-found';
-        
-        // The service should catch this error and not rethrow
-        expect(errorCode, 'object-not-found');
-      });
-    });
-
-    group('File Extension Validation', () {
-      test('should extract extension from path correctly', () {
-        const testPaths = [
-          '/path/to/image.jpg',
-          '/path/to/image.JPEG',
-          '/path/to/image.PNG',
-          'simple.gif',
-          '/complex/path/with.dots/image.webp',
-        ];
-
-        for (final path in testPaths) {
-          final extension = path.split('.').last.toLowerCase();
-          expect(['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(extension), isTrue);
-        }
-      });
-
-      test('should handle uppercase extensions', () {
-        const path = '/test/IMAGE.JPG';
-        final extension = path.split('.').last.toLowerCase();
-        
-        expect(extension, 'jpg');
-      });
-
-      test('should handle mixed case extensions', () {
-        const path = '/test/image.JpEg';
-        final extension = path.split('.').last.toLowerCase();
-        
-        expect(extension, 'jpeg');
-      });
-    });
-
-    group('Storage Path Construction', () {
-      test('restaurant image path should follow pattern', () {
-        const restaurantId = 'abc123';
-        final path = 'images/restaurants/$restaurantId/profile_image.png';
-        
-        expect(path, startsWith('images/'));
-        expect(path, contains('restaurants'));
-        expect(path, contains(restaurantId));
-        expect(path, endsWith('.png'));
-      });
-
-      test('dish image path should follow pattern', () {
+      test('should handle object-not-found error gracefully', () async {
         const restaurantId = 'rest123';
         const dishId = 'dish456';
-        final path = 'images/restaurants/$restaurantId/dishes/$dishId.png';
-        
-        expect(path, startsWith('images/'));
-        expect(path, contains('restaurants'));
-        expect(path, contains('dishes'));
-        expect(path, contains(dishId));
+
+        when(() => mockChildRef.delete()).thenThrow(
+          firebase_storage.FirebaseException(
+            plugin: 'firebase_storage',
+            code: 'object-not-found',
+            message: 'Object not found',
+          ),
+        );
+
+        // Should complete without throwing
+        await expectLater(
+          storageService.deleteDishImage(restaurantId, dishId),
+          completes,
+        );
+      });
+
+      test('should rethrow non-object-not-found FirebaseException', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+
+        when(() => mockChildRef.delete()).thenThrow(
+          firebase_storage.FirebaseException(
+            plugin: 'firebase_storage',
+            code: 'unauthorized',
+            message: 'Unauthorized',
+          ),
+        );
+
+        await expectLater(
+          storageService.deleteDishImage(restaurantId, dishId),
+          throwsA(isA<firebase_storage.FirebaseException>()),
+        );
+      });
+
+      test('should rethrow generic exceptions', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+
+        when(() => mockChildRef.delete())
+            .thenThrow(Exception('Network error'));
+
+        await expectLater(
+          storageService.deleteDishImage(restaurantId, dishId),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('should construct correct path for deletion', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+
+        when(() => mockChildRef.delete()).thenAnswer((_) async {});
+
+        await storageService.deleteDishImage(restaurantId, dishId);
+
+        verify(() => mockRootRef
+            .child('images/restaurants/rest123/dishes/dish456.png')).called(1);
       });
     });
 
-    group('Error Handling', () {
-      test('should return null on upload error', () async {
-        // The service returns null when an error occurs
-        // This is tested by checking the interface behavior
-        expect(true, isTrue);
+    group('Service Initialization', () {
+      test('should initialize with injected storage instance', () {
+        final service = app_storage.FirebaseStorage(storage: mockStorage);
+        expect(service, isNotNull);
       });
 
-      test('object-not-found should not be rethrown in delete', () {
-        // The service catches 'object-not-found' errors during deletion
-        const errorCode = 'object-not-found';
-        expect(errorCode, equals('object-not-found'));
-      });
-
-      test('other errors should be rethrown in delete', () {
-        // Other errors like 'unauthorized' should be rethrown
-        const errorCode = 'unauthorized';
-        expect(errorCode, isNot(equals('object-not-found')));
-      });
-    });
-
-    group('Upload Task Behavior', () {
-      test('upload should return download URL on success', () async {
-        // Verify the expected behavior: upload returns a URL string
-        const expectedUrl = 'https://storage.googleapis.com/bucket/image.png';
-        expect(expectedUrl, startsWith('https://'));
-      });
-
-      test('download URL should be valid HTTPS URL', () {
-        const url = 'https://storage.googleapis.com/bucket/images/test.png';
-        
-        expect(Uri.tryParse(url)?.hasScheme, isTrue);
-        expect(Uri.tryParse(url)?.scheme, 'https');
-      });
-    });
-
-    group('Service Interface', () {
       test('should have uploadRestaurantImage method', () {
         expect(storageService.uploadRestaurantImage, isNotNull);
       });
@@ -222,6 +412,41 @@ void main() {
 
       test('should have deleteDishImage method', () {
         expect(storageService.deleteDishImage, isNotNull);
+      });
+    });
+
+    group('Error Handling', () {
+      test('should return null when getDownloadURL fails', () async {
+        const restaurantId = 'rest123';
+        final mockFile = MockFile('/test/path/image.jpg');
+
+        when(() => mockTaskSnapshot.ref).thenReturn(mockChildRef);
+        when(() => mockChildRef.putFile(any())).thenAnswer(
+            (_) => MockUploadTask(Future.value(mockTaskSnapshot)));
+        when(() => mockChildRef.getDownloadURL())
+            .thenThrow(Exception('Failed to get URL'));
+
+        final result =
+            await storageService.uploadRestaurantImage(restaurantId, mockFile);
+
+        expect(result, isNull);
+      });
+
+      test('should return null when dish getDownloadURL fails', () async {
+        const restaurantId = 'rest123';
+        const dishId = 'dish456';
+        final mockFile = MockFile('/test/path/dish.jpg');
+
+        when(() => mockTaskSnapshot.ref).thenReturn(mockChildRef);
+        when(() => mockChildRef.putFile(any())).thenAnswer(
+            (_) => MockUploadTask(Future.value(mockTaskSnapshot)));
+        when(() => mockChildRef.getDownloadURL())
+            .thenThrow(Exception('Failed to get URL'));
+
+        final result = await storageService.uploadDishImage(
+            restaurantId, dishId, mockFile);
+
+        expect(result, isNull);
       });
     });
   });

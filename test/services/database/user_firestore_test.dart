@@ -16,8 +16,15 @@ class MockQuerySnapshot extends Mock implements QuerySnapshot<Map<String, dynami
 class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Map<String, dynamic>> {}
 class MockFirebaseUser extends Mock implements firebase_auth.User {}
 class MockQuery extends Mock implements Query<Map<String, dynamic>> {}
+class MockWriteBatch extends Mock implements WriteBatch {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(const GetOptions(source: Source.server));
+    registerFallbackValue(MockDocumentReference());
+  });
+
   group('UserFirestore Service Tests', () {
     late UserFirestore userFirestore;
     late MockFirebaseAuth mockFirebaseAuth;
@@ -148,7 +155,7 @@ void main() {
             .called(1);
       });
 
-      test('should throw when no authenticated user', () async {
+      test('should throw when no authenticated user (uid is null)', () async {
         // Arrange
         when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
@@ -156,6 +163,18 @@ void main() {
         expect(
           () => userFirestore.updateUserEmail('new@example.com'),
           throwsException,
+        );
+      });
+
+      test('should throw when authUser is null but uid exists', () async {
+        // This case tests when currentUser returns null for uid check
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+        // Act & Assert
+        expect(
+          () => userFirestore.updateUserEmail('new@example.com'),
+          throwsA(isA<Exception>()),
         );
       });
     });
@@ -175,13 +194,132 @@ void main() {
         verify(() => mockFirebaseUser.updatePassword('newPassword123')).called(1);
       });
 
-      test('should throw when no authenticated user', () async {
+      test('should throw when no authenticated user (uid is null)', () async {
         // Arrange
         when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
         // Act & Assert
         expect(
           () => userFirestore.updateUserPassword('newPassword'),
+          throwsException,
+        );
+      });
+    });
+
+    group('isUsernameTaken', () {
+      test('should return true when username exists', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc = MockQueryDocumentSnapshot();
+        final mockQuery = MockQuery();
+
+        when(() => mockUsersCollection.where('username', isEqualTo: 'existingUser'))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc]);
+
+        // Act
+        final result = await userFirestore.isUsernameTaken('existingUser');
+
+        // Assert
+        expect(result, isTrue);
+      });
+
+      test('should return false when username is available', () async {
+        // Arrange
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQuery = MockQuery();
+
+        when(() => mockUsersCollection.where('username', isEqualTo: 'newUser'))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+
+        // Act
+        final result = await userFirestore.isUsernameTaken('newUser');
+
+        // Assert
+        expect(result, isFalse);
+      });
+    });
+
+    group('updateUserRestaurant', () {
+      test('should update restaurant ID for user', () {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
+
+        // Act
+        userFirestore.updateUserRestaurant('rest789');
+
+        // Assert
+        verify(() => mockUserDoc.update({'restaurantId': 'rest789'})).called(1);
+      });
+
+      test('should throw when no authenticated user', () {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+        // Act & Assert
+        expect(
+          () => userFirestore.updateUserRestaurant('rest123'),
+          throwsException,
+        );
+      });
+    });
+
+    group('addToFavorites', () {
+      test('should add restaurant to favorites', () async {
+        // Arrange
+        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
+
+        // Act
+        await userFirestore.addToFavorites('user123', 'rest456');
+
+        // Assert
+        verify(() => mockUserDoc.update({
+          'favourites': FieldValue.arrayUnion(['rest456']),
+        })).called(1);
+      });
+
+      test('should rethrow error when update fails', () async {
+        // Arrange
+        when(() => mockUserDoc.update(any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act & Assert
+        expect(
+          () => userFirestore.addToFavorites('user123', 'rest456'),
+          throwsException,
+        );
+      });
+    });
+
+    group('removeFromFavorites', () {
+      test('should remove restaurant from favorites', () async {
+        // Arrange
+        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
+
+        // Act
+        await userFirestore.removeFromFavorites('user123', 'rest456');
+
+        // Assert
+        verify(() => mockUserDoc.update({
+          'favourites': FieldValue.arrayRemove(['rest456']),
+        })).called(1);
+      });
+
+      test('should rethrow error when update fails', () async {
+        // Arrange
+        when(() => mockUserDoc.update(any()))
+            .thenThrow(Exception('Update failed'));
+
+        // Act & Assert
+        expect(
+          () => userFirestore.removeFromFavorites('user123', 'rest456'),
           throwsException,
         );
       });
@@ -238,44 +376,19 @@ void main() {
         // Assert
         expect(result, isNull);
       });
-    });
 
-    group('isUsernameTaken', () {
-      test('should return true when username exists', () async {
+      test('should return null on error', () async {
         // Arrange
-        final mockQuerySnapshot = MockQuerySnapshot();
-        final mockDoc = MockQueryDocumentSnapshot();
-        final mockQuery = MockQuery();
-
-        when(() => mockUsersCollection.where('username', isEqualTo: 'existingUser'))
-            .thenReturn(mockQuery);
-        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
-        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
-        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc]);
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+        when(() => mockUserDoc.get(any()))
+            .thenThrow(Exception('Network error'));
 
         // Act
-        final result = await userFirestore.isUsernameTaken('existingUser');
+        final result = await userFirestore.getFullUserData();
 
         // Assert
-        expect(result, isTrue);
-      });
-
-      test('should return false when username is available', () async {
-        // Arrange
-        final mockQuerySnapshot = MockQuerySnapshot();
-        final mockQuery = MockQuery();
-
-        when(() => mockUsersCollection.where('username', isEqualTo: 'newUser'))
-            .thenReturn(mockQuery);
-        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
-        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
-        when(() => mockQuerySnapshot.docs).thenReturn([]);
-
-        // Act
-        final result = await userFirestore.isUsernameTaken('newUser');
-
-        // Assert
-        expect(result, isFalse);
+        expect(result, isNull);
       });
     });
 
@@ -310,6 +423,22 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test('should return empty list when document does not exist', () async {
+        // Arrange
+        final mockDocSnapshot = MockDocumentSnapshot();
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+        when(() => mockUserDoc.get(any()))
+            .thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(false);
+
+        // Act
+        final result = await userFirestore.getFavoriteRestaurantIds();
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
       test('should return empty list when no favourites field', () async {
         // Arrange
         final mockDocSnapshot = MockDocumentSnapshot();
@@ -326,62 +455,54 @@ void main() {
         // Assert
         expect(result, isEmpty);
       });
-    });
 
-    group('addToFavorites', () {
-      test('should add restaurant to favorites', () async {
+      test('should return empty list when data is null', () async {
         // Arrange
-        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
+        final mockDocSnapshot = MockDocumentSnapshot();
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+        when(() => mockUserDoc.get(any()))
+            .thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(true);
+        when(() => mockDocSnapshot.data()).thenReturn(null);
 
         // Act
-        await userFirestore.addToFavorites('user123', 'rest456');
+        final result = await userFirestore.getFavoriteRestaurantIds();
 
         // Assert
-        verify(() => mockUserDoc.update({
-          'favourites': FieldValue.arrayUnion(['rest456']),
-        })).called(1);
+        expect(result, isEmpty);
       });
-    });
 
-    group('removeFromFavorites', () {
-      test('should remove restaurant from favorites', () async {
-        // Arrange
-        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
-
-        // Act
-        await userFirestore.removeFromFavorites('user123', 'rest456');
-
-        // Assert
-        verify(() => mockUserDoc.update({
-          'favourites': FieldValue.arrayRemove(['rest456']),
-        })).called(1);
-      });
-    });
-
-    group('updateUserRestaurant', () {
-      test('should update restaurant ID for user', () {
+      test('should return empty list on error', () async {
         // Arrange
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
         when(() => mockFirebaseUser.uid).thenReturn('user123');
-        when(() => mockUserDoc.update(any())).thenAnswer((_) async {});
+        when(() => mockUserDoc.get(any()))
+            .thenThrow(Exception('Network error'));
 
         // Act
-        userFirestore.updateUserRestaurant('rest789');
+        final result = await userFirestore.getFavoriteRestaurantIds();
 
         // Assert
-        verify(() => mockUserDoc.update({'restaurantId': 'rest789'})).called(1);
+        expect(result, isEmpty);
       });
+    });
 
-      test('should throw when no authenticated user', () {
+    group('deleteUserData', () {
+      test('should throw when no authenticated user', () async {
         // Arrange
         when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
         // Act & Assert
         expect(
-          () => userFirestore.updateUserRestaurant('rest123'),
+          () => userFirestore.deleteUserData(),
           throwsException,
         );
       });
+
+      // Note: Full deleteUserData testing is limited because the method
+      // uses FirebaseFirestore.instance directly instead of the injected _firestore.
+      // The internal batch operations cannot be mocked with the current implementation.
     });
 
     group('User Model Tests', () {

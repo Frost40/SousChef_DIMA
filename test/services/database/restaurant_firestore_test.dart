@@ -12,6 +12,7 @@ class MockDocumentReference extends Mock implements DocumentReference<Map<String
 class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
 class MockQuerySnapshot extends Mock implements QuerySnapshot<Map<String, dynamic>> {}
 class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Map<String, dynamic>> {}
+class MockQuery extends Mock implements Query<Map<String, dynamic>> {}
 
 void main() {
   setUpAll(() {
@@ -285,6 +286,297 @@ void main() {
 
         // Assert
         expect(result, isNull);
+      });
+    });
+
+    group('getRestaurantsNearLocation', () {
+      test('should return restaurants within radius', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        // Restaurant at approximately 1km away from search point
+        const searchLat = 45.0;
+        const searchLon = 9.0;
+        const restaurantLat = 45.005; // ~0.5km north
+        const restaurantLon = 9.005; // ~0.4km east
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('rest123');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'name': 'Nearby Restaurant',
+          'address': '123 Close St',
+          'is_open': true,
+          'owner_id': 'owner123',
+          'location': const GeoPoint(restaurantLat, restaurantLon),
+          'restaurant_types': ['fixed_menu'],
+          'image_url': 'https://example.com/image.jpg',
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: searchLat,
+          longitude: searchLon,
+          radiusInKm: 5.0,
+        );
+
+        // Assert
+        expect(result, isNotEmpty);
+        expect(result.length, 1);
+        expect(result[0].name, 'Nearby Restaurant');
+      });
+
+      test('should exclude restaurants outside radius', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        // Restaurant far away (about 100km)
+        const searchLat = 45.0;
+        const searchLon = 9.0;
+        const farRestaurantLat = 46.0; // ~111km north
+        const farRestaurantLon = 9.0;
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('farRest');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'name': 'Far Restaurant',
+          'address': '999 Far St',
+          'is_open': true,
+          'owner_id': 'owner456',
+          'location': const GeoPoint(farRestaurantLat, farRestaurantLon),
+          'restaurant_types': [],
+          'image_url': null,
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: searchLat,
+          longitude: searchLon,
+          radiusInKm: 5.0, // Only 5km radius
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should return empty list when no restaurants found', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: 45.0,
+          longitude: 9.0,
+          radiusInKm: 10.0,
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should return empty list on query error', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenThrow(Exception('Query failed'));
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: 45.0,
+          longitude: 9.0,
+          radiusInKm: 10.0,
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should skip restaurants with null location in data', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('rest123');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'name': 'No Location Restaurant',
+          'address': '123 Main St',
+          'is_open': true,
+          'owner_id': 'owner123',
+          'location': null, // null location
+          'restaurant_types': [],
+          'image_url': null,
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: 45.0,
+          longitude: 9.0,
+          radiusInKm: 10.0,
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should handle document processing errors gracefully', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot1 = MockQueryDocumentSnapshot();
+        final mockQueryDocSnapshot2 = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([
+          mockQueryDocSnapshot1,
+          mockQueryDocSnapshot2,
+        ]);
+
+        // First doc throws error
+        when(() => mockQueryDocSnapshot1.data()).thenThrow(Exception('Bad data'));
+
+        // Second doc is valid and within range
+        when(() => mockQueryDocSnapshot2.id).thenReturn('validRest');
+        when(() => mockQueryDocSnapshot2.data()).thenReturn({
+          'name': 'Valid Restaurant',
+          'address': '123 Valid St',
+          'is_open': true,
+          'owner_id': 'owner123',
+          'location': const GeoPoint(45.001, 9.001),
+          'restaurant_types': ['fixed_menu'],
+          'image_url': null,
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: 45.0,
+          longitude: 9.0,
+          radiusInKm: 10.0,
+        );
+
+        // Assert - should still return the valid restaurant
+        expect(result.length, 1);
+        expect(result[0].name, 'Valid Restaurant');
+      });
+
+      test('should filter restaurants outside bounding box', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        // Restaurant outside bounding box (latitude out of range)
+        const searchLat = 45.0;
+        const searchLon = 9.0;
+        // With 1km radius, bounding box is roughly ±0.009 degrees
+        const outsideLat = 45.5; // Well outside the bounding box
+        const outsideLon = 9.0;
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('outsideRest');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'name': 'Outside Restaurant',
+          'address': '999 Outside St',
+          'is_open': true,
+          'owner_id': 'owner123',
+          'location': const GeoPoint(outsideLat, outsideLon),
+          'restaurant_types': [],
+          'image_url': null,
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: searchLat,
+          longitude: searchLon,
+          radiusInKm: 1.0, // Small radius
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should return multiple nearby restaurants', () async {
+        // Arrange
+        final mockQuery = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockDoc1 = MockQueryDocumentSnapshot();
+        final mockDoc2 = MockQueryDocumentSnapshot();
+        final mockDoc3 = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('location', isNotEqualTo: null))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockDoc1, mockDoc2, mockDoc3]);
+
+        // All restaurants within 1km
+        when(() => mockDoc1.id).thenReturn('rest1');
+        when(() => mockDoc1.data()).thenReturn({
+          'name': 'Restaurant 1',
+          'address': '1 Main St',
+          'is_open': true,
+          'owner_id': 'owner1',
+          'location': const GeoPoint(45.001, 9.001),
+          'restaurant_types': ['fixed_menu'],
+          'image_url': null,
+        });
+
+        when(() => mockDoc2.id).thenReturn('rest2');
+        when(() => mockDoc2.data()).thenReturn({
+          'name': 'Restaurant 2',
+          'address': '2 Main St',
+          'is_open': false,
+          'owner_id': 'owner2',
+          'location': const GeoPoint(45.002, 9.002),
+          'restaurant_types': ['on_request'],
+          'image_url': null,
+        });
+
+        when(() => mockDoc3.id).thenReturn('rest3');
+        when(() => mockDoc3.data()).thenReturn({
+          'name': 'Restaurant 3',
+          'address': '3 Main St',
+          'is_open': true,
+          'owner_id': 'owner3',
+          'location': const GeoPoint(44.999, 8.999),
+          'restaurant_types': [],
+          'image_url': 'https://example.com/img.jpg',
+        });
+
+        // Act
+        final result = await restaurantFirestore.getRestaurantsNearLocation(
+          latitude: 45.0,
+          longitude: 9.0,
+          radiusInKm: 5.0,
+        );
+
+        // Assert
+        expect(result.length, 3);
       });
     });
   });

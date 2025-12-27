@@ -14,10 +14,12 @@ class MockQuerySnapshot extends Mock implements firestore.QuerySnapshot<Map<Stri
 class MockQueryDocumentSnapshot extends Mock implements firestore.QueryDocumentSnapshot<Map<String, dynamic>> {}
 class MockWriteBatch extends Mock implements firestore.WriteBatch {}
 class MockQuery extends Mock implements firestore.Query<Map<String, dynamic>> {}
+class MockTransaction extends Mock implements firestore.Transaction {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(const firestore.GeoPoint(0, 0));
   });
 
   group('OrderFirestore Service Tests', () {
@@ -154,6 +156,538 @@ void main() {
 
         // Assert
         verify(() => mockDocRef.delete()).called(1);
+      });
+    });
+
+    group('getUserOrders', () {
+      test('should return list of non-completed orders for user', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuery3 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isNotEqualTo: 'completed'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.orderBy('pickup_date_time', descending: true))
+            .thenReturn(mockQuery3);
+        when(() => mockQuery3.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('order123');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime(2025, 12, 31)),
+          'verification_code': '1234',
+          'status': 'pending',
+          'total': 25.0,
+          'dishes': [],
+        });
+
+        // Act
+        final result = await orderFirestore.getUserOrders('user123');
+
+        // Assert
+        expect(result, isNotEmpty);
+        expect(result.length, 1);
+        expect(result[0].id, 'order123');
+        expect(result[0].status, 'pending');
+      });
+
+      test('should return empty list when no orders found', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuery3 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+
+        when(() => mockCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isNotEqualTo: 'completed'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.orderBy('pickup_date_time', descending: true))
+            .thenReturn(mockQuery3);
+        when(() => mockQuery3.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+
+        // Act
+        final result = await orderFirestore.getUserOrders('user123');
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    group('getUserCompletedOrders', () {
+      test('should return list of completed orders for user', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuery3 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isEqualTo: 'completed'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.orderBy('pickup_date_time', descending: true))
+            .thenReturn(mockQuery3);
+        when(() => mockQuery3.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('order123');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime(2025, 12, 31)),
+          'verification_code': '1234',
+          'status': 'completed',
+          'total': 25.0,
+          'dishes': [],
+        });
+
+        // Act
+        final result = await orderFirestore.getUserCompletedOrders('user123');
+
+        // Assert
+        expect(result, isNotEmpty);
+        expect(result.length, 1);
+        expect(result[0].status, 'completed');
+      });
+    });
+
+    group('getUserPaidOrders', () {
+      test('should return valid paid orders and expire old ones', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot1 = MockQueryDocumentSnapshot();
+        final mockQueryDocSnapshot2 = MockQueryDocumentSnapshot();
+        final mockDocRef1 = MockDocumentReference();
+        final mockDocRef2 = MockDocumentReference();
+
+        when(() => mockCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+
+        // Two orders: one valid (future pickup), one expired (old pickup)
+        when(() => mockQuerySnapshot.docs).thenReturn([
+          mockQueryDocSnapshot1,
+          mockQueryDocSnapshot2,
+        ]);
+
+        // Valid order with future pickup
+        when(() => mockQueryDocSnapshot1.id).thenReturn('validOrder');
+        when(() => mockQueryDocSnapshot1.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime.now().add(const Duration(hours: 2))),
+          'verification_code': '1234',
+          'status': 'paid',
+          'total': 25.0,
+          'dishes': [],
+        });
+
+        // Expired order (pickup was 25 hours ago)
+        when(() => mockQueryDocSnapshot2.id).thenReturn('expiredOrder');
+        when(() => mockQueryDocSnapshot2.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 25))),
+          'verification_code': '5678',
+          'status': 'paid',
+          'total': 30.0,
+          'dishes': [],
+        });
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockCollection.doc('expiredOrder')).thenReturn(mockDocRef2);
+        when(() => mockBatch.update(mockDocRef2, {'status': 'expired'})).thenReturn(null);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        final result = await orderFirestore.getUserPaidOrders('user123');
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].id, 'validOrder');
+        verify(() => mockBatch.update(mockDocRef2, {'status': 'expired'})).called(1);
+        verify(() => mockBatch.commit()).called(1);
+      });
+
+      test('should return empty list when no paid orders exist', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+
+        when(() => mockCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        final result = await orderFirestore.getUserPaidOrders('user123');
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    group('getRestaurantReceivedOrders', () {
+      test('should return valid paid orders for restaurant and expire old ones', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('order123');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime.now().add(const Duration(hours: 2))),
+          'verification_code': '1234',
+          'status': 'paid',
+          'total': 25.0,
+          'dishes': [],
+        });
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        final result = await orderFirestore.getRestaurantReceivedOrders('rest123');
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].id, 'order123');
+      });
+
+      test('should expire orders past 24 hours for restaurant', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+        final mockExpiredDocRef = MockDocumentReference();
+
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.id).thenReturn('expiredOrder');
+        when(() => mockQueryDocSnapshot.data()).thenReturn({
+          'user_id': 'user123',
+          'username': 'testuser',
+          'restaurant_id': 'rest123',
+          'restaurant_name': 'Test Restaurant',
+          'restaurant_address': '123 Main St',
+          'restaurant_location': const firestore.GeoPoint(45.0, 9.0),
+          'pickup_date_time': firestore.Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 30))),
+          'verification_code': '1234',
+          'status': 'paid',
+          'total': 25.0,
+          'dishes': [],
+        });
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockCollection.doc('expiredOrder')).thenReturn(mockExpiredDocRef);
+        when(() => mockBatch.update(mockExpiredDocRef, {'status': 'expired'})).thenReturn(null);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        final result = await orderFirestore.getRestaurantReceivedOrders('rest123');
+
+        // Assert
+        expect(result, isEmpty);
+        verify(() => mockBatch.update(mockExpiredDocRef, {'status': 'expired'})).called(1);
+      });
+    });
+
+    group('updateOrder', () {
+      test('should throw exception when order not found', () async {
+        // Arrange
+        final mockDocSnapshot = MockDocumentSnapshot();
+        when(() => mockCollection.doc('notFound')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(false);
+
+        // Act & Assert
+        expect(
+          () => orderFirestore.updateOrder(
+            orderId: 'notFound',
+            dishId: 'dish123',
+            newQuantity: 2,
+            dishPrice: 10.0,
+          ),
+          throwsException,
+        );
+      });
+
+      test('should throw exception when dish not found in order', () async {
+        // Arrange
+        final mockDocSnapshot = MockDocumentSnapshot();
+        when(() => mockCollection.doc('order123')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(true);
+        when(() => mockDocSnapshot['dishes']).thenReturn([
+          {'dish_id': 'otherDish', 'name': 'Other', 'quantity': 1, 'price': 5.0},
+        ]);
+
+        // Act & Assert
+        expect(
+          () => orderFirestore.updateOrder(
+            orderId: 'order123',
+            dishId: 'notFoundDish',
+            newQuantity: 2,
+            dishPrice: 10.0,
+          ),
+          throwsException,
+        );
+      });
+
+      test('should find dish and prepare for transaction when dish exists', () async {
+        // Arrange
+        final mockDocSnapshot = MockDocumentSnapshot();
+        // Use a separate instance for this test to avoid mock state leakage
+        final mockTestFirestore = MockFirebaseFirestore();
+        final mockTestCollection = MockCollectionReference();
+        final mockTestDocRef = MockDocumentReference();
+
+        when(() => mockTestFirestore.collection('orders')).thenReturn(mockTestCollection);
+        final testOrderFirestore = OrderFirestore(firestoreInstance: mockTestFirestore);
+
+        when(() => mockTestCollection.doc('order123')).thenReturn(mockTestDocRef);
+        when(() => mockTestDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
+        when(() => mockDocSnapshot.exists).thenReturn(true);
+        when(() => mockDocSnapshot['dishes']).thenReturn([
+          {'dish_id': 'dish123', 'name': 'Pizza', 'quantity': 1, 'price': 10.0},
+        ]);
+
+        // Verify the path up to transaction is reached by checking document fetch
+        await testOrderFirestore.updateOrder(
+          orderId: 'order123',
+          dishId: 'dish123',
+          newQuantity: 2,
+          dishPrice: 10.0,
+        ).catchError((_) {}); // Ignore error from unmocked transaction
+
+        // Assert - verify the document was fetched (proving we got to the transaction stage)
+        verify(() => mockTestDocRef.get()).called(1);
+      });
+    });
+
+    group('addDishToOrder', () {
+      test('should add new dish to order', () async {
+        // Arrange
+        final orderItem = OrderItem(
+          dishId: 'newDish123',
+          name: 'New Dish',
+          quantity: 1,
+          price: 15.0,
+        );
+
+        when(() => mockCollection.doc('order123')).thenReturn(mockDocRef);
+        when(() => mockDocRef.update(any())).thenAnswer((_) async {});
+
+        // Act
+        await orderFirestore.addDishToOrder(
+          orderId: 'order123',
+          orderItem: orderItem,
+        );
+
+        // Assert - verify update was called (not the exact map due to FieldValue comparison issues)
+        verify(() => mockDocRef.update(any())).called(1);
+      });
+    });
+
+    group('updateRestaurantNameInOrders', () {
+      test('should update restaurant name in all non-completed orders', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+        final mockQueryDocSnapshot = MockQueryDocumentSnapshot();
+        final mockOrderDocRef = MockDocumentReference();
+
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isNotEqualTo: 'completed'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([mockQueryDocSnapshot]);
+        when(() => mockQueryDocSnapshot.reference).thenReturn(mockOrderDocRef);
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.update(mockOrderDocRef, {'restaurant_name': 'New Name'})).thenReturn(null);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        await orderFirestore.updateRestaurantNameInOrders('rest123', 'New Name');
+
+        // Assert
+        verify(() => mockBatch.update(mockOrderDocRef, {'restaurant_name': 'New Name'})).called(1);
+        verify(() => mockBatch.commit()).called(1);
+      });
+
+      test('should handle empty result when no matching orders', () async {
+        // Arrange
+        final mockQuery1 = MockQuery();
+        final mockQuery2 = MockQuery();
+        final mockQuerySnapshot = MockQuerySnapshot();
+
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQuery1);
+        when(() => mockQuery1.where('status', isNotEqualTo: 'completed'))
+            .thenReturn(mockQuery2);
+        when(() => mockQuery2.get()).thenAnswer((_) async => mockQuerySnapshot);
+        when(() => mockQuerySnapshot.docs).thenReturn([]);
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        await orderFirestore.updateRestaurantNameInOrders('rest123', 'New Name');
+
+        // Assert
+        verify(() => mockBatch.commit()).called(1);
+      });
+    });
+
+    group('updateRestaurantAddressInOrders', () {
+      test('should update address for orders with specific statuses', () async {
+        // Arrange
+        final newLocation = const firestore.GeoPoint(46.0, 10.0);
+        final mockQueryReady = MockQuery();
+        final mockQueryPending = MockQuery();
+        final mockQueryPaid = MockQuery();
+        final mockQuery2Ready = MockQuery();
+        final mockQuery2Pending = MockQuery();
+        final mockQuery2Paid = MockQuery();
+        final mockSnapshotReady = MockQuerySnapshot();
+        final mockSnapshotPending = MockQuerySnapshot();
+        final mockSnapshotPaid = MockQuerySnapshot();
+        final mockDocSnapshotReady = MockQueryDocumentSnapshot();
+        final mockDocRefReady = MockDocumentReference();
+
+        // Setup for 'ready_for_checkout' status
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQueryReady);
+        when(() => mockQueryReady.where('status', isEqualTo: 'ready_for_checkout'))
+            .thenReturn(mockQuery2Ready);
+        when(() => mockQuery2Ready.get()).thenAnswer((_) async => mockSnapshotReady);
+        when(() => mockSnapshotReady.docs).thenReturn([mockDocSnapshotReady]);
+        when(() => mockDocSnapshotReady.reference).thenReturn(mockDocRefReady);
+
+        // Setup for 'pending' status
+        when(() => mockQueryReady.where('status', isEqualTo: 'pending'))
+            .thenReturn(mockQuery2Pending);
+        when(() => mockQuery2Pending.get()).thenAnswer((_) async => mockSnapshotPending);
+        when(() => mockSnapshotPending.docs).thenReturn([]);
+
+        // Setup for 'paid' status
+        when(() => mockQueryReady.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2Paid);
+        when(() => mockQuery2Paid.get()).thenAnswer((_) async => mockSnapshotPaid);
+        when(() => mockSnapshotPaid.docs).thenReturn([]);
+
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.update(mockDocRefReady, {
+          'restaurant_address': 'New Address',
+          'restaurant_location': newLocation,
+        })).thenReturn(null);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        await orderFirestore.updateRestaurantAddressInOrders(
+          'rest123',
+          'New Address',
+          newLocation,
+        );
+
+        // Assert
+        verify(() => mockBatch.update(mockDocRefReady, {
+          'restaurant_address': 'New Address',
+          'restaurant_location': newLocation,
+        })).called(1);
+        verify(() => mockBatch.commit()).called(1);
+      });
+
+      test('should handle empty results for all statuses', () async {
+        // Arrange
+        final newLocation = const firestore.GeoPoint(46.0, 10.0);
+        final mockQueryBase = MockQuery();
+        final mockQuery2Ready = MockQuery();
+        final mockQuery2Pending = MockQuery();
+        final mockQuery2Paid = MockQuery();
+        final mockSnapshotEmpty = MockQuerySnapshot();
+
+        when(() => mockCollection.where('restaurant_id', isEqualTo: 'rest123'))
+            .thenReturn(mockQueryBase);
+        when(() => mockQueryBase.where('status', isEqualTo: 'ready_for_checkout'))
+            .thenReturn(mockQuery2Ready);
+        when(() => mockQuery2Ready.get()).thenAnswer((_) async => mockSnapshotEmpty);
+
+        when(() => mockQueryBase.where('status', isEqualTo: 'pending'))
+            .thenReturn(mockQuery2Pending);
+        when(() => mockQuery2Pending.get()).thenAnswer((_) async => mockSnapshotEmpty);
+
+        when(() => mockQueryBase.where('status', isEqualTo: 'paid'))
+            .thenReturn(mockQuery2Paid);
+        when(() => mockQuery2Paid.get()).thenAnswer((_) async => mockSnapshotEmpty);
+
+        when(() => mockSnapshotEmpty.docs).thenReturn([]);
+        when(() => mockFirestore.batch()).thenReturn(mockBatch);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
+
+        // Act
+        await orderFirestore.updateRestaurantAddressInOrders(
+          'rest123',
+          'New Address',
+          newLocation,
+        );
+
+        // Assert
+        verify(() => mockBatch.commit()).called(1);
       });
     });
 

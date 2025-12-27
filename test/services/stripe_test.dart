@@ -1,161 +1,333 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:sous_chef/services/stripe.dart';
 
 /// Mock classes for Firebase Functions
 class MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
+
 class MockHttpsCallable extends Mock implements HttpsCallable {}
-class MockHttpsCallableResult extends Mock implements HttpsCallableResult<dynamic> {}
+
+class MockHttpsCallableResult<T> extends Mock
+    implements HttpsCallableResult<T> {}
 
 void main() {
   group('StripeService Tests', () {
-    // Note: StripeService uses FirebaseFunctions internally which is hard to mock
-    // without dependency injection. These tests focus on the expected behavior and data formats.
-    
-    group('createPaymentIntent Parameters', () {
-      test('should require amount in cents', () {
-        // Payment intent requires amount in cents (integer)
-        const euroAmount = 10.00;
-        final centAmount = (euroAmount * 100).round();
-        
-        expect(centAmount, 1000);
-        expect(centAmount, isA<int>());
-      });
+    late StripeService stripeService;
+    late MockFirebaseFunctions mockFunctions;
+    late MockHttpsCallable mockCallable;
 
-      test('should require currency code', () {
+    setUp(() {
+      mockFunctions = MockFirebaseFunctions();
+      mockCallable = MockHttpsCallable();
+      stripeService = StripeService(functions: mockFunctions);
+    });
+
+    group('createPaymentIntent', () {
+      test('should call createPaymentIntent callable with correct parameters',
+          () async {
+        // Arrange
+        const amount = 1000;
         const currency = 'eur';
-        
-        expect(currency.length, 3);
-        expect(currency, currency.toLowerCase());
-      });
-
-      test('should accept optional items list', () {
         final items = [
-          {'name': 'Pizza', 'price': 1200},
-          {'name': 'Pasta', 'price': 1000},
+          {'name': 'Pizza', 'price': 1200}
         ];
-        
-        expect(items, isA<List<Map<String, dynamic>>>());
-        expect(items.length, 2);
-      });
-    });
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
 
-    group('createRefund Parameters', () {
-      test('should require paymentIntentId', () {
-        const paymentIntentId = 'pi_1234567890';
-        
-        expect(paymentIntentId, startsWith('pi_'));
-      });
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'clientSecret': 'pi_xxx_secret_xxx',
+          'orderIds': ['order1', 'order2'],
+        });
 
-      test('should require amount in cents', () {
-        const refundAmount = 500; // 5.00 EUR
-        
-        expect(refundAmount, isA<int>());
-        expect(refundAmount, greaterThan(0));
-      });
-    });
+        // Act
+        final result = await stripeService.createPaymentIntent(
+          amount: amount,
+          currency: currency,
+          items: items,
+        );
 
-    group('Amount Validation', () {
-      test('amount should be in cents (integer)', () {
-        // Stripe requires amounts in cents
-        // 10.00 EUR = 1000 cents
-        const double euroAmount = 10.00;
-        const int centAmount = 1000;
-        
-        expect((euroAmount * 100).round(), centAmount);
+        // Assert
+        expect(result['clientSecret'], 'pi_xxx_secret_xxx');
+        expect(result['orderIds'], ['order1', 'order2']);
+        verify(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .called(1);
+        verify(() => mockCallable.call({
+              'amount': amount,
+              'currency': currency,
+              'items': items,
+            })).called(1);
       });
 
-      test('should handle decimal amounts correctly', () {
-        const double euroAmount = 12.50;
-        const int expectedCents = 1250;
-        
-        expect((euroAmount * 100).round(), expectedCents);
-      });
-
-      test('should handle small amounts', () {
-        const double euroAmount = 0.50;
-        const int expectedCents = 50;
-        
-        expect((euroAmount * 100).round(), expectedCents);
-      });
-
-      test('should handle large amounts', () {
-        const double euroAmount = 999.99;
-        const int expectedCents = 99999;
-        
-        expect((euroAmount * 100).round(), expectedCents);
-      });
-    });
-
-    group('Currency Validation', () {
-      test('should accept EUR currency', () {
-        const currency = 'eur';
-        expect(currency.toLowerCase(), 'eur');
-      });
-
-      test('should accept USD currency', () {
+      test('should use empty list when items is null', () async {
+        // Arrange
+        const amount = 500;
         const currency = 'usd';
-        expect(currency.toLowerCase(), 'usd');
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'clientSecret': 'pi_test_secret',
+          'orderIds': ['order1'],
+        });
+
+        // Act
+        final result = await stripeService.createPaymentIntent(
+          amount: amount,
+          currency: currency,
+        );
+
+        // Assert
+        expect(result['clientSecret'], 'pi_test_secret');
+        verify(() => mockCallable.call({
+              'amount': amount,
+              'currency': currency,
+              'items': [],
+            })).called(1);
       });
 
-      test('currency should be lowercase 3-letter code', () {
-        const validCurrencies = ['eur', 'usd', 'gbp', 'chf'];
-        
-        for (final currency in validCurrencies) {
-          expect(currency.length, 3);
-          expect(currency, currency.toLowerCase());
-        }
+      test('should throw exception when response data is null', () async {
+        // Arrange
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>?>();
+
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn(null);
+
+        // Act & Assert
+        expect(
+          () => stripeService.createPaymentIntent(
+            amount: 1000,
+            currency: 'eur',
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Invalid response from server'),
+          )),
+        );
+      });
+
+      test('should throw exception when clientSecret is null', () async {
+        // Arrange
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'clientSecret': null,
+          'orderIds': ['order1'],
+        });
+
+        // Act & Assert
+        expect(
+          () => stripeService.createPaymentIntent(
+            amount: 1000,
+            currency: 'eur',
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Invalid response from server'),
+          )),
+        );
+      });
+
+      test('should throw exception when orderIds is null', () async {
+        // Arrange
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'clientSecret': 'pi_xxx_secret',
+          'orderIds': null,
+        });
+
+        // Act & Assert
+        expect(
+          () => stripeService.createPaymentIntent(
+            amount: 1000,
+            currency: 'eur',
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Invalid response from server'),
+          )),
+        );
+      });
+
+      test('should handle FirebaseFunctionsException', () async {
+        // Arrange
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenThrow(
+          FirebaseFunctionsException(
+            code: 'invalid-argument',
+            message: 'Amount must be positive',
+          ),
+        );
+
+        // Act & Assert
+        expect(
+          () => stripeService.createPaymentIntent(
+            amount: -100,
+            currency: 'eur',
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Firebase Error: invalid-argument'),
+          )),
+        );
+      });
+
+      test('should handle generic exceptions', () async {
+        // Arrange
+        when(() => mockFunctions.httpsCallable('createPaymentIntent'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any()))
+            .thenThrow(Exception('Network error'));
+
+        // Act & Assert
+        expect(
+          () => stripeService.createPaymentIntent(
+            amount: 1000,
+            currency: 'eur',
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Error creating payment intent'),
+          )),
+        );
       });
     });
 
-    group('Payment Intent Response Structure', () {
-      test('response should contain clientSecret', () {
-        final expectedResponse = {
-          'clientSecret': 'pi_xxx_secret_xxx',
-          'orderIds': ['order1', 'order2'],
-        };
-        
-        expect(expectedResponse.containsKey('clientSecret'), isTrue);
-        expect(expectedResponse['clientSecret'], isNotNull);
+    group('createRefund', () {
+      test('should call createRefund callable with correct parameters',
+          () async {
+        // Arrange
+        const paymentIntentId = 'pi_1234567890';
+        const amount = 500;
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('createRefund'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'status': 'succeeded',
+          'amount': 500,
+        });
+
+        // Act
+        final result = await stripeService.createRefund(
+          paymentIntentId: paymentIntentId,
+          amount: amount,
+        );
+
+        // Assert
+        expect(result['status'], 'succeeded');
+        expect(result['amount'], 500);
+        verify(() => mockFunctions.httpsCallable('createRefund')).called(1);
+        verify(() => mockCallable.call({
+              'payment_intent_id': paymentIntentId,
+              'amount': amount,
+            })).called(1);
       });
 
-      test('response should contain orderIds', () {
-        final expectedResponse = {
-          'clientSecret': 'pi_xxx_secret_xxx',
-          'orderIds': ['order1', 'order2'],
-        };
-        
-        expect(expectedResponse.containsKey('orderIds'), isTrue);
-        expect(expectedResponse['orderIds'], isA<List>());
-      });
-    });
-
-    group('Refund Response Structure', () {
-      test('refund response should be a map', () {
-        final expectedResponse = {
+      test('should return response data from refund', () async {
+        // Arrange
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+        final expectedData = {
+          'id': 're_123',
           'status': 'succeeded',
           'amount': 1000,
+          'currency': 'eur',
         };
-        
-        expect(expectedResponse, isA<Map<String, dynamic>>());
+
+        when(() => mockFunctions.httpsCallable('createRefund'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn(expectedData);
+
+        // Act
+        final result = await stripeService.createRefund(
+          paymentIntentId: 'pi_test',
+          amount: 1000,
+        );
+
+        // Assert
+        expect(result, expectedData);
+      });
+
+      test('should handle FirebaseFunctionsException on refund', () async {
+        // Arrange
+        when(() => mockFunctions.httpsCallable('createRefund'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenThrow(
+          FirebaseFunctionsException(
+            code: 'not-found',
+            message: 'Payment intent not found',
+          ),
+        );
+
+        // Act & Assert
+        expect(
+          () => stripeService.createRefund(
+            paymentIntentId: 'pi_invalid',
+            amount: 500,
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Errore Firebase: not-found'),
+          )),
+        );
+      });
+
+      test('should handle generic exceptions on refund', () async {
+        // Arrange
+        when(() => mockFunctions.httpsCallable('createRefund'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any()))
+            .thenThrow(Exception('Connection timeout'));
+
+        // Act & Assert
+        expect(
+          () => stripeService.createRefund(
+            paymentIntentId: 'pi_test',
+            amount: 500,
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Errore nella richiesta di rimborso'),
+          )),
+        );
       });
     });
 
-    group('Error Handling', () {
-      test('should format Firebase error message', () {
-        const errorCode = 'invalid-argument';
-        const errorMessage = 'Amount must be positive';
-        final formattedMessage = 'Firebase Error: $errorCode - $errorMessage';
-        
-        expect(formattedMessage, contains(errorCode));
-        expect(formattedMessage, contains(errorMessage));
+    group('Service Initialization', () {
+      test('should initialize with injected functions instance', () {
+        final service = StripeService(functions: mockFunctions);
+        expect(service, isNotNull);
       });
 
-      test('should format general error message', () {
-        const error = 'Network error';
-        final formattedMessage = 'Error creating payment intent: $error';
-        
-        expect(formattedMessage, contains(error));
+      test('should have createPaymentIntent method', () {
+        expect(stripeService.createPaymentIntent, isNotNull);
+      });
+
+      test('should have createRefund method', () {
+        expect(stripeService.createRefund, isNotNull);
       });
     });
   });
