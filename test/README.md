@@ -13,16 +13,31 @@ test/
 │   ├── mock_services.dart       # Mock classes for all services
 │   └── mock_models.dart         # Helper functions to create mock model instances
 │
+├── models/
+│   ├── chat_test.dart           # Tests for Chat model
+│   ├── dish_test.dart           # Tests for Dish model
+│   ├── message_test.dart        # Tests for Message model
+│   ├── order_test.dart          # Tests for Order model
+│   ├── restaurant_test.dart     # Tests for Restaurant model
+│   └── user_test.dart           # Tests for User model
+│
 ├── services/
 │   ├── authentication_test.dart # Tests for Authentication service
-│   ├── dish_firestore_test.dart # Tests for DishFirestore service
-│   └── order_firestore_test.dart # Tests for OrderFirestore service (Order model)
+│   ├── firebase_storage_test.dart # Tests for Firebase Storage service
+│   ├── stripe_test.dart         # Tests for Stripe service
+│   └── database/
+│       ├── dish_firestore_test.dart # Tests for DishFirestore service
+│       ├── messages_firestore_test.dart # Tests for MessagesFirestore service
+│       ├── order_firestore_test.dart # Tests for OrderFirestore service
+│       ├── restaurant_firestore_test.dart # Tests for RestaurantFirestore service
+│       └── user_firestore_test.dart # Tests for UserFirestore service
 │
 └── providers/
     ├── auth_provider_test.dart  # Tests for AuthProvider
+    ├── chat_provider_test.dart  # Tests for ChatProvider
     ├── dish_provider_test.dart  # Tests for DishProvider
     ├── order_provider_test.dart # Tests for OrderProvider
-    ├── chat_provider_test.dart  # Tests for ChatProvider
+    ├── restaurant_provider_test.dart # Tests for RestaurantProvider
     └── stripe_provider_test.dart # Tests for StripeProvider
 ```
 
@@ -55,6 +70,9 @@ flutter test test/providers/
 # All service tests
 flutter test test/services/
 
+# All model tests
+flutter test test/models/
+
 # Specific test file
 flutter test test/providers/auth_provider_test.dart
 ```
@@ -73,6 +91,7 @@ open coverage/html/index.html
 ## 🎯 Testing Philosophy
 
 ### What We Test
+- **Models**: Serialization (toMap/fromMap), equality, property validation
 - **Services**: Data parsing, error handling, Firestore interactions
 - **Providers (State Management)**: State changes, loading states, error handling, ChangeNotifier behavior
 
@@ -111,21 +130,38 @@ final authProvider = AuthProvider(
 
 ### Provider Tests
 
-| Provider | Tests | Description |
-|----------|-------|-------------|
-| AuthProvider | 24 | Sign in, sign up, sign out, password reset, account deletion |
-| DishProvider | 25 | CRUD operations, availability updates, image handling |
-| OrderProvider | 24 | Fetch, create, update, delete orders, verification |
-| ChatProvider | 27 | Load chats, send messages, mark read, create/delete chats |
-| StripeProvider | 15 | Payment processing, refunds, error handling |
+| Provider | Description |
+|----------|-------------|
+| AuthProvider | Sign in, sign up, sign out, password reset, account deletion |
+| ChatProvider | Load chats, send messages, mark read, create/delete chats |
+| DishProvider | CRUD operations, availability updates, image handling |
+| OrderProvider | Fetch, create, update, delete orders, verification |
+| RestaurantProvider | Restaurant management operations |
+| StripeProvider | Payment processing, refunds, error handling |
 
 ### Service Tests
 
-| Service | Tests | Description |
-|---------|-------|-------------|
-| Authentication | 26 | Firebase Auth operations, Google Sign-in |
-| DishFirestore | 13 | Firestore CRUD for dishes |
-| OrderFirestore | 22 | Order model tests |
+| Service | Description |
+|---------|-------------|
+| Authentication | Firebase Auth operations, Google Sign-in |
+| FirebaseStorage | Image upload and retrieval |
+| StripeService | Stripe payment interactions |
+| DishFirestore | Firestore CRUD for dishes |
+| MessagesFirestore | Chat message operations |
+| OrderFirestore | Order model tests |
+| RestaurantFirestore | Restaurant database operations |
+| UserFirestore | User profile database operations |
+
+### Model Tests
+
+| Model | Description |
+|-------|-------------|
+| Chat | Chat model serialization, equality, properties |
+| Dish | Dish model serialization, equality, properties |
+| Message | Message model serialization, equality, properties |
+| Order | Order model serialization, equality, properties |
+| Restaurant | Restaurant model serialization, equality, properties |
+| User | User model serialization, equality, properties |
 
 ## 📝 Test Structure Example
 

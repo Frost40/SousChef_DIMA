@@ -7,12 +7,19 @@ import '../../mocks/mock_models.dart';
 
 /// Mock Firestore classes
 class MockFirebaseFirestore extends Mock implements firestore.FirebaseFirestore {}
+// ignore: subtype_of_sealed_class
 class MockCollectionReference extends Mock implements firestore.CollectionReference<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockDocumentReference extends Mock implements firestore.DocumentReference<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockDocumentSnapshot extends Mock implements firestore.DocumentSnapshot<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockQuerySnapshot extends Mock implements firestore.QuerySnapshot<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockQueryDocumentSnapshot extends Mock implements firestore.QueryDocumentSnapshot<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockWriteBatch extends Mock implements firestore.WriteBatch {}
+// ignore: subtype_of_sealed_class
 class MockQuery extends Mock implements firestore.Query<Map<String, dynamic>> {}
 class MockTransaction extends Mock implements firestore.Transaction {}
 

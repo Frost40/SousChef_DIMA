@@ -18,8 +18,11 @@ class MockGoogleSignInAuthentication extends Mock implements GoogleSignInAuthent
 
 /// Mock Firestore classes
 class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
+// ignore: subtype_of_sealed_class
 class MockCollectionReference extends Mock implements CollectionReference<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockDocumentReference extends Mock implements DocumentReference<Map<String, dynamic>> {}
+// ignore: subtype_of_sealed_class
 class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
 
 /// Fake class for AuthCredential
