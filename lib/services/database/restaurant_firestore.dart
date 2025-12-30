@@ -5,9 +5,17 @@ import 'package:flutter/material.dart';
 import '../../models/restaurant.dart';
 
 class RestaurantFirestore {
+  final FirebaseFirestore _firestore;
+  
   // Restaurants collection reference
-  final CollectionReference _restaurantsTable = FirebaseFirestore.instance
-      .collection('restaurants');
+  late final CollectionReference _restaurantsTable;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real Firestore instance
+  RestaurantFirestore({FirebaseFirestore? firestoreInstance})
+      : _firestore = firestoreInstance ?? FirebaseFirestore.instance {
+    _restaurantsTable = _firestore.collection('restaurants');
+  }
 
   /// Function to add a restaurant to Firestore
   /// This function creates a new restaurant document in the Firestore

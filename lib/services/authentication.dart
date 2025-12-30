@@ -5,9 +5,19 @@ import 'package:sous_chef/models/user.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class Authentication {
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final firebase_auth.FirebaseAuth _firebaseAuth;
+  final FirebaseFirestore _firestore;
+  final GoogleSignIn _googleSignIn;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  Authentication({
+    firebase_auth.FirebaseAuth? firebaseAuth,
+    FirebaseFirestore? firestore,
+    GoogleSignIn? googleSignIn,
+  })  : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   // Get currently authenticated Firebase user
   firebase_auth.User? get currentUser => _firebaseAuth.currentUser;

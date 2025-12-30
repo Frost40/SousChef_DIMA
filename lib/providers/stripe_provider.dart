@@ -4,9 +4,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/stripe.dart';
 
 class StripeProvider with ChangeNotifier {
-  final StripeService _stripeService = StripeService();
+  final StripeService _stripeService;
   bool _isLoading = false;
   String? _errorMessage;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instance
+  StripeProvider({
+    StripeService? stripeService,
+  }) : _stripeService = stripeService ?? StripeService();
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;

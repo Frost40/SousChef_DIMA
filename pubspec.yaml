@@ -64,6 +64,10 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.13.1
+  
+  # Testing dependencies
+  mocktail: ^1.0.0              # Modern mocking library for Dart
+  fake_cloud_firestore: ^3.1.0  # Fake Firestore for testing (compatible with cloud_firestore ^5.x)
 
 flutter_launcher_icons:
   android: true

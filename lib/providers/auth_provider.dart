@@ -12,9 +12,9 @@ import '../services/database/restaurant_firestore.dart';
 /// Implements ChangeNotifier to notify dependent widgets when authentication state changes.
 class AuthProvider with ChangeNotifier {
   // Authentication service instance used to interact with Firebase
-  final Authentication _auth = Authentication();
+  final Authentication _auth;
 
-  final UserFirestore _userFirestore = UserFirestore();
+  final UserFirestore _userFirestore;
 
   // Current authenticated user
   User? _user;
@@ -61,8 +61,13 @@ class AuthProvider with ChangeNotifier {
 
   StreamSubscription<firebase_auth.User?>? _authSubscription;
 
-  // Modifica il costruttore per inizializzare automaticamente
-  AuthProvider() {
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  AuthProvider({
+    Authentication? auth,
+    UserFirestore? userFirestore,
+  })  : _auth = auth ?? Authentication(),
+        _userFirestore = userFirestore ?? UserFirestore() {
     _initializeCurrentUser();
 
     // Sottoscrizione ai cambiamenti di autenticazione
