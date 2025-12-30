@@ -2,30 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>This app wants to access your gallary to select images for the dishes</string>
-    <key>NSCameraUsageDescription</key>
-    <string>This app wants to access your camera to take picture of your dishes</string>
-
-	<key>GIDClientID</key>
-	<!-- Copied from GoogleService-Info.plist key CLIENT_ID -->
-	<string>22755112532-ut73aoppho16qok218bbtj9l3ui47vk3.apps.googleusercontent.com</string>
-	<!-- Google Sign-in Section -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<!-- TODO Replace this value: -->
-				<!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
-				<string>com.googleusercontent.apps.22755112532-ut73aoppho16qok218bbtj9l3ui47vk3</string>
-				<string>souschef-stripe</string> <!-- Or any unique name, e.g., your bundle ID -->
-			</array>
-		</dict>
-	</array>
-	<!-- End of the Google Sign-in Section -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -44,16 +22,36 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.22755112532-ut73aoppho16qok218bbtj9l3ui47vk3</string>
+				<string>souschef-stripe</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>22755112532-ut73aoppho16qok218bbtj9l3ui47vk3.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app wants to access your camera to take picture of your dishes</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Questa app ha bisogno di accedere alla tua posizione per mostrarti i ristoranti vicini</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app wants to access your gallary to select images for the dishes</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Questa app ha bisogno di accedere alla tua posizione per mostrarti i ristoranti vicini</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -67,9 +65,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 </dict>
 </plist>
