@@ -10,6 +10,7 @@ class ChatScreen extends StatefulWidget {
   final String otherUserName;
   final String? otherUserImageUrl;
   final String? otherUserId;
+  final bool isEmbedded; // True when embedded in tablet horizontal layout
 
   const ChatScreen({
     super.key,
@@ -17,6 +18,7 @@ class ChatScreen extends StatefulWidget {
     required this.otherUserName,
     this.otherUserImageUrl,
     this.otherUserId,
+    this.isEmbedded = false,
   });
 
   @override
@@ -164,41 +166,47 @@ class _ChatScreenState extends State<ChatScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage:
-                  widget.otherUserImageUrl != null &&
-                          widget.otherUserImageUrl!.isNotEmpty
-                      ? NetworkImage(widget.otherUserImageUrl!)
-                      : null,
-              child:
-                  widget.otherUserImageUrl == null ||
-                          widget.otherUserImageUrl!.isEmpty
-                      ? Text(
-                        _getInitials(widget.otherUserName),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      )
-                      : null,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              widget.otherUserName,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+      appBar:
+          widget.isEmbedded
+              ? null
+              : AppBar(
+                centerTitle: true,
+                title: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage:
+                          widget.otherUserImageUrl != null &&
+                                  widget.otherUserImageUrl!.isNotEmpty
+                              ? NetworkImage(widget.otherUserImageUrl!)
+                              : null,
+                      child:
+                          widget.otherUserImageUrl == null ||
+                                  widget.otherUserImageUrl!.isEmpty
+                              ? Text(
+                                _getInitials(widget.otherUserName),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                ),
+                              )
+                              : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      widget.otherUserName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
       body: Column(
         children: [
           // Messages list

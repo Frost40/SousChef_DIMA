@@ -4,6 +4,10 @@ import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/providers/chat_provider.dart';
 import 'package:sous_chef/screens/chat_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:sous_chef/services/orientation_manager.dart';
+
+// Enum per identificare i tipi di layout possibili
+enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class AllChatsScreen extends StatefulWidget {
   const AllChatsScreen({super.key});
@@ -15,6 +19,26 @@ class AllChatsScreen extends StatefulWidget {
 class _AllChatsScreenState extends State<AllChatsScreen> {
   late ChatProvider _chatProvider;
   late AuthProvider _authProvider;
+  String? _selectedChatId;
+  String? _selectedOtherUserName;
+  String? _selectedOtherUserImageUrl;
+  String? _selectedOtherUserId;
+
+  // Metodo per determinare il tipo di layout basato sulle dimensioni dello schermo
+  LayoutType _getLayoutType(BuildContext context) {
+    final orientationManager = OrientationManager();
+    final bool isTablet = orientationManager.isTablet(context);
+    final bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (!isTablet) {
+      return LayoutType.mobile;
+    } else if (isLandscape) {
+      return LayoutType.tabletHorizontal;
+    } else {
+      return LayoutType.tabletVertical;
+    }
+  }
 
   @override
   void initState() {
@@ -89,6 +113,14 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final layoutType = _getLayoutType(context);
+
+    // Layout tablet orizzontale: split view
+    if (layoutType == LayoutType.tabletHorizontal) {
+      return _buildTabletHorizontalLayout();
+    }
+
+    // Layout normale per mobile e tablet verticale
     return Scaffold(
       appBar: AppBar(title: const Text('Chat'), centerTitle: true),
       body: Consumer<ChatProvider>(
@@ -223,21 +255,37 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                       ],
                     ),
                     onTap: () {
-                      debugPrint('Navigating to chat: ${chat.id}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => ChatScreen(
-                                chatId: chat.id,
-                                otherUserName:
-                                    displayName.isNotEmpty
-                                        ? displayName
-                                        : 'Utente Sconosciuto',
-                                otherUserImageUrl: restaurantImageUrl,
-                              ),
-                        ),
-                      );
+                      final layoutType = _getLayoutType(context);
+                      if (layoutType == LayoutType.tabletHorizontal) {
+                        // In tablet horizontal, update selected chat
+                        setState(() {
+                          _selectedChatId = chat.id;
+                          _selectedOtherUserName =
+                              displayName.isNotEmpty
+                                  ? displayName
+                                  : 'Utente Sconosciuto';
+                          _selectedOtherUserImageUrl = restaurantImageUrl;
+                          _selectedOtherUserId = otherUser?.id;
+                        });
+                      } else {
+                        // In mobile/tablet vertical, navigate to chat screen
+                        debugPrint('Navigating to chat: ${chat.id}');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ChatScreen(
+                                  chatId: chat.id,
+                                  otherUserName:
+                                      displayName.isNotEmpty
+                                          ? displayName
+                                          : 'Utente Sconosciuto',
+                                  otherUserImageUrl: restaurantImageUrl,
+                                  otherUserId: otherUser?.id,
+                                ),
+                          ),
+                        );
+                      }
                     },
                   ),
                   if (index < chatProvider.chats.length - 1)
@@ -253,6 +301,236 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildTabletHorizontalLayout() {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Chat'), centerTitle: true),
+      body: Row(
+        children: [
+          // Left side: Chat list (1/3)
+          SizedBox(
+            width: MediaQuery.of(context).size.width / 3,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: _buildChatList(),
+            ),
+          ),
+          // Right side: Selected chat or placeholder (2/3)
+          Expanded(
+            child:
+                _selectedChatId != null
+                    ? ChatScreen(
+                      chatId: _selectedChatId!,
+                      otherUserName: _selectedOtherUserName ?? 'Unknown User',
+                      otherUserImageUrl: _selectedOtherUserImageUrl,
+                      otherUserId: _selectedOtherUserId,
+                      isEmbedded: true,
+                    )
+                    : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            size: 64,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Click on a chat to view messages',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatList() {
+    return Consumer<ChatProvider>(
+      builder: (context, chatProvider, child) {
+        if (chatProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (chatProvider.errorMessage != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  chatProvider.errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => chatProvider.loadUserChats(),
+                  child: const Text('Riprova'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (chatProvider.chats.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No chats available',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: chatProvider.chats.length,
+          itemBuilder: (BuildContext context, int index) {
+            final chatInfo = chatProvider.chats[index];
+            final otherUser = chatInfo.otherUser;
+            final chat = chatInfo.chat;
+            final unreadCount = chatInfo.unreadCount;
+            final restaurantImageUrl = chatInfo.restaurantImageUrl;
+
+            final displayName =
+                otherUser?.username ??
+                '${otherUser?.name ?? ''} ${otherUser?.surname ?? ''}'.trim();
+
+            final isSelected = _selectedChatId == chat.id;
+
+            return Column(
+              children: [
+                Container(
+                  color:
+                      isSelected
+                          ? Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                          : null,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 8.0,
+                      horizontal: 16.0,
+                    ),
+                    leading: CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage:
+                          restaurantImageUrl != null &&
+                                  restaurantImageUrl.isNotEmpty
+                              ? NetworkImage(restaurantImageUrl)
+                              : null,
+                      child:
+                          restaurantImageUrl == null ||
+                                  restaurantImageUrl.isEmpty
+                              ? Text(
+                                getInitials(displayName),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              )
+                              : null,
+                    ),
+                    title: Text(
+                      displayName.isNotEmpty
+                          ? displayName
+                          : 'Utente Sconosciuto',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      chat.lastMessage ?? 'No messages',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          formatTime(chat.lastMessageTime),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                unreadCount > 0
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey,
+                          ),
+                        ),
+                        if (unreadCount > 0) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _selectedChatId = chat.id;
+                        _selectedOtherUserName =
+                            displayName.isNotEmpty
+                                ? displayName
+                                : 'Utente Sconosciuto';
+                        _selectedOtherUserImageUrl = restaurantImageUrl;
+                        _selectedOtherUserId = otherUser?.id;
+                      });
+                    },
+                  ),
+                ),
+                if (index < chatProvider.chats.length - 1)
+                  const Divider(
+                    height: 1,
+                    thickness: 0.2,
+                    indent: 88,
+                    endIndent: 16,
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

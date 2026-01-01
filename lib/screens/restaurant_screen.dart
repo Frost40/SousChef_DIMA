@@ -514,14 +514,32 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
       child: Scaffold(
-        appBar:
-            widget.showBackButton
-                ? AppBar(
-                  title: Text(restaurant.name),
-                  centerTitle: true,
-                  automaticallyImplyLeading: true,
-                )
-                : null,
+        appBar: AppBar(
+          title: Text(restaurant.name),
+          centerTitle: true,
+          automaticallyImplyLeading: widget.showBackButton,
+          actions:
+              isOwner
+                  ? const []
+                  : [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.mail_rounded),
+                        onPressed:
+                            () => _openChat(
+                              context,
+                              restaurant.ownerId,
+                              restaurant.name,
+                            ),
+                      ),
+                    ),
+                    FavoriteIconButton(
+                      restaurantId: restaurant.id,
+                      restaurantName: restaurant.name,
+                    ),
+                  ],
+        ),
         body: Row(
           children: [
             // Pannello laterale sinistro (1/3 dello schermo) con info ristorante e nome
@@ -538,54 +556,6 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     mainAxisAlignment:
                         MainAxisAlignment.center, // Centrato verticalmente
                     children: [
-                      // Header con nome ristorante
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16.0,
-                          horizontal: 8.0,
-                        ),
-                        child:
-                            isOwner
-                                ? InkWell(
-                                  onTap:
-                                      () => _showEditNameDialog(
-                                        context,
-                                        restaurant.name,
-                                      ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          restaurant.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(color: Colors.white),
-                                          textAlign: TextAlign.center,
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Icon(
-                                        Icons.edit,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ],
-                                  ),
-                                )
-                                : Text(
-                                  restaurant.name,
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(color: Colors.white),
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                ),
-                      ),
-
                       // Informazioni ristorante
                       RestaurantInfo(
                         restaurantImageUrl: restaurant.imageUrl ?? '',

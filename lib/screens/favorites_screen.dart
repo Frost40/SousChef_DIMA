@@ -4,6 +4,10 @@ import 'package:sous_chef/widgets/restaurant_list_tile.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
+import 'package:sous_chef/services/orientation_manager.dart';
+
+// Enum per identificare i tipi di layout possibili
+enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -17,6 +21,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   bool _isLoading = false;
   List<String> _lastFavoriteIds = [];
   bool _isInitialized = false;
+
+  // Metodo per determinare il tipo di layout basato sulle dimensioni dello schermo
+  LayoutType _getLayoutType(BuildContext context) {
+    final orientationManager = OrientationManager();
+    final bool isTablet = orientationManager.isTablet(context);
+    final bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (!isTablet) {
+      return LayoutType.mobile;
+    } else if (isLandscape) {
+      return LayoutType.tabletHorizontal;
+    } else {
+      return LayoutType.tabletVertical;
+    }
+  }
 
   @override
   void initState() {
@@ -102,6 +122,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final restaurantProvider = Provider.of<RestaurantProvider>(context);
+    final layoutType = _getLayoutType(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -122,6 +143,41 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Text("No favorite yet!", style: TextStyle(fontSize: 25)),
             );
           } else {
+            // Per tablet orizzontale: mostra 2 colonne
+            if (layoutType == LayoutType.tabletHorizontal) {
+              // Raggruppa i ristoranti in coppie
+              final List<List<Restaurant>> pairedRestaurants = [];
+              for (var i = 0; i < _favouriteRestaurants.length; i += 2) {
+                if (i + 1 < _favouriteRestaurants.length) {
+                  pairedRestaurants.add([
+                    _favouriteRestaurants[i],
+                    _favouriteRestaurants[i + 1],
+                  ]);
+                } else {
+                  pairedRestaurants.add([_favouriteRestaurants[i]]);
+                }
+              }
+
+              return ListView.builder(
+                itemCount: pairedRestaurants.length,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                itemBuilder: (context, index) {
+                  final pair = pairedRestaurants[index];
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: RestaurantListTile(restaurant: pair[0])),
+                      if (pair.length > 1)
+                        Expanded(child: RestaurantListTile(restaurant: pair[1]))
+                      else
+                        const Expanded(child: SizedBox()), // Placeholder vuoto
+                    ],
+                  );
+                },
+              );
+            }
+
+            // Layout normale per mobile e tablet verticale
             return ListView.builder(
               padding: const EdgeInsets.only(top: 8, bottom: 16),
               itemCount: _favouriteRestaurants.length,
