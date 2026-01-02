@@ -8,6 +8,9 @@ import '../providers/chat_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/personalized_button.dart';
+import '../services/orientation_manager.dart';
+
+enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -42,6 +45,17 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       _usernameModified ||
       _phoneNumberModified ||
       _emailModified;
+
+  LayoutType _getLayoutType(BuildContext context) {
+    final orientationManager = OrientationManager();
+    final isTablet = orientationManager.isTablet(context);
+    if (!isTablet) return LayoutType.mobile;
+
+    final orientation = MediaQuery.of(context).orientation;
+    return orientation == Orientation.portrait
+        ? LayoutType.tabletVertical
+        : LayoutType.tabletHorizontal;
+  }
 
   @override
   void initState() {
@@ -87,6 +101,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final userProvider = Provider.of<UserProvider>(context);
     final userData = userProvider.userData;
     var colorTheme = Theme.of(context).colorScheme;
+    final layoutType = _getLayoutType(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -119,284 +134,617 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 ),
               )
               : SafeArea(
-                child: ListView(
-                  children: [
-                    AccountSettingField(
-                      fieldName: "Name",
-                      initialValue: userData.name ?? "",
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _name = newValue;
-                          _nameModified = isModified;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
+                child:
+                    layoutType == LayoutType.tabletHorizontal
+                        ? Align(
+                          alignment: Alignment.topCenter,
+                          child: SizedBox(
+                            width: 900,
+                            child: ListView(
+                              children: [
+                                AccountSettingField(
+                                  fieldName: "Name",
+                                  initialValue: userData.name ?? "",
+                                  onValueChanged: (newValue, isModified) {
+                                    setState(() {
+                                      _name = newValue;
+                                      _nameModified = isModified;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 20),
 
-                    AccountSettingField(
-                      fieldName: "Surname",
-                      initialValue: userData.surname ?? "",
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _pageError = null;
-                          _surname = newValue;
-                          _surnameModified = isModified;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 20),
+                                AccountSettingField(
+                                  fieldName: "Surname",
+                                  initialValue: userData.surname ?? "",
+                                  onValueChanged: (newValue, isModified) {
+                                    setState(() {
+                                      _pageError = null;
+                                      _surname = newValue;
+                                      _surnameModified = isModified;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 20),
 
-                    AccountSettingField(
-                      fieldName: "Username",
-                      initialValue: userData.username ?? "",
-                      asyncValidator: _validateUsername,
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _username = newValue;
-                          _usernameModified = isModified;
-                        });
-                      },
-                      onTextChanged: _clearPageError,
-                      onValidationError: (error) {
-                        if (error != null) {
-                          setState(() {
-                            _pageError = error;
-                            _hasUsernameError = true;
-                          });
-                        } else {
-                          setState(() {
-                            _hasUsernameError = false;
-                          });
-                          _clearPageError();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
+                                AccountSettingField(
+                                  fieldName: "Username",
+                                  initialValue: userData.username ?? "",
+                                  asyncValidator: _validateUsername,
+                                  onValueChanged: (newValue, isModified) {
+                                    setState(() {
+                                      _username = newValue;
+                                      _usernameModified = isModified;
+                                    });
+                                  },
+                                  onTextChanged: _clearPageError,
+                                  onValidationError: (error) {
+                                    if (error != null) {
+                                      setState(() {
+                                        _pageError = error;
+                                        _hasUsernameError = true;
+                                      });
+                                    } else {
+                                      setState(() {
+                                        _hasUsernameError = false;
+                                      });
+                                      _clearPageError();
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 20),
 
-                    AccountSettingField(
-                      fieldName: "Phone Number",
-                      initialValue: userData.phone ?? "",
-                      asyncValidator: _validatePhoneNumber,
-                      onValueChanged: (newValue, isModified) {
-                        setState(() {
-                          _phoneNumber = newValue;
-                          _phoneNumberModified = isModified;
-                        });
-                      },
-                      onTextChanged: _clearPageError,
-                      onValidationError: (error) {
-                        if (error != null) {
-                          setState(() {
-                            _pageError = error;
-                            _hasPhoneNumberError = true;
-                          });
-                        } else {
-                          _hasPhoneNumberError = false;
-                          _clearPageError();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 40),
+                                AccountSettingField(
+                                  fieldName: "Phone Number",
+                                  initialValue: userData.phone ?? "",
+                                  asyncValidator: _validatePhoneNumber,
+                                  onValueChanged: (newValue, isModified) {
+                                    setState(() {
+                                      _phoneNumber = newValue;
+                                      _phoneNumberModified = isModified;
+                                    });
+                                  },
+                                  onTextChanged: _clearPageError,
+                                  onValidationError: (error) {
+                                    if (error != null) {
+                                      setState(() {
+                                        _pageError = error;
+                                        _hasPhoneNumberError = true;
+                                      });
+                                    } else {
+                                      _hasPhoneNumberError = false;
+                                      _clearPageError();
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 40),
 
-                    // Email section with info tooltip
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                          child: Text(
-                            "Email Settings",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: colorTheme.onSurface,
+                                // Email section with info tooltip
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 25.0,
+                                      ),
+                                      child: Text(
+                                        "Email Settings",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: colorTheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 25.0,
+                                      ),
+                                      child: Divider(
+                                        color: colorTheme.onSurface,
+                                        thickness: 0.5,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+                                    AccountSettingField(
+                                      fieldName: "Email",
+                                      initialValue: userData.email,
+                                      asyncValidator: _validateEmail,
+                                      onValueChanged: (newValue, isModified) {
+                                        setState(() {
+                                          _email = newValue;
+                                          _emailModified = isModified;
+                                        });
+                                      },
+                                      onTextChanged: _clearPageError,
+                                      onValidationError: (error) {
+                                        if (error != null) {
+                                          setState(() {
+                                            _pageError = error;
+                                            _hasEmailError = true;
+                                          });
+                                        } else {
+                                          _hasEmailError = false;
+                                          _clearPageError();
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 25.0,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline,
+                                            color: colorTheme.primary,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              "Changing your email will require you to log in again to apply the changes.",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    colorTheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                if (_pageError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 10.0),
+                                    child: Center(
+                                      child: Text(
+                                        _pageError!,
+                                        style: TextStyle(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.error,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 40),
+
+                                AnimatedButton(
+                                  onTap: () async {
+                                    // Show confirmation dialog
+                                    final bool confirmDelete =
+                                        await CustomAlertDialog.showConfirmationDialog(
+                                          context: context,
+                                          title: "Delete Account",
+                                          message:
+                                              "Are you sure you want to delete your account? This action cannot be undone.",
+                                          confirmText: "Delete",
+                                          cancelText: "Cancel",
+                                          icon: Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: colorTheme.primary,
+                                          ),
+                                        );
+
+                                    if (confirmDelete && context.mounted) {
+                                      try {
+                                        final userProvider =
+                                            Provider.of<UserProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        final authProvider =
+                                            Provider.of<AuthProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+
+                                        debugPrint(
+                                          "Starting account deletion process...",
+                                        );
+
+                                        if (!await authProvider
+                                            .hasRecentLogin()) {
+                                          debugPrint("Not recently logged in");
+                                          throw ("For security reasons, please log in again to delete your account.");
+                                        }
+
+                                        // Step 1: Delete all user data from Firestore
+                                        debugPrint(
+                                          "Step 1: Deleting user data from Firestore...",
+                                        );
+                                        await userProvider.deleteUserData();
+                                        if (userProvider.errorMessage != null) {
+                                          debugPrint(
+                                            "Error in Step 1: ${userProvider.errorMessage}",
+                                          );
+                                          throw Exception(
+                                            userProvider.errorMessage,
+                                          );
+                                        }
+                                        debugPrint(
+                                          "Step 1 completed successfully",
+                                        );
+
+                                        // Step 2: Delete user account from Firebase Auth
+                                        debugPrint(
+                                          "Step 2: Deleting user account from Firebase Auth...",
+                                        );
+                                        await authProvider.deleteUserAccount();
+                                        if (authProvider.errorMessage != null) {
+                                          debugPrint(
+                                            "Error in Step 2: ${authProvider.errorMessage}",
+                                          );
+                                          throw Exception(
+                                            authProvider.errorMessage,
+                                          );
+                                        }
+                                        debugPrint(
+                                          "Step 2 completed successfully",
+                                        );
+
+                                        // Step 3: Sign out the user and clear chat data
+                                        debugPrint(
+                                          "Step 3: Signing out user...",
+                                        );
+                                        final chatProvider =
+                                            Provider.of<ChatProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        await authProvider.signOut(
+                                          onSignOut:
+                                              () =>
+                                                  chatProvider.clearAllChats(),
+                                        );
+                                        debugPrint(
+                                          "Account deletion completed successfully",
+                                        );
+
+                                        // Step 4: Navigate to login screen
+                                        _navigateToLogin();
+                                      } catch (e) {
+                                        debugPrint(
+                                          "Account deletion failed with error: $e",
+                                        );
+                                        // Show specific error message
+                                        if (context.mounted) {
+                                          CustomAlertDialog.showInfoDialog(
+                                            context: context,
+                                            title: "Account Deletion Failed",
+                                            message: e.toString(),
+                                            icon: Icon(
+                                              Icons.error_outline,
+                                              color: colorTheme.error,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                  child: PersonalizedButton(
+                                    text: "Delete Account",
+                                    onPressed: null,
+                                    centralWidget:
+                                        authProvider.isLoading ||
+                                                userProvider.isLoading
+                                            ? LoadingAnimationWidget.staggeredDotsWave(
+                                              color: colorTheme.onPrimary,
+                                              size: 30,
+                                            )
+                                            : null,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                        )
+                        : ListView(
+                          children: [
+                            AccountSettingField(
+                              fieldName: "Name",
+                              initialValue: userData.name ?? "",
+                              onValueChanged: (newValue, isModified) {
+                                setState(() {
+                                  _name = newValue;
+                                  _nameModified = isModified;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 20),
 
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                          child: Divider(
-                            color: colorTheme.onSurface,
-                            thickness: 0.5,
-                          ),
-                        ),
+                            AccountSettingField(
+                              fieldName: "Surname",
+                              initialValue: userData.surname ?? "",
+                              onValueChanged: (newValue, isModified) {
+                                setState(() {
+                                  _pageError = null;
+                                  _surname = newValue;
+                                  _surnameModified = isModified;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 20),
 
-                        const SizedBox(height: 10),
-                        AccountSettingField(
-                          fieldName: "Email",
-                          initialValue: userData.email,
-                          asyncValidator: _validateEmail,
-                          onValueChanged: (newValue, isModified) {
-                            setState(() {
-                              _email = newValue;
-                              _emailModified = isModified;
-                            });
-                          },
-                          onTextChanged: _clearPageError,
-                          onValidationError: (error) {
-                            if (error != null) {
-                              setState(() {
-                                _pageError = error;
-                                _hasEmailError = true;
-                              });
-                            } else {
-                              _hasEmailError = false;
-                              _clearPageError();
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: colorTheme.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "Changing your email will require you to log in again to apply the changes.",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: colorTheme.onSurfaceVariant,
+                            AccountSettingField(
+                              fieldName: "Username",
+                              initialValue: userData.username ?? "",
+                              asyncValidator: _validateUsername,
+                              onValueChanged: (newValue, isModified) {
+                                setState(() {
+                                  _username = newValue;
+                                  _usernameModified = isModified;
+                                });
+                              },
+                              onTextChanged: _clearPageError,
+                              onValidationError: (error) {
+                                if (error != null) {
+                                  setState(() {
+                                    _pageError = error;
+                                    _hasUsernameError = true;
+                                  });
+                                } else {
+                                  setState(() {
+                                    _hasUsernameError = false;
+                                  });
+                                  _clearPageError();
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            AccountSettingField(
+                              fieldName: "Phone Number",
+                              initialValue: userData.phone ?? "",
+                              asyncValidator: _validatePhoneNumber,
+                              onValueChanged: (newValue, isModified) {
+                                setState(() {
+                                  _phoneNumber = newValue;
+                                  _phoneNumberModified = isModified;
+                                });
+                              },
+                              onTextChanged: _clearPageError,
+                              onValidationError: (error) {
+                                if (error != null) {
+                                  setState(() {
+                                    _pageError = error;
+                                    _hasPhoneNumberError = true;
+                                  });
+                                } else {
+                                  _hasPhoneNumberError = false;
+                                  _clearPageError();
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 40),
+
+                            // Email section with info tooltip
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 25.0,
+                                  ),
+                                  child: Text(
+                                    "Email Settings",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: colorTheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 25.0,
+                                  ),
+                                  child: Divider(
+                                    color: colorTheme.onSurface,
+                                    thickness: 0.5,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 10),
+                                AccountSettingField(
+                                  fieldName: "Email",
+                                  initialValue: userData.email,
+                                  asyncValidator: _validateEmail,
+                                  onValueChanged: (newValue, isModified) {
+                                    setState(() {
+                                      _email = newValue;
+                                      _emailModified = isModified;
+                                    });
+                                  },
+                                  onTextChanged: _clearPageError,
+                                  onValidationError: (error) {
+                                    if (error != null) {
+                                      setState(() {
+                                        _pageError = error;
+                                        _hasEmailError = true;
+                                      });
+                                    } else {
+                                      _hasEmailError = false;
+                                      _clearPageError();
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 25.0,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: colorTheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          "Changing your email will require you to log in again to apply the changes.",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: colorTheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            if (_pageError != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10.0),
+                                child: Center(
+                                  child: Text(
+                                    _pageError!,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                            const SizedBox(height: 40),
 
-                    const SizedBox(height: 20),
+                            AnimatedButton(
+                              onTap: () async {
+                                // Show confirmation dialog
+                                final bool confirmDelete =
+                                    await CustomAlertDialog.showConfirmationDialog(
+                                      context: context,
+                                      title: "Delete Account",
+                                      message:
+                                          "Are you sure you want to delete your account? This action cannot be undone.",
+                                      confirmText: "Delete",
+                                      cancelText: "Cancel",
+                                      icon: Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: colorTheme.primary,
+                                      ),
+                                    );
 
-                    if (_pageError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10.0),
-                        child: Center(
-                          child: Text(
-                            _pageError!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 40),
+                                if (confirmDelete && context.mounted) {
+                                  try {
+                                    final userProvider =
+                                        Provider.of<UserProvider>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    final authProvider =
+                                        Provider.of<AuthProvider>(
+                                          context,
+                                          listen: false,
+                                        );
 
-                    AnimatedButton(
-                      onTap: () async {
-                        // Show confirmation dialog
-                        final bool confirmDelete =
-                            await CustomAlertDialog.showConfirmationDialog(
-                              context: context,
-                              title: "Delete Account",
-                              message:
-                                  "Are you sure you want to delete your account? This action cannot be undone.",
-                              confirmText: "Delete",
-                              cancelText: "Cancel",
-                              icon: Icon(
-                                Icons.warning_amber_rounded,
-                                color: colorTheme.primary,
+                                    debugPrint(
+                                      "Starting account deletion process...",
+                                    );
+
+                                    if (!await authProvider.hasRecentLogin()) {
+                                      debugPrint("Not recently logged in");
+                                      throw ("For security reasons, please log in again to delete your account.");
+                                    }
+
+                                    // Step 1: Delete all user data from Firestore
+                                    debugPrint(
+                                      "Step 1: Deleting user data from Firestore...",
+                                    );
+                                    await userProvider.deleteUserData();
+                                    if (userProvider.errorMessage != null) {
+                                      debugPrint(
+                                        "Error in Step 1: ${userProvider.errorMessage}",
+                                      );
+                                      throw Exception(
+                                        userProvider.errorMessage,
+                                      );
+                                    }
+                                    debugPrint("Step 1 completed successfully");
+
+                                    // Step 2: Delete user account from Firebase Auth
+                                    debugPrint(
+                                      "Step 2: Deleting user account from Firebase Auth...",
+                                    );
+                                    await authProvider.deleteUserAccount();
+                                    if (authProvider.errorMessage != null) {
+                                      debugPrint(
+                                        "Error in Step 2: ${authProvider.errorMessage}",
+                                      );
+                                      throw Exception(
+                                        authProvider.errorMessage,
+                                      );
+                                    }
+                                    debugPrint("Step 2 completed successfully");
+
+                                    // Step 3: Sign out the user and clear chat data
+                                    debugPrint("Step 3: Signing out user...");
+                                    final chatProvider =
+                                        Provider.of<ChatProvider>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    await authProvider.signOut(
+                                      onSignOut:
+                                          () => chatProvider.clearAllChats(),
+                                    );
+                                    debugPrint(
+                                      "Account deletion completed successfully",
+                                    );
+
+                                    // Step 4: Navigate to login screen
+                                    _navigateToLogin();
+                                  } catch (e) {
+                                    debugPrint(
+                                      "Account deletion failed with error: $e",
+                                    );
+                                    // Show specific error message
+                                    if (context.mounted) {
+                                      CustomAlertDialog.showInfoDialog(
+                                        context: context,
+                                        title: "Account Deletion Failed",
+                                        message: e.toString(),
+                                        icon: Icon(
+                                          Icons.error_outline,
+                                          color: colorTheme.error,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                              child: PersonalizedButton(
+                                text: "Delete Account",
+                                onPressed: null,
+                                centralWidget:
+                                    authProvider.isLoading ||
+                                            userProvider.isLoading
+                                        ? LoadingAnimationWidget.staggeredDotsWave(
+                                          color: colorTheme.onPrimary,
+                                          size: 30,
+                                        )
+                                        : null,
                               ),
-                            );
-
-                        if (confirmDelete && context.mounted) {
-                          try {
-                            final userProvider = Provider.of<UserProvider>(
-                              context,
-                              listen: false,
-                            );
-                            final authProvider = Provider.of<AuthProvider>(
-                              context,
-                              listen: false,
-                            );
-
-                            debugPrint("Starting account deletion process...");
-
-                            if (!await authProvider.hasRecentLogin()) {
-                              debugPrint("Not recently logged in");
-                              throw ("For security reasons, please log in again to delete your account.");
-                            }
-
-                            // Step 1: Delete all user data from Firestore
-                            debugPrint(
-                              "Step 1: Deleting user data from Firestore...",
-                            );
-                            await userProvider.deleteUserData();
-                            if (userProvider.errorMessage != null) {
-                              debugPrint(
-                                "Error in Step 1: ${userProvider.errorMessage}",
-                              );
-                              throw Exception(userProvider.errorMessage);
-                            }
-                            debugPrint("Step 1 completed successfully");
-
-                            // Step 2: Delete user account from Firebase Auth
-                            debugPrint(
-                              "Step 2: Deleting user account from Firebase Auth...",
-                            );
-                            await authProvider.deleteUserAccount();
-                            if (authProvider.errorMessage != null) {
-                              debugPrint(
-                                "Error in Step 2: ${authProvider.errorMessage}",
-                              );
-                              throw Exception(authProvider.errorMessage);
-                            }
-                            debugPrint("Step 2 completed successfully");
-
-                            // Step 3: Sign out the user and clear chat data
-                            debugPrint("Step 3: Signing out user...");
-                            final chatProvider = Provider.of<ChatProvider>(
-                              context,
-                              listen: false,
-                            );
-                            await authProvider.signOut(
-                              onSignOut: () => chatProvider.clearAllChats(),
-                            );
-                            debugPrint(
-                              "Account deletion completed successfully",
-                            );
-
-                            // Step 4: Navigate to login screen
-                            _navigateToLogin();
-                          } catch (e) {
-                            debugPrint(
-                              "Account deletion failed with error: $e",
-                            );
-                            // Show specific error message
-                            if (context.mounted) {
-                              CustomAlertDialog.showInfoDialog(
-                                context: context,
-                                title: "Account Deletion Failed",
-                                message: e.toString(),
-                                icon: Icon(
-                                  Icons.error_outline,
-                                  color: colorTheme.error,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      child: PersonalizedButton(
-                        text: "Delete Account",
-                        onPressed: null,
-                        centralWidget:
-                            authProvider.isLoading || userProvider.isLoading
-                                ? LoadingAnimationWidget.staggeredDotsWave(
-                                  color: colorTheme.onPrimary,
-                                  size: 30,
-                                )
-                                : null,
-                      ),
-                    ),
-                  ],
-                ),
+                            ),
+                          ],
+                        ),
               ),
     );
   }

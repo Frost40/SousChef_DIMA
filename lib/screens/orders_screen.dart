@@ -5,6 +5,9 @@ import '../providers/order_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/order_screen/order.dart';
 import '../widgets/navigation_tabbar.dart';
+import '../services/orientation_manager.dart';
+
+enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -114,8 +117,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  LayoutType _getLayoutType(BuildContext context) {
+    final orientationManager = OrientationManager();
+    final isTablet = orientationManager.isTablet(context);
+    if (!isTablet) return LayoutType.mobile;
+
+    final orientation = MediaQuery.of(context).orientation;
+    return orientation == Orientation.portrait
+        ? LayoutType.tabletVertical
+        : LayoutType.tabletHorizontal;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final layoutType = _getLayoutType(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders'),
@@ -126,24 +142,44 @@ class _OrdersScreenState extends State<OrdersScreen> {
           !_isInitialized
               ? const Center(child: CircularProgressIndicator())
               : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: EdgeInsets.symmetric(
+                  horizontal:
+                      layoutType == LayoutType.tabletVertical ||
+                              layoutType == LayoutType.tabletHorizontal
+                          ? 24.0
+                          : 16.0,
+                ),
                 child: Column(
                   children: [
                     // Slider for restaurants only
                     if (_isRestaurant) ...[
                       const SizedBox(height: 8),
-                      NavigationTabbar(
-                        tabCount: 2,
-                        tabLabels: const ['Received Orders', 'My Orders'],
-                        height: 40,
-                        margin: EdgeInsets.zero,
-                        radius: 25.0,
-                        initialIndex: _showReceivedOrders ? 0 : 1,
-                        onTabSelected: (index) {
-                          setState(() {
-                            _showReceivedOrders = index == 0;
-                          });
-                        },
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal:
+                              layoutType == LayoutType.tabletHorizontal
+                                  ? 150.0
+                                  : layoutType == LayoutType.tabletVertical
+                                  ? 100.0
+                                  : 0.0,
+                        ),
+                        child: NavigationTabbar(
+                          tabCount: 2,
+                          tabLabels: const ['Received Orders', 'My Orders'],
+                          height:
+                              layoutType == LayoutType.tabletVertical ||
+                                      layoutType == LayoutType.tabletHorizontal
+                                  ? 35
+                                  : 40,
+                          margin: EdgeInsets.zero,
+                          radius: 25.0,
+                          initialIndex: _showReceivedOrders ? 0 : 1,
+                          onTabSelected: (index) {
+                            setState(() {
+                              _showReceivedOrders = index == 0;
+                            });
+                          },
+                        ),
                       ),
                       const SizedBox(height: 8),
                     ],
@@ -170,7 +206,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   ],
                                 ),
                               )
-                              : _buildOrdersList(),
+                              : _buildOrdersList(layoutType),
                     ),
                   ],
                 ),
@@ -178,7 +214,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildOrdersList() {
+  Widget _buildOrdersList(LayoutType layoutType) {
     final orders =
         _isRestaurant && _showReceivedOrders
             ? _restaurantReceivedOrders ?? []
@@ -195,6 +231,42 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
 
+    // For tablet horizontal, center orders with fixed width
+    if (layoutType == LayoutType.tabletHorizontal) {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 600, // Fixed width for centered orders
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ...orders.map((order) {
+                  final bool isReceivedOrder =
+                      _isRestaurant && _showReceivedOrders;
+                  return OrderTile(
+                    orderId: order.id,
+                    displayName:
+                        isReceivedOrder ? order.username : order.restaurantName,
+                    isClickable: !isReceivedOrder,
+                    restaurantId: order.restaurantId,
+                    dishes: order.dishes,
+                    dateTime: order.pickupDateTime,
+                    restaurantAddress:
+                        isReceivedOrder ? null : order.restaurantAddress,
+                    price: order.total,
+                    isRestaurantView: isReceivedOrder,
+                    verificationCode: order.verificationCode,
+                  );
+                }),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // For mobile and tablet vertical, normal list
     return SingleChildScrollView(
       child: Column(
         children: [

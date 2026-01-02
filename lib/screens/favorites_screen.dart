@@ -143,37 +143,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Text("No favorite yet!", style: TextStyle(fontSize: 25)),
             );
           } else {
-            // Per tablet orizzontale: mostra 2 colonne
+            // Per tablet orizzontale: lista singola centrata con larghezza limitata
             if (layoutType == LayoutType.tabletHorizontal) {
-              // Raggruppa i ristoranti in coppie
-              final List<List<Restaurant>> pairedRestaurants = [];
-              for (var i = 0; i < _favouriteRestaurants.length; i += 2) {
-                if (i + 1 < _favouriteRestaurants.length) {
-                  pairedRestaurants.add([
-                    _favouriteRestaurants[i],
-                    _favouriteRestaurants[i + 1],
-                  ]);
-                } else {
-                  pairedRestaurants.add([_favouriteRestaurants[i]]);
-                }
-              }
-
-              return ListView.builder(
-                itemCount: pairedRestaurants.length,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                itemBuilder: (context, index) {
-                  final pair = pairedRestaurants[index];
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: RestaurantListTile(restaurant: pair[0])),
-                      if (pair.length > 1)
-                        Expanded(child: RestaurantListTile(restaurant: pair[1]))
-                      else
-                        const Expanded(child: SizedBox()), // Placeholder vuoto
-                    ],
-                  );
-                },
+              return Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 900,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    itemCount: _favouriteRestaurants.length,
+                    itemBuilder: (context, index) {
+                      final restaurant = _favouriteRestaurants[index];
+                      return RestaurantListTile(restaurant: restaurant);
+                    },
+                  ),
+                ),
               );
             }
 

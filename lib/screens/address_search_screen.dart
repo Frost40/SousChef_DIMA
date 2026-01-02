@@ -6,6 +6,9 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_alert_dialog.dart';
+import '../services/orientation_manager.dart';
+
+enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 /// Schermata di ricerca indirizzo con Google Places Autocomplete
 /// Permette all'utente di cercare e selezionare un indirizzo
@@ -39,9 +42,21 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     super.dispose();
   }
 
+  LayoutType _getLayoutType(BuildContext context) {
+    final orientationManager = OrientationManager();
+    final isTablet = orientationManager.isTablet(context);
+    if (!isTablet) return LayoutType.mobile;
+
+    final orientation = MediaQuery.of(context).orientation;
+    return orientation == Orientation.portrait
+        ? LayoutType.tabletVertical
+        : LayoutType.tabletHorizontal;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final layoutType = _getLayoutType(context);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -58,124 +73,134 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           style: TextStyle(color: colorScheme.onSurface),
         ),
       ),
-      body: Column(
-        children: [
-          // Barra di ricerca
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: GooglePlaceAutoCompleteTextField(
-              textEditingController: _searchController,
-              googleAPIKey: dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '',
-              inputDecoration: InputDecoration(
-                hintText: 'Enter your address...',
-                hintStyle: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.4),
+      body:
+          layoutType == LayoutType.tabletHorizontal
+              ? Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(width: 900, child: _buildContent(colorScheme)),
+              )
+              : _buildContent(colorScheme),
+    );
+  }
+
+  Widget _buildContent(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        // Barra di ricerca
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: GooglePlaceAutoCompleteTextField(
+            textEditingController: _searchController,
+            googleAPIKey: dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '',
+            inputDecoration: InputDecoration(
+              hintText: 'Enter your address...',
+              hintStyle: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.4),
+              ),
+              prefixIcon: Icon(Icons.search, color: colorScheme.primary),
+              suffixIcon:
+                  _searchController.text.isNotEmpty
+                      ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                      : null,
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.2),
                 ),
-                prefixIcon: Icon(Icons.search, color: colorScheme.primary),
-                suffixIcon:
-                    _searchController.text.isNotEmpty
-                        ? IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                        )
-                        : null,
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+            ),
+            focusNode: _searchFocusNode,
+            debounceTime: 600,
+            countries: const ["it"], // Solo indirizzi italiani
+            isLatLngRequired: true,
+            getPlaceDetailWithLatLng: (Prediction prediction) async {
+              // Questo callback viene chiamato quando l'utente seleziona un indirizzo
+              await _onAddressSelected(prediction);
+            },
+            itemClick: (Prediction prediction) {
+              _searchController.text = prediction.description ?? '';
+              _searchController.selection = TextSelection.fromPosition(
+                TextPosition(offset: _searchController.text.length),
+              );
+            },
+            itemBuilder: (context, index, Prediction prediction) {
+              return _buildSuggestionItem(prediction);
+            },
+            seperatedBuilder: Divider(
+              height: 1,
+              color: colorScheme.outline.withOpacity(0.1),
+            ),
+            isCrossBtnShown: false,
+          ),
+        ),
+
+        // Loading indicator
+        if (_isLoading)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  LoadingAnimationWidget.staggeredDotsWave(
+                    color: colorScheme.primary,
+                    size: 50,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Saving address...',
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
-              focusNode: _searchFocusNode,
-              debounceTime: 600,
-              countries: const ["it"], // Solo indirizzi italiani
-              isLatLngRequired: true,
-              getPlaceDetailWithLatLng: (Prediction prediction) async {
-                // Questo callback viene chiamato quando l'utente seleziona un indirizzo
-                await _onAddressSelected(prediction);
-              },
-              itemClick: (Prediction prediction) {
-                _searchController.text = prediction.description ?? '';
-                _searchController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: _searchController.text.length),
-                );
-              },
-              itemBuilder: (context, index, Prediction prediction) {
-                return _buildSuggestionItem(prediction);
-              },
-              seperatedBuilder: Divider(
-                height: 1,
-                color: colorScheme.outline.withOpacity(0.1),
+            ),
+          )
+        else
+          // Placeholder quando non ci sono risultati
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 64,
+                    color: colorScheme.onSurface.withOpacity(0.2),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Start typing to search',
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.4),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
-              isCrossBtnShown: false,
             ),
           ),
-
-          // Loading indicator
-          if (_isLoading)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    LoadingAnimationWidget.staggeredDotsWave(
-                      color: colorScheme.primary,
-                      size: 50,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Saving address...',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            // Placeholder quando non ci sono risultati
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 64,
-                      color: colorScheme.onSurface.withOpacity(0.2),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Start typing to search',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.4),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
