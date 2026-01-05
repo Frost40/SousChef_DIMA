@@ -86,6 +86,16 @@ case "${1:-all}" in
         run_with_status "flutter test test/providers/stripe_provider_test.dart" "Testing StripeProvider"
         ;;
     
+    "widgets")
+        print_header "Running Widget Tests"
+        run_with_status "flutter test test/widgets/" "Testing all widgets"
+        ;;
+    
+    "screens")
+        print_header "Running Screen Tests"
+        run_with_status "flutter test test/screens/" "Testing all screens"
+        ;;
+    
     "example")
         print_header "Running Example Test"
         run_with_status "flutter test test/examples/auth_provider_complete_example_test.dart" "Running complete example"
@@ -123,6 +133,8 @@ case "${1:-all}" in
         echo "  all        - Run all tests (default)"
         echo "  providers  - Run all provider tests"
         echo "  services   - Run all service tests"
+        echo "  widgets    - Run all widget tests"
+        echo "  screens    - Run all screen tests"
         echo "  auth       - Run auth-related tests"
         echo "  dish       - Run dish-related tests"
         echo "  order      - Run order-related tests"
@@ -136,6 +148,7 @@ case "${1:-all}" in
         echo "Examples:"
         echo "  ./run_tests.sh              # Run all tests"
         echo "  ./run_tests.sh providers    # Run provider tests only"
+        echo "  ./run_tests.sh widgets      # Run widget tests only"
         echo "  ./run_tests.sh coverage     # Generate coverage report"
         ;;
     
