@@ -13,7 +13,9 @@ import '../services/orientation_manager.dart';
 enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class AccountSettingsScreen extends StatefulWidget {
-  const AccountSettingsScreen({super.key});
+  final bool isEmbedded;
+
+  const AccountSettingsScreen({super.key, this.isEmbedded = false});
 
   @override
   State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
@@ -104,27 +106,30 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     final layoutType = _getLayoutType(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account Settings'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        actions: [
-          if (_isAnyFieldModified &&
-              !_hasUsernameError &&
-              !_hasPhoneNumberError &&
-              !_hasEmailError)
-            IconButton(
-              icon: const Icon(Icons.save),
-              color: colorTheme.primary,
-              onPressed: userProvider.isLoading ? null : _saveChanges,
-            ),
-        ],
-      ),
+      appBar:
+          widget.isEmbedded
+              ? null
+              : AppBar(
+                title: const Text('Account Settings'),
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                actions: [
+                  if (_isAnyFieldModified &&
+                      !_hasUsernameError &&
+                      !_hasPhoneNumberError &&
+                      !_hasEmailError)
+                    IconButton(
+                      icon: const Icon(Icons.save),
+                      color: colorTheme.primary,
+                      onPressed: userProvider.isLoading ? null : _saveChanges,
+                    ),
+                ],
+              ),
       body:
           userProvider.isLoading || userData == null
               ? Center(

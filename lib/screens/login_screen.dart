@@ -273,15 +273,6 @@ class _LoginScreenState extends State<LoginScreen> {
       const SizedBox(height: 20),
 
       CustomSocialButton(
-        onTap: () {},
-        icon: 'assets/facebook.svg',
-        text: 'Join using Facebook',
-        margin: 0,
-      ),
-
-      const SizedBox(height: 20),
-
-      CustomSocialButton(
         onTap: () async {
           // Authentication process via provider
           await authProvider.signInWithGoogle();

@@ -10,7 +10,9 @@ import '../services/orientation_manager.dart';
 enum LayoutType { mobile, tabletVertical, tabletHorizontal }
 
 class PastOrdersScreen extends StatefulWidget {
-  const PastOrdersScreen({super.key});
+  final bool isEmbedded;
+
+  const PastOrdersScreen({super.key, this.isEmbedded = false});
 
   @override
   State<PastOrdersScreen> createState() => _PastOrdersScreenState();
@@ -55,14 +57,17 @@ class _PastOrdersScreenState extends State<PastOrdersScreen> {
     final layoutType = _getLayoutType(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Orders completed'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar:
+          widget.isEmbedded
+              ? null
+              : AppBar(
+                title: const Text('Orders completed'),
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
       body:
           !_isInitialized
               ? const Center(child: CircularProgressIndicator())
