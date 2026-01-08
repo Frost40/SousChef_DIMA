@@ -20,6 +20,7 @@ extension PumpApp on WidgetTester {
   ///
   /// All providers are optional and default to mock implementations.
   /// Use [navigatorObserver] to verify navigation events with [MockNavigatorObserver].
+  /// Use [screenSize] to override the screen size for layout testing.
   ///
   Future<void> pumpApp(
     Widget widget, {
@@ -33,41 +34,54 @@ extension PumpApp on WidgetTester {
     NavigatorObserver? navigatorObserver,
     ThemeData? theme,
     List<NavigatorObserver>? additionalObservers,
+    Size? screenSize,
   }) async {
     final observers = <NavigatorObserver>[
       if (navigatorObserver != null) navigatorObserver,
       ...?additionalObservers,
     ];
 
-    await pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<AuthProvider>.value(
-            value: authProvider ?? MockAuthProvider(),
-          ),
-          ChangeNotifierProvider<ChatProvider>.value(
-            value: chatProvider ?? MockChatProvider(),
-          ),
-          if (dishProvider != null)
-            ChangeNotifierProvider<DishProvider>.value(value: dishProvider),
-          if (orderProvider != null)
-            ChangeNotifierProvider<OrderProvider>.value(value: orderProvider),
-          if (restaurantProvider != null)
-            ChangeNotifierProvider<RestaurantProvider>.value(
-              value: restaurantProvider,
-            ),
-          if (stripeProvider != null)
-            ChangeNotifierProvider<StripeProvider>.value(value: stripeProvider),
-          if (userProvider != null)
-            ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-        ],
-        child: MaterialApp(
-          theme: theme ?? ThemeData.light(),
-          home: widget,
-          navigatorObservers: observers,
+    Widget appWidget = MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(
+          value: authProvider ?? MockAuthProvider(),
         ),
+        ChangeNotifierProvider<ChatProvider>.value(
+          value: chatProvider ?? MockChatProvider(),
+        ),
+        if (dishProvider != null)
+          ChangeNotifierProvider<DishProvider>.value(value: dishProvider),
+        if (orderProvider != null)
+          ChangeNotifierProvider<OrderProvider>.value(value: orderProvider),
+        if (restaurantProvider != null)
+          ChangeNotifierProvider<RestaurantProvider>.value(
+            value: restaurantProvider,
+          ),
+        if (stripeProvider != null)
+          ChangeNotifierProvider<StripeProvider>.value(value: stripeProvider),
+        if (userProvider != null)
+          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+      ],
+      child: MaterialApp(
+        theme: theme ?? ThemeData.light(),
+        home: widget,
+        navigatorObservers: observers,
       ),
     );
+
+    // Wrap with MediaQuery if screenSize is provided
+    if (screenSize != null) {
+      appWidget = MediaQuery(
+        data: MediaQueryData(
+          size: screenSize,
+          padding: EdgeInsets.zero,
+          devicePixelRatio: 1.0,
+        ),
+        child: appWidget,
+      );
+    }
+
+    await pumpWidget(appWidget);
   }
 
   /// Pumps a widget wrapped only in [MaterialApp] without providers.
