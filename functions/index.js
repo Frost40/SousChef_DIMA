@@ -15,6 +15,7 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 // Import the specific function logic
 const {createPaymentIntentLogic} = require("./Stripe/payment");
 const {createRefundLogic} = require("./Stripe/refund");
+const {cancelPaymentLogic} = require("./Stripe/cancelPayment");
 const {handleStripeWebhook} = require("./Stripe/webhook");
 
 
@@ -49,6 +50,20 @@ exports.createRefund = onCall(
           STRIPE_SECRET_KEY.value(),
           db,
           FieldValue,
+      );
+    },
+);
+
+/**
+ * Cloud Function to cancel a payment and revert order status.
+ * Called when user cancels the payment sheet on the client side.
+ */
+exports.cancelPayment = onCall(
+    async (request) => {
+      return cancelPaymentLogic(
+          request.data,
+          request,
+          db,
       );
     },
 );

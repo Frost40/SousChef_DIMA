@@ -55,4 +55,23 @@ class StripeService {
       throw Exception('Errore nella richiesta di rimborso: $e');
     }
   }
+
+  /// Cancel a payment and revert order status to 'ready_for_checkout'.
+  /// Called when user cancels the payment sheet.
+  Future<Map<String, dynamic>> cancelPayment({
+    required List<String> orderIds,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('cancelPayment');
+      final response = await callable.call({
+        'orderIds': orderIds,
+      });
+
+      return Map<String, dynamic>.from(response.data);
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception('Firebase Error: ${e.code} - ${e.message}');
+    } catch (e) {
+      throw Exception('Error cancelling payment: $e');
+    }
+  }
 }

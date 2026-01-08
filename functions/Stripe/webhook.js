@@ -131,6 +131,56 @@ async function handleStripeWebhook(req, res, stripeWebhookSecret, db) {
                 );
                 break;
             }
+
+            case "payment_intent.canceled": {
+                // Handle when a Payment Intent is canceled (e.g., user abandoned payment)
+                const paymentIntent = event.data.object;
+                const orderIdsString = paymentIntent.metadata && paymentIntent.metadata.orders_id;
+
+                if (!orderIdsString) {
+                    console.warn(
+                        `Webhook: payment_intent.canceled event ${event.id}
+                         missing orders_id in metadata. Skipping.`
+                    );
+                    return res.json({ received: true });
+                }
+
+                const orderIds = orderIdsString.split(",");
+                const batch = db.batch();
+
+                for (const orderId of orderIds) {
+                    const orderRef = db.collection("orders").doc(orderId);
+
+                    const orderDoc = await orderRef.get();
+                    if (!orderDoc.exists) {
+                        console.log(`Webhook: Order ${orderId} does not exist. Skipping.`);
+                        continue;
+                    }
+
+                    const currentStatus = orderDoc.data().status;
+
+                    // Only revert if status is 'pending'
+                    if (currentStatus !== "pending") {
+                        console.log(
+                            `Webhook: Order ${orderId} has status '${currentStatus}', 
+                            expected 'pending'. Skipping revert.`
+                        );
+                        continue;
+                    }
+
+                    batch.update(orderRef, {
+                        status: "ready_for_checkout",
+                        payment_cancelled_at: require("firebase-admin").firestore.FieldValue.serverTimestamp(),
+                    });
+                }
+
+                await batch.commit();
+                console.log(
+                    `Webhook: Status updated to 'ready_for_checkout' for orders: ${orderIds.join(", ")}
+                     for canceled PI ${paymentIntent.id}`
+                );
+                break;
+            }
         }
 
         // Crucially, send a 200 OK response to Stripe to acknowledge receipt.

@@ -39,6 +39,8 @@ class StripeProvider with ChangeNotifier {
     required List<Map<String, dynamic>> items,
     String currency = 'eur',
   }) async {
+    List<String>? orderIds;
+
     try {
       _isLoading = true;
       _errorMessage = null;
@@ -57,7 +59,8 @@ class StripeProvider with ChangeNotifier {
       print('[StripeProvider] Received payment data from server: $paymentData');
 
       final clientSecret = paymentData['clientSecret'];
-      final orderIds = paymentData['orderIds'];
+      // Store orderIds for potential cancellation
+      orderIds = List<String>.from(paymentData['orderIds'] ?? []);
 
       // [FIX] Add a null and type check for the client secret to prevent a native crash.
       // The flutter_stripe plugin can crash the app if this value is not a valid string.
@@ -102,6 +105,19 @@ class StripeProvider with ChangeNotifier {
         // Handle user cancellation gracefully
         if (e.error.code == FailureCode.Canceled) {
           print('[StripeProvider] Payment was cancelled by user');
+
+          // Revert orders to 'ready_for_checkout' status
+          if (orderIds != null && orderIds.isNotEmpty) {
+            try {
+              print('[StripeProvider] Reverting orders to ready_for_checkout...');
+              await _stripeService.cancelPayment(orderIds: orderIds);
+              print('[StripeProvider] Orders successfully reverted.');
+            } catch (cancelError) {
+              print('[StripeProvider] Error reverting orders: $cancelError');
+              // Don't throw here - the webhook will handle it as backup
+            }
+          }
+
           _isLoading = false;
           notifyListeners();
           return false;
@@ -115,6 +131,18 @@ class StripeProvider with ChangeNotifier {
     } catch (e) {
       print('[StripeProvider] An error occurred in processPayment: $e');
       _isLoading = false;
+
+      // If we have orderIds and an error occurred after payment intent creation,
+      // try to revert the orders
+      if (orderIds != null && orderIds.isNotEmpty) {
+        try {
+          print('[StripeProvider] Error occurred, reverting orders...');
+          await _stripeService.cancelPayment(orderIds: orderIds);
+          print('[StripeProvider] Orders reverted after error.');
+        } catch (cancelError) {
+          print('[StripeProvider] Error reverting orders: $cancelError');
+        }
+      }
 
       if (e is StripeException) {
         _errorMessage = 'Errore Stripe: ${e.error.localizedMessage}';
