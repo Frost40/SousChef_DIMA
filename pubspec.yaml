@@ -73,9 +73,10 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/app_icon.png"
-  # Opzionale: per Android 13+ adaptive icon
-  # adaptive_icon_background: "#ffffff"
-  # adaptive_icon_foreground: "assets/app_icon_foreground.png"
+  # Android adaptive icon configuration
+  adaptive_icon_background: "assets/app_icon.png"
+  adaptive_icon_foreground: "assets/app_icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
