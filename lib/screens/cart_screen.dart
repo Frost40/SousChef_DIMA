@@ -59,7 +59,7 @@ class _CartScreenState extends State<CartScreen> {
                     .isEmpty
                 ? Center(
                   child: Text(
-                    'No orders received!',
+                    'No orders in the cart!',
                     style: TextStyle(
                       fontSize: 24,
                       color: colorScheme.onSurface,
