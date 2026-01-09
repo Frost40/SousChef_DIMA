@@ -65,8 +65,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.13.1
-  
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.0
+
   # Testing dependencies
   mocktail: ^1.0.0              # Modern mocking library for Dart
   fake_cloud_firestore: ^3.1.0  # Fake Firestore for testing (compatible with cloud_firestore ^5.x)
@@ -76,9 +77,25 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/app_icon.png"
   # Android adaptive icon configuration
-  adaptive_icon_background: "assets/app_icon.png"
-  adaptive_icon_foreground: "assets/app_icon.png"
+  # Using solid color to avoid ring/border artifacts
+  # Using padded foreground to match iOS icon size
+  adaptive_icon_background: "#D67F3C"
+  adaptive_icon_foreground: "assets/app_icon_foreground_padded.png"
   min_sdk_android: 21
+
+flutter_native_splash:
+  # Splash screen background color (orange)
+  color: "#D67F3C"
+  # White logo centered on splash screen
+  image: "assets/app_icon_no_background.png"
+  # Android 12+ specific settings
+  android_12:
+    color: "#D67F3C"
+    image: "assets/app_icon_no_background.png"
+    icon_background_color: "#D67F3C"
+  # Apply to both light and dark mode
+  color_dark: "#D67F3C"
+  image_dark: "assets/app_icon_no_background.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

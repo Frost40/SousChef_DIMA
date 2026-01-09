@@ -14,6 +14,12 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+
+    // Suppress deprecation warnings for all subprojects (dependencies)
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:-deprecation")
+        options.compilerArgs.add("-Xlint:-unchecked")
+    }
 }
 
 tasks.register<Delete>("clean") {
