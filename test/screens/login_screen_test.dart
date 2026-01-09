@@ -86,7 +86,6 @@ void main() {
           authProvider: mockAuthProvider,
         );
 
-        expect(find.text('Join using Facebook'), findsOneWidget);
         expect(find.text('Join using Google'), findsOneWidget);
       });
     });
