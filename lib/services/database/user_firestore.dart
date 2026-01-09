@@ -310,6 +310,6 @@ class UserFirestore {
     }
 
     // Update the restaurant ID in the user's document
-    _usersTable.doc(_uid).update({'restaurantId': id});
+    _usersTable.doc(_uid).update({'restaurant_id': id});
   }
 }
