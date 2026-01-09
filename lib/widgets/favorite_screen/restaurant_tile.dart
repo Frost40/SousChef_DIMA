@@ -21,7 +21,7 @@ class RestaurantTile extends StatelessWidget {
       subtitle: Text(
         restaurant['available'] ? "Open" : "Closed",
         style: TextStyle(
-          color: restaurant['available'] == "Open" ? Colors.green : Colors.red,
+          color: restaurant['available'] ? Colors.green : Colors.red,
         ),
       ),
       trailing: IconButton(
