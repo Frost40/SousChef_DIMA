@@ -293,7 +293,7 @@ void main() {
 
         FlutterError.onError = originalOnError;
 
-        expect(find.text('No orders received!'), findsOneWidget);
+        expect(find.text('No orders in the cart!'), findsOneWidget);
       });
 
       testWidgets('displays empty message when only paid orders exist', (
@@ -317,7 +317,7 @@ void main() {
         FlutterError.onError = originalOnError;
 
         // Paid orders should not appear - only ready_for_checkout orders
-        expect(find.text('No orders received!'), findsOneWidget);
+        expect(find.text('No orders in the cart!'), findsOneWidget);
       });
 
       testWidgets('does not show Checkout button when cart is empty', (

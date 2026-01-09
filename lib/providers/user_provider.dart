@@ -3,16 +3,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
-import 'package:sous_chef/services/authentication.dart'; // Add this import
+import 'package:sous_chef/services/authentication.dart';
 import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
 class UserProvider with ChangeNotifier {
   // UserFirestore service instance used to interact with Firestore
-  final UserFirestore _userFirestore = UserFirestore();
+  final UserFirestore _userFirestore;
   // Authentication service instance
-  final Authentication _authentication = Authentication();
+  final Authentication _authentication;
+
+  /// Constructor with dependency injection for testability
+  /// In production, defaults to real service instances
+  UserProvider({
+    UserFirestore? userFirestore,
+    Authentication? authentication,
+  })  : _userFirestore = userFirestore ?? UserFirestore(),
+        _authentication = authentication ?? Authentication();
 
   // Current user data
   User? _userData;

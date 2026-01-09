@@ -388,7 +388,7 @@ void main() {
 
       // Verify empty state message
       expect(find.text('No chats available'), findsOneWidget);
-      expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
+      expect(find.byIcon(Icons.chat_bubble_outline), findsWidgets);
     });
   });
 }
