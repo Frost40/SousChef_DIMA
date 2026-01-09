@@ -261,7 +261,7 @@ void main() {
         userFirestore.updateUserRestaurant('rest789');
 
         // Assert
-        verify(() => mockUserDoc.update({'restaurantId': 'rest789'})).called(1);
+        verify(() => mockUserDoc.update({'restaurant_id': 'rest789'})).called(1);
       });
 
       test('should throw when no authenticated user', () {
