@@ -74,4 +74,60 @@ class DishFirestore {
         .doc(dishId)
         .update(updates);
   }
+
+  /// Get all special dishes for a specific username across all restaurants
+  Future<List<Map<String, dynamic>>> getSpecialDishesByUsername(String username) async {
+    final List<Map<String, dynamic>> specialDishes = [];
+
+    // Get all restaurants
+    final QuerySnapshot restaurantsSnapshot = await _restaurantTable.get();
+
+    // For each restaurant, query special dishes with the given username
+    for (var restaurantDoc in restaurantsSnapshot.docs) {
+      final QuerySnapshot dishesSnapshot = await _restaurantTable
+          .doc(restaurantDoc.id)
+          .collection('dishes')
+          .where('is_special', isEqualTo: true)
+          .where('user_username', isEqualTo: username)
+          .get();
+
+      for (var dishDoc in dishesSnapshot.docs) {
+        specialDishes.add({
+          'restaurantId': restaurantDoc.id,
+          'dishId': dishDoc.id,
+          'dish': Dish.fromFirestore(dishDoc),
+        });
+      }
+    }
+
+    return specialDishes;
+  }
+
+  /// Update username for all special dishes of a user (transactional)
+  Future<void> updateUsernameForSpecialDishes({
+    required String oldUsername,
+    required String newUsername,
+  }) async {
+    // Use a batch write for atomicity
+    final WriteBatch batch = _firestore.batch();
+
+    // Get all special dishes with the old username
+    final specialDishes = await getSpecialDishesByUsername(oldUsername);
+
+    // Add all updates to the batch
+    for (var dishData in specialDishes) {
+      final String restaurantId = dishData['restaurantId'];
+      final String dishId = dishData['dishId'];
+
+      final DocumentReference dishRef = _restaurantTable
+          .doc(restaurantId)
+          .collection('dishes')
+          .doc(dishId);
+
+      batch.update(dishRef, {'user_username': newUsername});
+    }
+
+    // Commit all updates atomically
+    await batch.commit();
+  }
 }

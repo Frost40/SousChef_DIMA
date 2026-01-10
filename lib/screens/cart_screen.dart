@@ -43,6 +43,152 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
+  Future<void> _handleCheckout(
+    StripeProvider stripeProvider,
+    ColorScheme colorScheme,
+  ) async {
+    final authProvider = Provider.of<sous_chef_auth.AuthProvider>(
+      context,
+      listen: false,
+    );
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    try {
+      // 1. Get the current user directly from FirebaseAuth
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+
+      if (firebaseUser == null) {
+        // This is the most reliable check for authentication.
+        throw 'User is not logged in.';
+      }
+
+      // 2. Call getIdToken() on the firebaseUser object (notice the camelCase)
+      await firebaseUser.getIdToken(true);
+      print('✅ Firebase ID Token successfully refreshed.');
+    } catch (e) {
+      print('Auth token refresh failed: $e');
+      if (mounted) {
+        CustomAlertDialog.showInfoDialog(
+          context: context,
+          title: 'Authentication Expired',
+          message:
+              'Your session has expired. Please log in again to continue.',
+          icon: Icon(
+            Icons.login,
+            color: colorScheme.primary,
+          ),
+        );
+      }
+      return;
+    }
+
+    final ordersToCheckout = orderProvider.userOrders
+        .where((order) => order.status == 'ready_for_checkout')
+        .toList();
+
+    if (ordersToCheckout.isEmpty) {
+      if (mounted) {
+        CustomAlertDialog.showInfoDialog(
+          context: context,
+          title: 'No Orders',
+          message: 'There are no orders to process',
+          icon: Icon(
+            Icons.info_outline,
+            color: colorScheme.primary,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Calculate checkout amount
+    final totalAmount = ordersToCheckout.fold<double>(
+      0,
+      (sum, order) => sum + order.total,
+    );
+
+    // Prepare items to send to Stripe
+    final List<Map<String, dynamic>> items = ordersToCheckout.map((order) {
+      return {
+        'id': order.id,
+        'restaurantId': order.restaurantId,
+        'restaurantName': order.restaurantName,
+        'amount': order.total,
+      };
+    }).toList();
+
+    // Show confirmation dialog before processing payment
+    if (!mounted) return;
+    final confirmCheckout =
+        await CustomAlertDialog.showConfirmationDialog(
+      context: context,
+      title: 'Confirm Checkout',
+      message: 'Proceed with payment of \€${totalAmount.toStringAsFixed(2)}?',
+      confirmText: 'Proceed',
+      icon: Icon(
+        Icons.shopping_cart_checkout,
+        color: colorScheme.primary,
+      ),
+    );
+
+    if (!confirmCheckout) return;
+
+    // Payment processing
+    // The backend (payment.js) will update status to 'pending'
+    // The webhook will update to 'paid' when payment is confirmed
+    if (!mounted) return;
+    final success = await stripeProvider.processPayment(
+      context: context,
+      amount: totalAmount,
+      items: items,
+    );
+
+    if (success) {
+      // Payment was successful
+      // Backend has updated orders to 'pending'
+      // Webhook will update them to 'paid' when confirmed
+
+      // Fetch updated orders to reflect new status
+      orderProvider.fetchUserOrders(
+        authProvider.user!.id,
+        forceRefresh: true,
+      );
+
+      if (mounted) {
+        await CustomAlertDialog.showInfoDialog(
+          context: context,
+          title: 'Success',
+          message: 'Payment completed successfully!',
+          icon: Icon(
+            Icons.check_circle_outline,
+            color: colorScheme.primary,
+          ),
+        );
+      }
+    } else {
+      // Payment failed or was cancelled
+      // Orders remain in 'ready_for_checkout' (backend validation failed)
+      // OR backend already updated to 'pending' but payment sheet was cancelled
+      if (stripeProvider.errorMessage != null && mounted) {
+        await CustomAlertDialog.showInfoDialog(
+          context: context,
+          title: 'Payment Failed',
+          message: stripeProvider.errorMessage!,
+          icon: Icon(
+            Icons.error_outline,
+            color: colorScheme.error,
+          ),
+        );
+      }
+
+      // Refresh orders to show correct status
+      orderProvider.fetchUserOrders(
+        authProvider.user!.id,
+        forceRefresh: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final orderProvider = Provider.of<OrderProvider>(context);
@@ -114,149 +260,11 @@ class _CartScreenState extends State<CartScreen> {
                       Consumer<StripeProvider>(
                         builder: (context, stripeProvider, child) {
                           return AnimatedButton(
-                            onTap: () async {
-                              final authProvider =
-                                  Provider.of<sous_chef_auth.AuthProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-
-                              try {
-                                // 1. Get the current user directly from FirebaseAuth
-                                final firebaseUser =
-                                    FirebaseAuth.instance.currentUser;
-
-                                if (firebaseUser == null) {
-                                  // This is the most reliable check for authentication.
-                                  throw 'User is not logged in.';
-                                }
-
-                                // 2. Call getIdToken() on the firebaseUser object (notice the camelCase)
-                                await firebaseUser.getIdToken(true);
-                                print(
-                                  '✅ Firebase ID Token successfully refreshed.',
-                                );
-                              } catch (e) {
-                                print('Auth token refresh failed: $e');
-                                CustomAlertDialog.showInfoDialog(
-                                  context: context,
-                                  title: 'Authentication Expired',
-                                  message:
-                                      'Your session has expired. Please log in again to continue.',
-                                  icon: Icon(
-                                    Icons.login,
-                                    color: colorScheme.primary,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              final ordersToCheckout =
-                                  orderProvider.userOrders
-                                      .where(
-                                        (order) =>
-                                            order.status == 'ready_for_checkout',
-                                      )
-                                      .toList();
-
-                              if (ordersToCheckout.isEmpty) {
-                                CustomAlertDialog.showInfoDialog(
-                                  context: context,
-                                  title: 'No Orders',
-                                  message: 'There are no orders to process',
-                                  icon: Icon(
-                                    Icons.info_outline,
-                                    color: colorScheme.primary,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              // Calculate checkout amount
-                              final totalAmount = ordersToCheckout.fold<double>(
-                                0,
-                                (sum, order) => sum + order.total,
-                              );
-
-                              // Prepare items to send to Stripe
-                              final List<Map<String, dynamic>> items =
-                                  ordersToCheckout.map((order) {
-                                    return {
-                                      'id': order.id,
-                                      'restaurantId': order.restaurantId,
-                                      'restaurantName': order.restaurantName,
-                                      'amount': order.total,
-                                    };
-                                  }).toList();
-
-                              // Show confirmation dialog before processing payment
-                              final confirmCheckout =
-                                  await CustomAlertDialog.showConfirmationDialog(
-                                    context: context,
-                                    title: 'Confirm Checkout',
-                                    message:
-                                        'Proceed with payment of \€${totalAmount.toStringAsFixed(2)}?',
-                                    confirmText: 'Proceed',
-                                    icon: Icon(
-                                      Icons.shopping_cart_checkout,
-                                      color: colorScheme.primary,
-                                    ),
-                                  );
-
-                              if (!confirmCheckout) return;
-
-                              // Payment processing
-                              // The backend (payment.js) will update status to 'pending'
-                              // The webhook will update to 'paid' when payment is confirmed
-                              final success = await stripeProvider.processPayment(
-                                context: context,
-                                amount: totalAmount,
-                                items: items,
-                              );
-
-                              if (success) {
-                                // Payment was successful
-                                // Backend has updated orders to 'pending'
-                                // Webhook will update them to 'paid' when confirmed
-
-                                // Fetch updated orders to reflect new status
-                                orderProvider.fetchUserOrders(
-                                  authProvider.user!.id,
-                                  forceRefresh: true,
-                                );
-
-                                await CustomAlertDialog.showInfoDialog(
-                                  context: context,
-                                  title: 'Success',
-                                  message: 'Payment completed successfully!',
-                                  icon: Icon(
-                                    Icons.check_circle_outline,
-                                    color: colorScheme.primary,
-                                  ),
-                                );
-                              } else {
-                                // Payment failed or was cancelled
-                                // Orders remain in 'ready_for_checkout' (backend validation failed)
-                                // OR backend already updated to 'pending' but payment sheet was cancelled
-                                if (stripeProvider.errorMessage != null) {
-                                  await CustomAlertDialog.showInfoDialog(
-                                    context: context,
-                                    title: 'Payment Failed',
-                                    message: stripeProvider.errorMessage!,
-                                    icon: Icon(
-                                      Icons.error_outline,
-                                      color: colorScheme.error,
-                                    ),
-                                  );
-                                }
-
-                                // Refresh orders to show correct status
-                                orderProvider.fetchUserOrders(
-                                  authProvider.user!.id,
-                                  forceRefresh: true,
-                                );
-                              }
-                            },
+                            onTap: stripeProvider.isLoading
+                                ? () {} // Do nothing when loading
+                                : () {
+                                    _handleCheckout(stripeProvider, colorScheme);
+                                  },
                             child: PersonalizedButton(
                               text: "Checkout",
                               onPressed: null,

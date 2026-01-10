@@ -13,6 +13,7 @@ import '../providers/dish_provider.dart';
 import '../providers/order_provider.dart';
 import '../providers/restaurant_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/user_provider.dart';
 import '../transition_type.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/custom_alert_dialog.dart';
@@ -762,8 +763,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final dishProvider = Provider.of<DishProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUsername = authProvider.user?.username;
+    final userProvider = Provider.of<UserProvider>(context);
+    final currentUsername = userProvider.userData?.username;
 
     // Check if data is loading
     if (dishProvider.isLoading) {

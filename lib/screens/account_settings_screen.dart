@@ -6,6 +6,7 @@ import 'package:sous_chef/widgets/custom_alert_dialog.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/user_provider.dart';
+import '../providers/dish_provider.dart';
 import '../widgets/animated_button.dart';
 import '../widgets/personalized_button.dart';
 import '../services/orientation_manager.dart';
@@ -759,18 +760,28 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
   Future<void> _saveChanges() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final dishProvider = Provider.of<DishProvider>(context, listen: false);
 
     // Update profile fields
     if (_name != null ||
         _surname != null ||
         _username != null ||
         _phoneNumber != null) {
-      await userProvider.updateUserProfile(
-        username: _username,
-        name: _name,
-        surname: _surname,
-        phone: _phoneNumber,
-      );
+      try {
+        await userProvider.updateUserProfile(
+          username: _username,
+          name: _name,
+          surname: _surname,
+          phone: _phoneNumber,
+          dishProvider: dishProvider,
+        );
+      } catch (e) {
+        // Handle error - it will be shown via userProvider.errorMessage
+        setState(() {
+          _pageError = userProvider.errorMessage;
+        });
+        return;
+      }
     }
 
     if (_email != null) {

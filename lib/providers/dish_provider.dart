@@ -55,6 +55,7 @@ class DishProvider with ChangeNotifier {
 
     try {
       _dishes = await _dishFirestore.getRestaurantDishes(restaurantId);
+      print(_dishes.map((d) => d.name).toList());
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -306,6 +307,38 @@ class DishProvider with ChangeNotifier {
     }
 
     return 'An error occurred: $errorMessage';
+  }
+
+  /// Updates username for all special dishes of a user
+  /// This method is called when a user changes their username
+  Future<void> updateUsernameForSpecialDishes({
+    required String oldUsername,
+    required String newUsername,
+  }) async {
+    try {
+      await _dishFirestore.updateUsernameForSpecialDishes(
+        oldUsername: oldUsername,
+        newUsername: newUsername,
+      );
+
+      // Update local cache if current restaurant is loaded
+      for (int i = 0; i < _dishes.length; i++) {
+        if (_dishes[i].isSpecial && _dishes[i].userUsername == oldUsername) {
+          _dishes[i] = _dishes[i].copyWith(userUsername: newUsername);
+        }
+      }
+
+      // If we have a current restaurant loaded, force a refresh to ensure data consistency
+      if (_currentRestaurantId != null) {
+        await fetchDishes(_currentRestaurantId!);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _getErrorMessage(e);
+      notifyListeners();
+      rethrow; // Re-throw to allow UserProvider to handle the error
+    }
   }
 }
 

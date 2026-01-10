@@ -5,6 +5,7 @@ import 'package:sous_chef/models/user.dart';
 import 'package:sous_chef/services/database/user_firestore.dart';
 import 'package:sous_chef/services/authentication.dart';
 import 'package:sous_chef/widgets/custom_alert_dialog.dart';
+import 'package:sous_chef/providers/dish_provider.dart';
 
 /// Provider that manages user data operations using the UserFirestore service.
 /// Implements ChangeNotifier to notify dependent widgets when user data changes.
@@ -129,12 +130,19 @@ class UserProvider with ChangeNotifier {
     String? name,
     String? surname,
     String? phone,
+    DishProvider? dishProvider, // Add DishProvider parameter
   }) async {
     clearErrors();
     _isLoading = true;
     notifyListeners();
 
     try {
+      // Store old username before update if username is being changed
+      final String? oldUsername = (username != null && _userData != null)
+          ? _userData!.username
+          : null;
+
+      // First, update the user profile in Firestore
       await _userFirestore.updateUserProfile(
         username: username,
         name: name,
@@ -142,7 +150,32 @@ class UserProvider with ChangeNotifier {
         phone: phone,
       );
 
-      // Update in-memory data
+      // If username changed and dishProvider is provided, update special dishes
+      if (oldUsername != null && username != null && oldUsername != username && dishProvider != null) {
+        try {
+          // Update all special dishes with the new username
+          await dishProvider.updateUsernameForSpecialDishes(
+            oldUsername: oldUsername,
+            newUsername: username,
+          );
+        } catch (dishError) {
+          // If dish update fails, rollback the user profile update
+          debugPrint('Error updating dishes, rolling back user profile: $dishError');
+
+          // Rollback by updating back to old username
+          await _userFirestore.updateUserProfile(
+            username: oldUsername,
+            name: name,
+            surname: surname,
+            phone: phone,
+          );
+
+          // Re-throw the error to be handled by the UI
+          throw Exception('Failed to update username in all dishes. Changes have been rolled back.');
+        }
+      }
+
+      // Update in-memory data only after both operations succeed
       _userData = await _userFirestore.getFullUserData();
       _isLoading = false;
       notifyListeners();
@@ -151,6 +184,7 @@ class UserProvider with ChangeNotifier {
       _errorMessage = _getErrorMessage(e);
       _setErrorFieldsByErrorType(e);
       notifyListeners();
+      rethrow; // Re-throw to allow the UI to handle the error
     }
   }
 
