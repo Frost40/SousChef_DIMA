@@ -175,56 +175,58 @@ class ChatProvider with ChangeNotifier {
     List<Chat> chats,
     String currentUserId,
   ) async {
-    // Crea una nuova lista invece di modificare _chats direttamente
-    final List<ChatInfo> newChats = [];
-
-    // Usa un Set per tracciare gli ID delle chat già processate
-    final Set<String> processedChatIds = {};
-
+    // Usa un Set per tracciare gli ID delle chat già processate e rimuovere duplicati
+    final Map<String, Chat> uniqueChats = {};
     for (var chat in chats) {
-      // Salta i duplicati
-      if (processedChatIds.contains(chat.id)) {
-        debugPrint('Skipping duplicate chat ${chat.id}');
-        continue;
-      }
-      processedChatIds.add(chat.id);
-
-      try {
-        final otherUserId = chat.getOtherUserId(currentUserId);
-        final otherUserData = await _getUserData(otherUserId);
-        final unreadCount = await _chatFirestore.getUnreadMessagesCount(
-          chat.id,
-          currentUserId,
-        );
-
-        // Recupera l'immagine e il nome del ristorante se l'utente ne ha uno
-        String? restaurantImageUrl;
-        String? restaurantName;
-        if (otherUserData?.restaurantId != null &&
-            otherUserData!.restaurantId!.isNotEmpty) {
-          final restaurantInfo = await _getRestaurantInfo(
-            otherUserData.restaurantId!,
-          );
-          restaurantImageUrl = restaurantInfo.imageUrl;
-          restaurantName = restaurantInfo.name;
-        }
-
-        newChats.add(
-          ChatInfo(
-            chat: chat,
-            otherUser: otherUserData,
-            restaurantImageUrl: restaurantImageUrl,
-            restaurantName: restaurantName,
-            unreadCount: unreadCount,
-          ),
-        );
-      } catch (e) {
-        debugPrint('Error enriching chat ${chat.id}: $e');
+      if (!uniqueChats.containsKey(chat.id)) {
+        uniqueChats[chat.id] = chat;
       }
     }
 
-    // Assegna la nuova lista solo alla fine
-    _chats = newChats;
+    // Processa tutte le chat in parallelo per maggiore velocità
+    final List<Future<ChatInfo?>> futures =
+        uniqueChats.values.map((chat) async {
+          try {
+            final otherUserId = chat.getOtherUserId(currentUserId);
+
+            // Esegui le query in parallelo
+            final results = await Future.wait([
+              _getUserData(otherUserId),
+              _chatFirestore.getUnreadMessagesCount(chat.id, currentUserId),
+            ]);
+
+            final otherUserData = results[0] as User?;
+            final unreadCount = results[1] as int;
+
+            // Recupera l'immagine e il nome del ristorante se l'utente ne ha uno
+            String? restaurantImageUrl;
+            String? restaurantName;
+            if (otherUserData?.restaurantId != null &&
+                otherUserData!.restaurantId!.isNotEmpty) {
+              final restaurantInfo = await _getRestaurantInfo(
+                otherUserData.restaurantId!,
+              );
+              restaurantImageUrl = restaurantInfo.imageUrl;
+              restaurantName = restaurantInfo.name;
+            }
+
+            return ChatInfo(
+              chat: chat,
+              otherUser: otherUserData,
+              restaurantImageUrl: restaurantImageUrl,
+              restaurantName: restaurantName,
+              unreadCount: unreadCount,
+            );
+          } catch (e) {
+            debugPrint('Error enriching chat ${chat.id}: $e');
+            return null;
+          }
+        }).toList();
+
+    final results = await Future.wait(futures);
+
+    // Filtra i null e assegna la nuova lista
+    _chats = results.whereType<ChatInfo>().toList();
     debugPrint('ChatProvider: Enriched ${_chats.length} unique chats');
   }
 

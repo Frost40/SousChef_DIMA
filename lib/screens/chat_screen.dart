@@ -30,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   late ChatProvider _chatProvider;
   late AuthProvider _authProvider;
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
@@ -45,6 +46,15 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('Error marking messages as read: $e');
     }
+  }
+
+  /// Controlla se ci sono nuovi messaggi e li marca come letti
+  void _checkAndMarkNewMessagesAsRead(List<Message> messages) {
+    if (messages.length > _lastMessageCount) {
+      // Ci sono nuovi messaggi, marcali come letti
+      _markMessagesAsRead();
+    }
+    _lastMessageCount = messages.length;
   }
 
   Future<void> _sendMessage() async {
@@ -230,6 +240,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
 
                 final messages = snapshot.data ?? [];
+
+                // Marca i nuovi messaggi come letti
+                if (messages.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _checkAndMarkNewMessagesAsRead(messages);
+                  });
+                }
 
                 if (messages.isEmpty) {
                   return Center(
