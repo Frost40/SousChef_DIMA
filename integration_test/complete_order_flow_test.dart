@@ -5,6 +5,7 @@ import 'package:sous_chef/main.dart' as app;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sous_chef/widgets/restaurant_screen/menu_item.dart';
 import 'package:sous_chef/widgets/circular_button.dart';
+import 'package:sous_chef/widgets/dish_screen/calendar_widget.dart';
 
 /// REAL Integration Test - Complete Order Flow
 ///
@@ -27,6 +28,7 @@ import 'package:sous_chef/widgets/circular_button.dart';
 /// 3. Run the test:
 ///    flutter test integration_test/complete_order_flow_test.dart -d <device_id>
 ///    flutter test integration_test/complete_order_flow_test.dart -d "29043A99-7A90-404A-BD0D-153B519BEB50"
+///    flutter test integration_test/complete_order_flow_test.dart -d "emulator-5556"
 /// Note: Make sure you have an Android emulator, iOS simulator, or
 /// physical device running before executing the tests.
 
@@ -178,109 +180,79 @@ void main() {
       print('✓ Successfully selected an available dish');
 
       // ============================================
-      // 5. SELECT DATE AND TIME (STRICT)
+      // 5. SELECT DATE AND TIME (CORRECTED)
       // ============================================
       await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      // Scroll per rendere visibile il calendario
-      final scrollables = find.byType(SingleChildScrollView);
-      if (scrollables.evaluate().isNotEmpty) {
-        await tester.drag(scrollables.first, const Offset(0, -200));
-        await tester.pumpAndSettle();
+      print('--- Starting Date & Time Selection ---');
+
+      // 1. Find and Tap the "Select Date & Time" container trigger
+      // defined in calendar_widget.dart
+      final datePickerTrigger = find.byType(DateTimePickerWidget);
+      // Or closer matcher: find.widgetWithIcon(Container, Icons.calendar_today);
+
+      expect(datePickerTrigger, findsOneWidget, reason: 'Could not find the DateTimePicker trigger widget');
+
+      await tester.ensureVisible(datePickerTrigger);
+      await tester.pumpAndSettle();
+      await tester.tap(datePickerTrigger);
+      await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for Dialog to open
+
+      // 2. Select Date in the Native Material Date Picker Dialog
+      // On a tablet, this opens a dialog. We usually just want to accept the default (Today)
+      // or tap "OK" / "Save".
+
+      final okButton = find.text('OK');
+
+      // If OK isn't found immediately, we might need to select a day first.
+      // But usually 'initialDate' is set, so OK is active.
+      if (okButton.evaluate().isNotEmpty) {
+        await tester.tap(okButton);
+      } else {
+        // Fallback: Tap the current day (usually indicated by a selected decoration)
+        // or just tap a visible day number like '15' or '28' to be safe
+        final confirmText = find.text('OK'); // Standard flutter date picker confirm text
+        expect(confirmText, findsOneWidget, reason: 'Date picker dialog did not open or OK button missing');
+        await tester.tap(confirmText);
       }
 
-      // ---- SELECT DATE ----
-      final calendarInkWells = find.byType(InkWell);
+      await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for Date Dialog to close and Time Sheet to open
 
-      // Filtro: escludiamo bottoni di navigazione evidenti (freccette ecc.)
-      // e prendiamo solo quelli visibili
-      final visibleDateCandidates = calendarInkWells.evaluate().toList();
+      // 3. Select Time in the Modal Bottom Sheet (CupertinoPicker)
+      // The code in calendar_widget.dart opens showModalBottomSheet immediately after date selection
 
-      expect(
-        visibleDateCandidates.isNotEmpty,
-        isTrue,
-        reason: 'FAIL: No tappable date widgets found in DishScreen calendar.',
-      );
+      final confirmTimeButton = find.text('Confirm Time');
 
-      bool dateSelected = false;
+      // Check if the bottom sheet appeared
+      if (confirmTimeButton.evaluate().isEmpty) {
+        // It's possible the time list was empty (late night testing).
+        // Check for the SnackBar "Nessun orario disponibile..."
+        final snackBar = find.byType(SnackBar);
+        if (snackBar.evaluate().isNotEmpty) {
+          print('⚠ Warning: No times available for today. Test might fail on "Add to Cart".');
+        } else {
+          fail('Time picker bottom sheet did not appear after selecting date.');
+        }
+      } else {
+        // Optional: Scroll the CupertinoPicker if you don't want the default first time
+        // final picker = find.byType(CupertinoPicker);
+        // await tester.drag(picker, const Offset(0, -50));
+        // await tester.pumpAndSettle();
 
-      for (int i = 0; i < visibleDateCandidates.length; i++) {
-        final finder = calendarInkWells.at(i);
-        try {
-          await tester.ensureVisible(finder);
-          await tester.tap(finder);
-          await tester.pumpAndSettle(const Duration(milliseconds: 500));
-
-          // Dopo il tap, nel tuo DishScreen compare sempre un testo con la data scelta
-          final selectedDateText = find.textContaining(
-            RegExp(r'\d{1,2}/\d{1,2}|\d{4}-\d{2}-\d{2}'),
-          );
-
-          if (selectedDateText.evaluate().isNotEmpty) {
-            dateSelected = true;
-            break;
-          }
-        } catch (_) {}
+        // Tap "Confirm Time"
+        await tester.tap(confirmTimeButton);
+        await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for sheet to close
       }
 
-      expect(
-        dateSelected,
-        isTrue,
-        reason:
-            'FAIL: Could not select any valid date on DishScreen. '
-            'Calendar is present but no date could be selected.',
+      // 4. Verification
+      // The DateTimePickerWidget text updates to show the formatted date/time
+      final dateTimeText = find.descendant(
+        of: find.byType(DateTimePickerWidget),
+        matching: find.textContaining(RegExp(r':')), // Looks for time format like 12:30
       );
 
-      print('✓ Date selected');
-
-      // ---- SELECT TIME ----
-      await tester.pumpAndSettle(const Duration(milliseconds: 500));
-
-      final timeSelectors = find.byType(DropdownButton);
-
-      expect(
-        timeSelectors.evaluate().isNotEmpty,
-        isTrue,
-        reason:
-            'FAIL: No time selector found on DishScreen. '
-            'User cannot choose a pickup time.',
-      );
-
-      bool timeSelected = false;
-
-      try {
-        await tester.tap(timeSelectors.first);
-        await tester.pumpAndSettle(const Duration(seconds: 1));
-
-        final dropdownItems = find.byType(InkWell);
-        expect(
-          dropdownItems.evaluate().length > 1,
-          isTrue,
-          reason:
-              'FAIL: Time dropdown opened but contains no selectable items.',
-        );
-
-        await tester.tap(dropdownItems.at(1));
-        await tester.pumpAndSettle();
-
-        // Verifica che ora selezionata compaia a schermo
-        final selectedTimeText = find.textContaining(
-          RegExp(r'\d{1,2}:\d{2}'),
-        );
-
-        timeSelected = selectedTimeText.evaluate().isNotEmpty;
-      } catch (_) {
-        timeSelected = false;
-      }
-
-      expect(
-        timeSelected,
-        isTrue,
-        reason:
-            'FAIL: Time was not selected correctly on DishScreen.',
-      );
-
-      print('✓ Time selected');
+      expect(dateTimeText, findsOneWidget, reason: 'Date/Time text did not update in the widget');
+      print('✓ Date and Time successfully selected');
 
       // ============================================
       // 6. CHECK IF STILL ON DISH SCREEN OR HANDLE ADD BUTTON
@@ -311,48 +283,78 @@ void main() {
           addButton = iconButtons.last;
         }
 
-        if (addButton != null) {
-          await tester.ensureVisible(addButton);
-          await tester.pumpAndSettle();
-          await tester.tap(addButton);
-          await tester.pumpAndSettle(const Duration(seconds: 2));
-          print('✓ Tapped add button');
+        expect(
+          addButton,
+          isNotNull,
+          reason: 'FAIL: Add button not found on dish screen. Cannot add item to cart.',
+        );
 
-          // Handle potential confirmation dialog
-          final confirmButtons = [
-            find.text('OK'),
-            find.text('Confirm'),
-            find.text('Add'),
-          ];
+        await tester.ensureVisible(addButton!);
+        await tester.pumpAndSettle();
+        await tester.tap(addButton);
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+        print('✓ Tapped add button');
 
-          for (final btn in confirmButtons) {
-            if (btn.evaluate().isNotEmpty) {
-              await tester.tap(btn.first);
-              await tester.pumpAndSettle(const Duration(seconds: 2));
-              print('✓ Confirmed add');
-              break;
-            }
+        // Handle potential confirmation dialog
+        final confirmButtons = [
+          find.text('OK'),
+          find.text('Confirm'),
+          find.text('Add'),
+        ];
+
+        for (final btn in confirmButtons) {
+          if (btn.evaluate().isNotEmpty) {
+            await tester.tap(btn.first);
+            await tester.pumpAndSettle(const Duration(seconds: 2));
+            print('✓ Confirmed add');
+            break;
           }
-        } else {
-          print('⚠ Add button not found, continuing anyway');
         }
       }
 
       // ============================================
-      // 7. NAVIGATE TO HOME
+      // 7. NAVIGATE TO HOME (CORRECTED)
       // ============================================
-      // Tap the home icon in the bottom navigation bar
-      final homeButton = find.byIcon(Icons.home_rounded);
-      expect(homeButton, findsOneWidget);
+      // PROBLEM: We are on DishScreen, which covers the Bottom Navigation Bar.
+      // FIX: We must "Go Back" (pop) until we reach the main screen.
 
-      await tester.tap(homeButton);
-      await tester.pump();
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      print('--- Navigating back to Home ---');
 
-      // Verify we're back on home screen
-      expect(find.text('Sous Chef'), findsOneWidget);
+      // 1. Close the DishScreen
+      // Look for either a close icon (Tablet) or generic back button (Mobile)
+      final closeDishButton = find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(Icons.close),
+      );
+      final backDishButton = find.byType(BackButton);
 
-      print('✓ Navigated to home');
+      if (closeDishButton.evaluate().isNotEmpty) {
+        await tester.tap(closeDishButton);
+      } else if (backDishButton.evaluate().isNotEmpty) {
+        await tester.tap(backDishButton);
+      }
+      await tester.pumpAndSettle();
+      print('✓ Closed Dish Screen');
+
+      // 2. Close the RestaurantScreen (if we are not yet at Home)
+      // If we see "Fixed menu" or "On Request", we are still in a restaurant.
+      final restaurantTabs = find.textContaining(RegExp(r'Fixed menu|On Request'));
+
+      if (restaurantTabs.evaluate().isNotEmpty) {
+        // We are in the restaurant, go back one more time
+        final backFromRest = find.byType(BackButton);
+        if (backFromRest.evaluate().isNotEmpty) {
+          await tester.tap(backFromRest);
+          await tester.pumpAndSettle();
+          print('✓ Closed Restaurant Screen');
+        }
+      }
+
+      // 3. Now verify we are on the Home Screen
+      // "Sous Chef" is likely the title in the AppBar of the home screen
+      expect(find.text('Sous Chef'), findsOneWidget, reason: 'Failed to return to Home Screen');
+
+      print('✓ Successfully returned to Home');
 
       // ============================================
       // 8. OPEN CART
@@ -381,51 +383,57 @@ void main() {
         // ============================================
         // 9. TAP CHECKOUT (only if cart has items)
         // ============================================
-        // Look for the checkout button
         final checkoutButton = find.text('Checkout');
 
-        // Scroll down if needed
+        // Scroll down if needed to find checkout button
         if (checkoutButton.evaluate().isEmpty) {
-          try {
-            await tester.drag(
-              find.byType(SingleChildScrollView).first,
-              const Offset(0, -300),
-            );
-            await tester.pumpAndSettle();
-          } catch (e) {
-            // Scroll failed, continue
-          }
+          await tester.drag(
+            find.byType(SingleChildScrollView).first,
+            const Offset(0, -300),
+          );
+          await tester.pumpAndSettle();
         }
 
-        if (checkoutButton.evaluate().isNotEmpty) {
-          await tester.tap(checkoutButton);
-          await tester.pump();
-          await tester.pumpAndSettle(const Duration(seconds: 2));
-          print('✓ Tapped checkout button');
+        expect(
+          checkoutButton.evaluate().isNotEmpty,
+          isTrue,
+          reason: 'FAIL: Checkout button not found.',
+        );
 
-          // ============================================
-          // 10. CONFIRM CHECKOUT IN POPUP (Proceed button)
-          // ============================================
-          // Look for confirmation dialog
-          final proceedButton = find.text('Proceed');
+        await tester.tap(checkoutButton);
+        await tester.pump();
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+        print('✓ Tapped checkout button');
 
-          if (proceedButton.evaluate().isNotEmpty) {
-            await tester.tap(proceedButton);
-            await tester.pump();
-            await tester.pumpAndSettle(const Duration(seconds: 3));
-            print('✓ Confirmed checkout with Proceed button');
-            print('✓ Payment sheet should appear at this point');
-          }
-        }
-      } else {
-        print('✓ Cart is empty - skipping checkout flow');
-      }
+        // ============================================
+        // 10. CONFIRM CHECKOUT & VERIFY PAYMENT START
+        // ============================================
+        // Look for confirmation dialog "Proceed" button
+        final proceedButton = find.text('Proceed');
 
-      print('✓ Complete order flow test finished successfully!');
+        expect(
+          proceedButton.evaluate().isNotEmpty,
+          isTrue,
+          reason: 'FAIL: Proceed button not found in confirmation dialog.',
+        );
 
-      // Wait for any remaining animations
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-    });
+        await tester.tap(proceedButton);
+
+        // Allow time for the Native Bridge to initialize (where your logs show "Presenting...")
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 5));
+
+        print('✓ Confirmed checkout with Proceed button');
+        print('✓ Payment Flow Initiated (Stripe)');
+
+        // STOP HERE:
+        // We cannot automate the Native Stripe Sheet using standard flutter_test.
+        // If the logs show "Presenting...", the integration is working.
+        print('✓ Test Completed Successfully (Stopping before Native UI interaction)');
+
+        // Optional: If you want to prevent the test from hanging indefinitely,
+        // do NOT await a condition that requires the native sheet to close.
+      }});
 
     testWidgets('Add dish to cart without selecting date shows error', (
       WidgetTester tester,
@@ -515,7 +523,11 @@ void main() {
       }
 
       final addButton = find.byIcon(Icons.add);
-      expect(addButton, findsAtLeastNWidgets(1));
+      expect(
+        addButton,
+        findsAtLeastNWidgets(1),
+        reason: 'FAIL: Add button not found on dish screen.',
+      );
 
       final addButtonCount = addButton.evaluate().length;
       await tester.tap(addButton.at(addButtonCount - 1));
@@ -533,6 +545,7 @@ void main() {
         warningDialog.evaluate().isNotEmpty ||
             stillOnDishScreen.evaluate().isNotEmpty,
         isTrue,
+        reason: 'FAIL: Expected error handling when adding without date/time selection, but no warning was shown and dish screen was closed.',
       );
 
       print('✓ Error handling works: Cannot add without date/time selection');
@@ -567,14 +580,11 @@ void main() {
 
       final cartButton = find.byIcon(Icons.shopping_cart);
 
-      // Cart icon might not always be visible on all screens
-      // If not found, the test has already verified navigation in other tests
-      if (cartButton.evaluate().isEmpty) {
-        print(
-          '✓ Navigation test skipped - cart icon not visible on current screen',
-        );
-        return;
-      }
+      expect(
+        cartButton.evaluate().isNotEmpty,
+        isTrue,
+        reason: 'FAIL: Cart icon not found. Cannot test navigation to cart.',
+      );
 
       await tester.tap(cartButton);
       await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -584,10 +594,15 @@ void main() {
 
       // Navigate back using back button
       final backButton = find.byIcon(Icons.arrow_back);
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pumpAndSettle(const Duration(seconds: 2));
-      }
+
+      expect(
+        backButton.evaluate().isNotEmpty,
+        isTrue,
+        reason: 'FAIL: Back button not found in cart screen. Cannot navigate back to home.',
+      );
+
+      await tester.tap(backButton.first);
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       // Verify we're back on home by checking for home icon in bottom navigation
       expect(find.byIcon(Icons.home_rounded), findsAtLeastNWidgets(1));
