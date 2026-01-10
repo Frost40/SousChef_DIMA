@@ -20,10 +20,22 @@ import 'firebase_options.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-void main() async {
+// Exports for integration tests
+export 'package:sous_chef/screens/login_screen.dart';
+export 'package:sous_chef/screens/main_layout.dart';
+export 'package:sous_chef/screens/dish_screen.dart';
+export 'package:sous_chef/screens/restaurant_screen.dart';
+export 'package:sous_chef/screens/chat_screen.dart';
+export 'package:sous_chef/widgets/restaurant_list_tile.dart';
+
+Future<void> main({FirebaseOptions? testOptions}) async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Use testOptions if provided, otherwise use default
+  await Firebase.initializeApp(
+    options: testOptions ?? DefaultFirebaseOptions.currentPlatform,
+  );
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
   await Stripe.instance.applySettings();

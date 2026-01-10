@@ -244,7 +244,8 @@ class _DishScreenState extends State<DishScreen> {
     final imageUrlChanged =
         (initialText == null && controllerText.isNotEmpty) ||
         (initialText != null && controllerText != initialText);
-    final imageFileChanged = _imageFile != null; // Check if a new image file has been selected
+    final imageFileChanged =
+        _imageFile != null; // Check if a new image file has been selected
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
     final minForewarningDaysChanged =
@@ -543,6 +544,7 @@ class _DishScreenState extends State<DishScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   CustomDropdownMenu<Course>(
+                                    key: const Key('course_dropdown'),
                                     items: Course.values,
                                     selectedItem: _selectedCourse,
                                     isEditable: widget.isEditable,
@@ -592,6 +594,7 @@ class _DishScreenState extends State<DishScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   CustomDropdownMenu<Cuisine>(
+                                    key: const Key('cuisine_dropdown'),
                                     items: Cuisine.values,
                                     selectedItem: _selectedCuisine,
                                     isEditable: widget.isEditable,
@@ -814,17 +817,20 @@ class _DishScreenState extends State<DishScreen> {
                                       if (_dish == null) return;
 
                                       // Fetch the latest dish data from Firebase to verify availability
-                                      final dishProvider = Provider.of<DishProvider>(
-                                        context,
-                                        listen: false,
-                                      );
+                                      final dishProvider =
+                                          Provider.of<DishProvider>(
+                                            context,
+                                            listen: false,
+                                          );
 
-                                      final restaurantId = dishProvider.currentRestaurantId;
+                                      final restaurantId =
+                                          dishProvider.currentRestaurantId;
                                       if (restaurantId == null) {
                                         CustomAlertDialog.showInfoDialog(
                                           context: context,
                                           title: "Error",
-                                          message: "Restaurant information is missing.",
+                                          message:
+                                              "Restaurant information is missing.",
                                           icon: Icon(
                                             Icons.error_outline,
                                             color: colorScheme.error,
@@ -833,14 +839,18 @@ class _DishScreenState extends State<DishScreen> {
                                         return;
                                       }
 
-                                      await dishProvider.fetchDishes(restaurantId);
-                                      final latestDish = dishProvider.getDishById(_dish!.id);
+                                      await dishProvider.fetchDishes(
+                                        restaurantId,
+                                      );
+                                      final latestDish = dishProvider
+                                          .getDishById(_dish!.id);
 
                                       if (latestDish == null) {
                                         CustomAlertDialog.showInfoDialog(
                                           context: context,
                                           title: "Error",
-                                          message: "The dish is no longer available.",
+                                          message:
+                                              "The dish is no longer available.",
                                           icon: Icon(
                                             Icons.error_outline,
                                             color: colorScheme.error,
@@ -879,8 +889,7 @@ class _DishScreenState extends State<DishScreen> {
                                       orderProvider
                                           .addOrder(
                                             userId:
-                                                userProvider.userData?.id ??
-                                                '',
+                                                userProvider.userData?.id ?? '',
                                             username:
                                                 userProvider
                                                     .userData
@@ -889,8 +898,7 @@ class _DishScreenState extends State<DishScreen> {
                                             dishId: latestDish.id,
                                             dishName: latestDish.name,
                                             dishPrice: latestDish.price,
-                                            pickupDateTime:
-                                                _selectedDateTime!,
+                                            pickupDateTime: _selectedDateTime!,
                                           )
                                           .then((_) {
                                             CustomAlertDialog.showInfoDialog(
@@ -910,8 +918,7 @@ class _DishScreenState extends State<DishScreen> {
                                               context: context,
                                               title: "Error",
                                               message:
-                                                  orderProvider
-                                                      .errorMessage ??
+                                                  orderProvider.errorMessage ??
                                                   "Something went wrong. Try again later.",
                                               icon: Icon(
                                                 Icons.error_outline,

@@ -63,11 +63,9 @@ class AuthProvider with ChangeNotifier {
 
   /// Constructor with dependency injection for testability
   /// In production, defaults to real service instances
-  AuthProvider({
-    Authentication? auth,
-    UserFirestore? userFirestore,
-  })  : _auth = auth ?? Authentication(),
-        _userFirestore = userFirestore ?? UserFirestore() {
+  AuthProvider({Authentication? auth, UserFirestore? userFirestore})
+    : _auth = auth ?? Authentication(),
+      _userFirestore = userFirestore ?? UserFirestore() {
     _initializeCurrentUser();
 
     // Sottoscrizione ai cambiamenti di autenticazione
@@ -85,12 +83,15 @@ class AuthProvider with ChangeNotifier {
     } else {
       _user = null;
     }
-    notifyListeners();
+    // Only notify if the provider hasn't been disposed and has listeners
+    if (hasListeners) {
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
-    //_authSubscription?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 
