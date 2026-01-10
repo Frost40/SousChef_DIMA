@@ -408,9 +408,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                               listen: false,
                                             );
                                         await authProvider.signOut(
-                                          onSignOut:
-                                              () =>
-                                                  chatProvider.clearAllChats(),
+                                          onSignOut: () {
+                                            chatProvider.clearAllChats();
+                                            userProvider.clearUserData();
+                                          },
                                         );
                                         debugPrint(
                                           "Account deletion completed successfully",
@@ -707,8 +708,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                           listen: false,
                                         );
                                     await authProvider.signOut(
-                                      onSignOut:
-                                          () => chatProvider.clearAllChats(),
+                                      onSignOut: () {
+                                        chatProvider.clearAllChats();
+                                        userProvider.clearUserData();
+                                      },
                                     );
                                     debugPrint(
                                       "Account deletion completed successfully",

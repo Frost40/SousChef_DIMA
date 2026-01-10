@@ -16,11 +16,9 @@ class UserProvider with ChangeNotifier {
 
   /// Constructor with dependency injection for testability
   /// In production, defaults to real service instances
-  UserProvider({
-    UserFirestore? userFirestore,
-    Authentication? authentication,
-  })  : _userFirestore = userFirestore ?? UserFirestore(),
-        _authentication = authentication ?? Authentication();
+  UserProvider({UserFirestore? userFirestore, Authentication? authentication})
+    : _userFirestore = userFirestore ?? UserFirestore(),
+      _authentication = authentication ?? Authentication();
 
   // Current user data
   User? _userData;
@@ -110,6 +108,19 @@ class UserProvider with ChangeNotifier {
     _hasUsernameError = false;
     _hasPhoneError = false;
     if (notify) notifyListeners();
+  }
+
+  /// Clears all user data (used on logout)
+  void clearUserData() {
+    _userData = null;
+    _errorMessage = null;
+    _hasEmailError = false;
+    _hasPasswordError = false;
+    _hasUsernameError = false;
+    _hasPhoneError = false;
+    _pendingRemovals.forEach((_, timer) => timer.cancel());
+    _pendingRemovals.clear();
+    notifyListeners();
   }
 
   /// Updates user profile with the provided fields

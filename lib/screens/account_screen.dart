@@ -5,6 +5,7 @@ import 'package:sous_chef/widgets/animated_button.dart';
 import 'package:sous_chef/widgets/personalized_button.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/providers/chat_provider.dart';
+import 'package:sous_chef/providers/user_provider.dart';
 import 'package:sous_chef/widgets/account_screen/theme_switch.dart';
 import 'package:sous_chef/services/orientation_manager.dart';
 import 'package:sous_chef/screens/account_settings_screen.dart';
@@ -227,15 +228,22 @@ class _AccountScreenState extends State<AccountScreen> {
         // Logout button with animation
         AnimatedButton(
           onTap: () async {
-            // Get chat provider to clear chats on logout
+            // Get providers to clear data on logout
             final chatProvider = Provider.of<ChatProvider>(
+              context,
+              listen: false,
+            );
+            final userProvider = Provider.of<UserProvider>(
               context,
               listen: false,
             );
 
             // Sign out the user through auth provider
             await authProvider.signOut(
-              onSignOut: () => chatProvider.clearAllChats(),
+              onSignOut: () {
+                chatProvider.clearAllChats();
+                userProvider.clearUserData();
+              },
             );
 
             // Navigate to login screen after successful logout

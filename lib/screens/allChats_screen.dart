@@ -111,6 +111,26 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
     return initials.toUpperCase();
   }
 
+  /// Costruisce il display name per la chat.
+  /// Se l'utente ha un ristorante, mostra "Restaurant Name | username"
+  /// Altrimenti mostra solo lo username o nome/cognome
+  String buildDisplayName(ChatInfo chatInfo) {
+    final otherUser = chatInfo.otherUser;
+    final restaurantName = chatInfo.restaurantName;
+
+    // Username o fallback a nome/cognome
+    final username =
+        otherUser?.username ??
+        '${otherUser?.name ?? ''} ${otherUser?.surname ?? ''}'.trim();
+
+    // Se c'è un nome ristorante, combina con username
+    if (restaurantName != null && restaurantName.isNotEmpty) {
+      return '$restaurantName | $username';
+    }
+
+    return username;
+  }
+
   @override
   Widget build(BuildContext context) {
     final layoutType = _getLayoutType(context);
@@ -176,10 +196,8 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
               final unreadCount = chatInfo.unreadCount;
               final restaurantImageUrl = chatInfo.restaurantImageUrl;
 
-              // Use username or fallback to name if username is not available
-              final displayName =
-                  otherUser?.username ??
-                  '${otherUser?.name ?? ''} ${otherUser?.surname ?? ''}'.trim();
+              // Build display name with format "Restaurant Name | username" if applicable
+              final displayName = buildDisplayName(chatInfo);
 
               return Column(
                 children: [
@@ -214,6 +232,8 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                           ? displayName
                           : 'Utente Sconosciuto',
                       style: const TextStyle(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
                       chat.lastMessage ?? 'No messages',
@@ -420,9 +440,8 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
             final unreadCount = chatInfo.unreadCount;
             final restaurantImageUrl = chatInfo.restaurantImageUrl;
 
-            final displayName =
-                otherUser?.username ??
-                '${otherUser?.name ?? ''} ${otherUser?.surname ?? ''}'.trim();
+            // Build display name with format "Restaurant Name | username" if applicable
+            final displayName = buildDisplayName(chatInfo);
 
             final isSelected = _selectedChatId == chat.id;
 
@@ -466,6 +485,8 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                           ? displayName
                           : 'Utente Sconosciuto',
                       style: const TextStyle(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     subtitle: Text(
                       chat.lastMessage ?? 'No messages',

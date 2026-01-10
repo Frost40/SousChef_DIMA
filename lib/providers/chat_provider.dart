@@ -16,11 +16,9 @@ class ChatProvider with ChangeNotifier {
 
   /// Constructor with dependency injection for testability
   /// In production, defaults to real service instances
-  ChatProvider({
-    ChatFirestore? chatFirestore,
-    FirebaseFirestore? firestore,
-  })  : _chatFirestore = chatFirestore ?? ChatFirestore(),
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  ChatProvider({ChatFirestore? chatFirestore, FirebaseFirestore? firestore})
+    : _chatFirestore = chatFirestore ?? ChatFirestore(),
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Current user ID from AuthProvider
   String? _currentUserId;
@@ -199,13 +197,16 @@ class ChatProvider with ChangeNotifier {
           currentUserId,
         );
 
-        // Recupera l'immagine del ristorante se l'utente ne ha uno
+        // Recupera l'immagine e il nome del ristorante se l'utente ne ha uno
         String? restaurantImageUrl;
+        String? restaurantName;
         if (otherUserData?.restaurantId != null &&
             otherUserData!.restaurantId!.isNotEmpty) {
-          restaurantImageUrl = await _getRestaurantImage(
+          final restaurantInfo = await _getRestaurantInfo(
             otherUserData.restaurantId!,
           );
+          restaurantImageUrl = restaurantInfo.imageUrl;
+          restaurantName = restaurantInfo.name;
         }
 
         newChats.add(
@@ -213,6 +214,7 @@ class ChatProvider with ChangeNotifier {
             chat: chat,
             otherUser: otherUserData,
             restaurantImageUrl: restaurantImageUrl,
+            restaurantName: restaurantName,
             unreadCount: unreadCount,
           ),
         );
@@ -239,19 +241,21 @@ class ChatProvider with ChangeNotifier {
     return null;
   }
 
-  /// Get restaurant image URL by restaurant ID
-  Future<String?> _getRestaurantImage(String restaurantId) async {
+  /// Get restaurant info (image URL and name) by restaurant ID
+  Future<({String? imageUrl, String? name})> _getRestaurantInfo(
+    String restaurantId,
+  ) async {
     try {
       final restaurantDoc =
           await _firestore.collection('restaurants').doc(restaurantId).get();
       if (restaurantDoc.exists) {
         final restaurant = Restaurant.fromFirestore(restaurantDoc);
-        return restaurant.imageUrl;
+        return (imageUrl: restaurant.imageUrl, name: restaurant.name);
       }
     } catch (e) {
-      debugPrint('Error fetching restaurant image: $e');
+      debugPrint('Error fetching restaurant info: $e');
     }
-    return null;
+    return (imageUrl: null, name: null);
   }
 
   /// Send a message in a chat
@@ -417,12 +421,14 @@ class ChatInfo {
   final Chat chat;
   final User? otherUser;
   final String? restaurantImageUrl;
+  final String? restaurantName;
   final int unreadCount;
 
   ChatInfo({
     required this.chat,
     required this.otherUser,
     this.restaurantImageUrl,
+    this.restaurantName,
     this.unreadCount = 0,
   });
 
@@ -430,12 +436,14 @@ class ChatInfo {
     Chat? chat,
     User? otherUser,
     String? restaurantImageUrl,
+    String? restaurantName,
     int? unreadCount,
   }) {
     return ChatInfo(
       chat: chat ?? this.chat,
       otherUser: otherUser ?? this.otherUser,
       restaurantImageUrl: restaurantImageUrl ?? this.restaurantImageUrl,
+      restaurantName: restaurantName ?? this.restaurantName,
       unreadCount: unreadCount ?? this.unreadCount,
     );
   }

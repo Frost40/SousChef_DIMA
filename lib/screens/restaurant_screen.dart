@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sous_chef/models/restaurant.dart';
@@ -137,6 +138,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     BuildContext context,
     String restaurantOwnerId,
     String restaurantName,
+    String? restaurantImageUrl,
   ) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
@@ -238,13 +240,33 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
     final String finalChatId = chatId;
 
+    // Recupera lo username del proprietario del ristorante
+    String displayName = restaurantName;
+    try {
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(restaurantOwnerId)
+              .get();
+      if (userDoc.exists) {
+        final username = userDoc.data()?['username'] as String?;
+        if (username != null && username.isNotEmpty) {
+          displayName = '$restaurantName | $username';
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching owner username: $e');
+      // In case of error, use just the restaurant name
+    }
+
     // Navigate to chat screen
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder:
             (context) => ChatScreen(
               chatId: finalChatId,
-              otherUserName: restaurantName,
+              otherUserName: displayName,
+              otherUserImageUrl: restaurantImageUrl,
               otherUserId: restaurantOwnerId,
             ),
       ),
@@ -336,6 +358,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                                   context,
                                   restaurant.ownerId,
                                   restaurant.name,
+                                  restaurant.imageUrl,
                                 ),
                           ),
                         ),
@@ -531,6 +554,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                               context,
                               restaurant.ownerId,
                               restaurant.name,
+                              restaurant.imageUrl,
                             ),
                       ),
                     ),
