@@ -206,13 +206,15 @@ class _ChatScreenState extends State<ChatScreen> {
                               : null,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      widget.otherUserName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        widget.otherUserName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
