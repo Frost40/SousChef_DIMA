@@ -796,7 +796,7 @@ class _DishScreenState extends State<DishScreen> {
                                     backgroundColor: colorScheme.primary,
                                     size: 50,
                                     bottomPadding: 0,
-                                    onPressed: () {
+                                    onPressed: () async {
                                       if (_selectedDateTime == null) {
                                         CustomAlertDialog.showInfoDialog(
                                           context: context,
@@ -811,7 +811,46 @@ class _DishScreenState extends State<DishScreen> {
                                         return;
                                       }
 
-                                      if (_availabilityStatus == false) {
+                                      if (_dish == null) return;
+
+                                      // Fetch the latest dish data from Firebase to verify availability
+                                      final dishProvider = Provider.of<DishProvider>(
+                                        context,
+                                        listen: false,
+                                      );
+
+                                      final restaurantId = dishProvider.currentRestaurantId;
+                                      if (restaurantId == null) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Error",
+                                          message: "Restaurant information is missing.",
+                                          icon: Icon(
+                                            Icons.error_outline,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      await dishProvider.fetchDishes(restaurantId);
+                                      final latestDish = dishProvider.getDishById(_dish!.id);
+
+                                      if (latestDish == null) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Error",
+                                          message: "The dish is no longer available.",
+                                          icon: Icon(
+                                            Icons.error_outline,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      // Check availability from Firebase data
+                                      if (latestDish.isAvailable != true) {
                                         CustomAlertDialog.showInfoDialog(
                                           context: context,
                                           title: "Warning",
@@ -837,51 +876,49 @@ class _DishScreenState extends State<DishScreen> {
 
                                       orderProvider.setContext(context);
 
-                                      if (_dish != null) {
-                                        orderProvider
-                                            .addOrder(
-                                              userId:
-                                                  userProvider.userData?.id ??
-                                                  '',
-                                              username:
-                                                  userProvider
-                                                      .userData
-                                                      ?.username ??
-                                                  '',
-                                              dishId: _dish!.id,
-                                              dishName: _dish!.name,
-                                              dishPrice: _dish!.price,
-                                              pickupDateTime:
-                                                  _selectedDateTime!,
-                                            )
-                                            .then((_) {
-                                              CustomAlertDialog.showInfoDialog(
-                                                context: context,
-                                                title: "Dish sent to cart",
-                                                message:
-                                                    "The dish \"${_dish!.name}\" has been correctly added to your cart.",
-                                                icon: Icon(
-                                                  Icons.check_circle,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                buttonText: "OK",
-                                              );
-                                            })
-                                            .catchError((error) {
-                                              CustomAlertDialog.showInfoDialog(
-                                                context: context,
-                                                title: "Error",
-                                                message:
-                                                    orderProvider
-                                                        .errorMessage ??
-                                                    "Something went wrong. Try again later.",
-                                                icon: Icon(
-                                                  Icons.error_outline,
-                                                  color: colorScheme.error,
-                                                ),
-                                              );
-                                            });
-                                      }
+                                      orderProvider
+                                          .addOrder(
+                                            userId:
+                                                userProvider.userData?.id ??
+                                                '',
+                                            username:
+                                                userProvider
+                                                    .userData
+                                                    ?.username ??
+                                                '',
+                                            dishId: latestDish.id,
+                                            dishName: latestDish.name,
+                                            dishPrice: latestDish.price,
+                                            pickupDateTime:
+                                                _selectedDateTime!,
+                                          )
+                                          .then((_) {
+                                            CustomAlertDialog.showInfoDialog(
+                                              context: context,
+                                              title: "Dish sent to cart",
+                                              message:
+                                                  "The dish \"${latestDish.name}\" has been correctly added to your cart.",
+                                              icon: Icon(
+                                                Icons.check_circle,
+                                                color: colorScheme.primary,
+                                              ),
+                                              buttonText: "OK",
+                                            );
+                                          })
+                                          .catchError((error) {
+                                            CustomAlertDialog.showInfoDialog(
+                                              context: context,
+                                              title: "Error",
+                                              message:
+                                                  orderProvider
+                                                      .errorMessage ??
+                                                  "Something went wrong. Try again later.",
+                                              icon: Icon(
+                                                Icons.error_outline,
+                                                color: colorScheme.error,
+                                              ),
+                                            );
+                                          });
                                     },
                                   ),
 
@@ -951,18 +988,17 @@ class _DishScreenState extends State<DishScreen> {
         ),
 
         // Availability button on the bottom-left corner
-        if (!isSpecial)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: DishAvailabilityButton(
-              initialValue: _availabilityStatus,
-              isEditable: false,
-              size: 40,
-              symbolResize: 0.6,
-              onToggle: null,
-            ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: false,
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: null,
           ),
+        ),
       ],
     );
   }
@@ -1031,41 +1067,40 @@ class _DishScreenState extends State<DishScreen> {
         ),
 
         // Availability button on the bottom-left corner
-        if (!isSpecial)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: DishAvailabilityButton(
-              initialValue: _availabilityStatus,
-              isEditable: widget.isEditable,
-              size: 40,
-              symbolResize: 0.6,
-              onToggle: (value) {
-                debugPrint("Availability changed: $value");
-                setState(() {
-                  _availabilityStatus = value;
-                });
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: widget.isEditable,
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: (value) {
+              debugPrint("Availability changed: $value");
+              setState(() {
+                _availabilityStatus = value;
+              });
 
-                if (widget.dishId != null) {
-                  final dishProvider = Provider.of<DishProvider>(
-                    context,
-                    listen: false,
+              if (widget.dishId != null) {
+                final dishProvider = Provider.of<DishProvider>(
+                  context,
+                  listen: false,
+                );
+                final restaurantId = dishProvider.currentRestaurantId;
+
+                if (restaurantId != null) {
+                  dishProvider.updateDishAvailability(
+                    restaurantId,
+                    widget.dishId!,
+                    value,
                   );
-                  final restaurantId = dishProvider.currentRestaurantId;
-
-                  if (restaurantId != null) {
-                    dishProvider.updateDishAvailability(
-                      restaurantId,
-                      widget.dishId!,
-                      value,
-                    );
-                  }
                 }
+              }
 
-                widget.onAvailabilityChanged?.call(value);
-              },
-            ),
+              widget.onAvailabilityChanged?.call(value);
+            },
           ),
+        ),
       ],
     );
   }

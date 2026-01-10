@@ -171,7 +171,7 @@ class DishProvider with ChangeNotifier {
         cuisine: cuisine,
         minForewarningDays: minForewarningDays ?? 0,
         imageUrl: imageUrl ?? '',
-        isAvailable: isSpecial ? true : isAvailable,
+        isAvailable: isAvailable, // Use passed value even for special dishes
         userUsername: isSpecial ? userUsername : null,
       );
 
@@ -278,7 +278,7 @@ class DishProvider with ChangeNotifier {
         price: price,
         course: course,
         cuisine: cuisine,
-        isAvailable: isSpecial ? _dishes[index].isAvailable : isAvailable,
+        isAvailable: isAvailable ?? _dishes[index].isAvailable, // Update availability correctly for all dishes
         userUsername: isSpecial ? userUsername ?? _dishes[index].userUsername : null,
         minForewarningDays: minForewarningDays,
         imageUrl: newImageUrl,
