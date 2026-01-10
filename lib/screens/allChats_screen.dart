@@ -70,8 +70,8 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
 
   @override
   void dispose() {
-    // Use saved provider reference instead of doing Provider.of in dispose
-    _chatProvider.stopListeningToChats();
+    // Non fermiamo il listener qui perché deve rimanere attivo per il badge
+    // nella home screen. Il listener viene fermato solo al logout in ChatProvider.clearAllChats()
     super.dispose();
   }
 

@@ -9,7 +9,7 @@ class ChatFirestore {
   /// Constructor with dependency injection for testability
   /// In production, defaults to real Firestore instance
   ChatFirestore({FirebaseFirestore? firestoreInstance})
-      : _firestore = firestoreInstance ?? FirebaseFirestore.instance;
+    : _firestore = firestoreInstance ?? FirebaseFirestore.instance;
 
   // Reference alle collections principali
   CollectionReference get _chatsTable => _firestore.collection('chats');

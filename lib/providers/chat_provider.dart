@@ -175,14 +175,17 @@ class ChatProvider with ChangeNotifier {
   void _startUnreadRefreshTimer() {
     _unreadRefreshTimer?.cancel();
     _unreadRefreshTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(
+        seconds: 1,
+      ), // Controllo ogni secondo per aggiornamento quasi istantaneo
       (_) => _refreshUnreadCounts(),
     );
   }
 
   /// Refresh only the unread counts without reloading all chat data
   Future<void> _refreshUnreadCounts() async {
-    if (_currentUserId == null || _chats.isEmpty) return;
+    if (_currentUserId == null) return;
+    if (_chats.isEmpty) return;
 
     try {
       bool hasChanges = false;
@@ -205,7 +208,6 @@ class ChatProvider with ChangeNotifier {
       if (hasChanges) {
         _chats = updatedChats;
         notifyListeners();
-        debugPrint('ChatProvider: Unread counts refreshed');
       }
     } catch (e) {
       debugPrint('ChatProvider: Error refreshing unread counts - $e');
@@ -217,7 +219,6 @@ class ChatProvider with ChangeNotifier {
     _chatsSubscription?.cancel();
     _unreadRefreshTimer?.cancel();
     _isListening = false;
-    debugPrint('ChatProvider: Stopped listening to chats');
   }
 
   /// Enrich chats with user information and unread count
