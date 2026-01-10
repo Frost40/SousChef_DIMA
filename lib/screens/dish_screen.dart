@@ -244,6 +244,7 @@ class _DishScreenState extends State<DishScreen> {
     final imageUrlChanged =
         (initialText == null && controllerText.isNotEmpty) ||
         (initialText != null && controllerText != initialText);
+    final imageFileChanged = _imageFile != null; // Check if a new image file has been selected
     final courseChanged = _selectedCourse != _initialCourse;
     final cuisineChanged = _selectedCuisine != _initialCuisine;
     final minForewarningDaysChanged =
@@ -256,6 +257,7 @@ class _DishScreenState extends State<DishScreen> {
               priceChanged ||
               usernameChanged ||
               imageUrlChanged ||
+              imageFileChanged ||
               courseChanged ||
               cuisineChanged ||
               minForewarningDaysChanged) &&
@@ -264,7 +266,7 @@ class _DishScreenState extends State<DishScreen> {
 
     debugPrint(
       "Changes: name=$nameChanged, desc=$descriptionChanged, price=$priceChanged, "
-              "user=$usernameChanged, img=$imageUrlChanged, course=$courseChanged, " +
+              "user=$usernameChanged, img=$imageUrlChanged, imgFile=$imageFileChanged, course=$courseChanged, " +
           "cuisine=$cuisineChanged, hasChanges=$_hasChanges",
     );
   }

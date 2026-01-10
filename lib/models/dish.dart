@@ -39,7 +39,7 @@ class Dish {
 
     // Convert course from string to enum
     Course? dishCourse = Course.other;
-    if (!isSpecial && data['course'] != null) {
+    if (data['course'] != null) {
       final String courseStr = data['course'] as String;
       try {
         dishCourse = Course.values.firstWhere(
@@ -52,7 +52,7 @@ class Dish {
 
     // Convert cuisine from string to enum
     Cuisine? dishCuisine = Cuisine.other;
-    if (!isSpecial && data['cuisine'] != null) {
+    if (data['cuisine'] != null) {
       final String cuisineStr = data['cuisine'] as String;
       try {
         dishCuisine = Cuisine.values.firstWhere(
@@ -71,11 +71,11 @@ class Dish {
       isSpecial: isSpecial,
 
       // Regular dish attributes
-      isAvailable: isSpecial ? null : data['is_available'],
+      isAvailable: data['is_available'],
       course: dishCourse,
       cuisine: dishCuisine,
       minForewarningDays: data['min_forewarning_days'] ?? 0,
-      imageUrl: isSpecial ? null : data['image'],
+      imageUrl: data['image'],
 
       // Special dish attributes
       userUsername: isSpecial ? data['user_username'] : null,
@@ -95,14 +95,8 @@ class Dish {
       'min_forewarning_days': minForewarningDays,
       'image': imageUrl,
       'is_special': isSpecial,
+      'is_available': isAvailable,
     };
-
-    // Add regular dish attributes
-    if (!isSpecial) {
-      data.addAll({
-        'is_available': isAvailable,
-      });
-    }
 
     // Add special dish attributes
     if (isSpecial) {

@@ -171,7 +171,7 @@ class DishProvider with ChangeNotifier {
         cuisine: cuisine,
         minForewarningDays: minForewarningDays ?? 0,
         imageUrl: imageUrl ?? '',
-        isAvailable: isSpecial ? null : isAvailable,
+        isAvailable: isSpecial ? true : isAvailable,
         userUsername: isSpecial ? userUsername : null,
       );
 
@@ -251,15 +251,12 @@ class DishProvider with ChangeNotifier {
       if (name != null) updates['name'] = name;
       if (description != null) updates['description'] = description;
       if (price != null) updates['price'] = price;
+      if (isAvailable != null) updates['is_available'] = isAvailable;
 
       if (course != null) updates['course'] = course.toString().split('.').last;
       if (cuisine != null) updates['cuisine'] = cuisine.toString().split('.').last;
       if (minForewarningDays != null) updates['min_forewarning_days'] = minForewarningDays;
 
-      // Aggiungi i campi condizionali
-      if (!isSpecial && isAvailable != null) {
-        updates['is_available'] = isAvailable;
-      }
       if (isSpecial && userUsername != null) {
         updates['user_username'] = userUsername;
       }
