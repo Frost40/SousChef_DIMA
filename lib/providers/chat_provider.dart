@@ -38,6 +38,9 @@ class ChatProvider with ChangeNotifier {
   // Flag to track if listener is active
   bool _isListening = false;
 
+  // Timer for periodic unread count refresh
+  Timer? _unreadRefreshTimer;
+
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -77,12 +80,14 @@ class ChatProvider with ChangeNotifier {
   @override
   void dispose() {
     _chatsSubscription?.cancel();
+    _unreadRefreshTimer?.cancel();
     super.dispose();
   }
 
   /// Clears all chat data and resets the provider state
   void clearAllChats() {
     _chatsSubscription?.cancel();
+    _unreadRefreshTimer?.cancel();
     _isListening = false;
     _currentUserId = null;
     _chats = [];
@@ -161,11 +166,56 @@ class ChatProvider with ChangeNotifier {
             notifyListeners();
           },
         );
+
+    // Start periodic refresh of unread counts (every 5 seconds)
+    _startUnreadRefreshTimer();
+  }
+
+  /// Start timer for periodic unread count refresh
+  void _startUnreadRefreshTimer() {
+    _unreadRefreshTimer?.cancel();
+    _unreadRefreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _refreshUnreadCounts(),
+    );
+  }
+
+  /// Refresh only the unread counts without reloading all chat data
+  Future<void> _refreshUnreadCounts() async {
+    if (_currentUserId == null || _chats.isEmpty) return;
+
+    try {
+      bool hasChanges = false;
+      final List<ChatInfo> updatedChats = [];
+
+      for (var chatInfo in _chats) {
+        final newUnreadCount = await _chatFirestore.getUnreadMessagesCount(
+          chatInfo.chat.id,
+          _currentUserId!,
+        );
+
+        if (newUnreadCount != chatInfo.unreadCount) {
+          hasChanges = true;
+          updatedChats.add(chatInfo.copyWith(unreadCount: newUnreadCount));
+        } else {
+          updatedChats.add(chatInfo);
+        }
+      }
+
+      if (hasChanges) {
+        _chats = updatedChats;
+        notifyListeners();
+        debugPrint('ChatProvider: Unread counts refreshed');
+      }
+    } catch (e) {
+      debugPrint('ChatProvider: Error refreshing unread counts - $e');
+    }
   }
 
   /// Stop listening to real-time chat updates
   void stopListeningToChats() {
     _chatsSubscription?.cancel();
+    _unreadRefreshTimer?.cancel();
     _isListening = false;
     debugPrint('ChatProvider: Stopped listening to chats');
   }
