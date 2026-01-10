@@ -316,6 +316,219 @@ void main() {
       });
     });
 
+    group('cancelPayment', () {
+      test('should call cancelPayment callable with correct parameters',
+          () async {
+        // Arrange
+        final orderIds = ['order1', 'order2', 'order3'];
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'success': true,
+          'message': 'Payment cancelled successfully',
+          'cancelledOrders': orderIds,
+        });
+
+        // Act
+        final result = await stripeService.cancelPayment(
+          orderIds: orderIds,
+        );
+
+        // Assert
+        expect(result['success'], true);
+        expect(result['message'], 'Payment cancelled successfully');
+        expect(result['cancelledOrders'], orderIds);
+        verify(() => mockFunctions.httpsCallable('cancelPayment')).called(1);
+        verify(() => mockCallable.call({
+              'orderIds': orderIds,
+            })).called(1);
+      });
+
+      test('should handle single order cancellation', () async {
+        // Arrange
+        final orderIds = ['order1'];
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'success': true,
+          'cancelledOrders': orderIds,
+        });
+
+        // Act
+        final result = await stripeService.cancelPayment(
+          orderIds: orderIds,
+        );
+
+        // Assert
+        expect(result['success'], true);
+        expect(result['cancelledOrders'], orderIds);
+        verify(() => mockCallable.call({
+              'orderIds': orderIds,
+            })).called(1);
+      });
+
+      test('should return response data from cancelPayment', () async {
+        // Arrange
+        final orderIds = ['order1', 'order2'];
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+        final expectedData = {
+          'success': true,
+          'message': 'Orders reverted to ready_for_checkout',
+          'cancelledOrders': orderIds,
+          'timestamp': '2026-01-10T12:00:00Z',
+        };
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn(expectedData);
+
+        // Act
+        final result = await stripeService.cancelPayment(
+          orderIds: orderIds,
+        );
+
+        // Assert
+        expect(result, expectedData);
+        expect(result['success'], true);
+        expect(result['message'], 'Orders reverted to ready_for_checkout');
+        expect(result['cancelledOrders'], orderIds);
+        expect(result['timestamp'], '2026-01-10T12:00:00Z');
+      });
+
+      test('should handle empty order list', () async {
+        // Arrange
+        final orderIds = <String>[];
+        final mockResult = MockHttpsCallableResult<Map<String, dynamic>>();
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn({
+          'success': true,
+          'message': 'No orders to cancel',
+          'cancelledOrders': [],
+        });
+
+        // Act
+        final result = await stripeService.cancelPayment(
+          orderIds: orderIds,
+        );
+
+        // Assert
+        expect(result['success'], true);
+        expect(result['cancelledOrders'], isEmpty);
+        verify(() => mockCallable.call({
+              'orderIds': orderIds,
+            })).called(1);
+      });
+
+      test('should handle FirebaseFunctionsException on cancelPayment',
+          () async {
+        // Arrange
+        final orderIds = ['order1', 'order2'];
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenThrow(
+          FirebaseFunctionsException(
+            code: 'permission-denied',
+            message: 'User not authorized to cancel payment',
+          ),
+        );
+
+        // Act & Assert
+        expect(
+          () => stripeService.cancelPayment(
+            orderIds: orderIds,
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Firebase Error: permission-denied'),
+          )),
+        );
+      });
+
+      test('should handle generic exceptions on cancelPayment', () async {
+        // Arrange
+        final orderIds = ['order1'];
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any()))
+            .thenThrow(Exception('Network timeout'));
+
+        // Act & Assert
+        expect(
+          () => stripeService.cancelPayment(
+            orderIds: orderIds,
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Error cancelling payment'),
+          )),
+        );
+      });
+
+      test('should handle FirebaseFunctionsException with different error codes',
+          () async {
+        // Arrange
+        final orderIds = ['order1'];
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenThrow(
+          FirebaseFunctionsException(
+            code: 'invalid-argument',
+            message: 'Invalid order IDs provided',
+          ),
+        );
+
+        // Act & Assert
+        expect(
+          () => stripeService.cancelPayment(
+            orderIds: orderIds,
+          ),
+          throwsA(isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('Firebase Error: invalid-argument'),
+              contains('Invalid order IDs provided'),
+            ),
+          )),
+        );
+      });
+
+      test('should handle null data in response', () async {
+        // Arrange
+        final orderIds = ['order1'];
+        final mockResult = MockHttpsCallableResult<dynamic>();
+
+        when(() => mockFunctions.httpsCallable('cancelPayment'))
+            .thenReturn(mockCallable);
+        when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
+        when(() => mockResult.data).thenReturn(null);
+
+        // Act & Assert
+        // Should throw when trying to convert null to Map
+        expect(
+          () => stripeService.cancelPayment(
+            orderIds: orderIds,
+          ),
+          throwsA(isA<Exception>()),
+        );
+      });
+    });
+
     group('Service Initialization', () {
       test('should initialize with injected functions instance', () {
         final service = StripeService(functions: mockFunctions);
@@ -328,6 +541,10 @@ void main() {
 
       test('should have createRefund method', () {
         expect(stripeService.createRefund, isNotNull);
+      });
+
+      test('should have cancelPayment method', () {
+        expect(stripeService.cancelPayment, isNotNull);
       });
     });
   });

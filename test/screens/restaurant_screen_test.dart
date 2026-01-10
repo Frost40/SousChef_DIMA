@@ -19,6 +19,7 @@ void main() {
   late MockDishProvider mockDishProvider;
   late MockChatProvider mockChatProvider;
   late MockOrderProvider mockOrderProvider;
+  late MockUserProvider mockUserProvider;
 
   // Sample normal user (not the restaurant owner)
   final testNormalUser = User(
@@ -98,6 +99,7 @@ void main() {
     mockDishProvider = MockDishProvider();
     mockChatProvider = MockChatProvider();
     mockOrderProvider = MockOrderProvider();
+    mockUserProvider = MockUserProvider();
 
     // Stub default values for AuthProvider (normal user)
     when(() => mockAuthProvider.user).thenReturn(testNormalUser);
@@ -130,6 +132,9 @@ void main() {
     // Stub default values for OrderProvider
     when(() => mockOrderProvider.isLoading).thenReturn(false);
     when(() => mockOrderProvider.userOrders).thenReturn([]);
+
+    // Stub default values for UserProvider
+    when(() => mockUserProvider.userData).thenReturn(null);
   });
 
   setUpAll(() {
@@ -171,6 +176,7 @@ void main() {
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
           orderProvider: mockOrderProvider,
+          userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -191,7 +197,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -212,7 +218,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -235,7 +241,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -267,7 +273,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -292,7 +298,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -319,7 +325,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -340,7 +346,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -363,7 +369,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -395,7 +401,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -418,7 +424,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -441,7 +447,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -462,7 +468,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -489,7 +495,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -514,7 +520,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
         );
 
         await tester.pump();
@@ -549,7 +555,7 @@ void main() {
             restaurantProvider: mockRestaurantProvider,
             dishProvider: mockDishProvider,
             chatProvider: mockChatProvider,
-            orderProvider: mockOrderProvider,
+            orderProvider: mockOrderProvider, userProvider: mockUserProvider,
             screenSize: mobileSize,
           );
 
@@ -581,7 +587,7 @@ void main() {
             restaurantProvider: mockRestaurantProvider,
             dishProvider: mockDishProvider,
             chatProvider: mockChatProvider,
-            orderProvider: mockOrderProvider,
+            orderProvider: mockOrderProvider, userProvider: mockUserProvider,
             screenSize: mobileSize,
           );
 
@@ -619,7 +625,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: mobileSize,
         );
 
@@ -641,7 +647,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: mobileSize,
         );
 
@@ -663,7 +669,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: mobileSize,
         );
 
@@ -685,7 +691,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: mobileSize,
         );
 
@@ -719,7 +725,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletVerticalSize,
         );
 
@@ -741,7 +747,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletVerticalSize,
         );
 
@@ -765,7 +771,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletVerticalSize,
         );
 
@@ -787,7 +793,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletVerticalSize,
         );
 
@@ -821,7 +827,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletHorizontalSize,
         );
 
@@ -845,7 +851,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletHorizontalSize,
         );
 
@@ -869,7 +875,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletHorizontalSize,
         );
 
@@ -893,7 +899,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletHorizontalSize,
         );
 
@@ -916,7 +922,7 @@ void main() {
           restaurantProvider: mockRestaurantProvider,
           dishProvider: mockDishProvider,
           chatProvider: mockChatProvider,
-          orderProvider: mockOrderProvider,
+          orderProvider: mockOrderProvider, userProvider: mockUserProvider,
           screenSize: tabletHorizontalSize,
         );
 
@@ -941,7 +947,7 @@ void main() {
             restaurantProvider: mockRestaurantProvider,
             dishProvider: mockDishProvider,
             chatProvider: mockChatProvider,
-            orderProvider: mockOrderProvider,
+            orderProvider: mockOrderProvider, userProvider: mockUserProvider,
             screenSize: tabletHorizontalSize,
           );
 

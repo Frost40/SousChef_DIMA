@@ -959,5 +959,365 @@ void main() {
         expect(dishProvider.errorMessage, contains('Network'));
       });
     });
+
+    group('updateUsernameForSpecialDishes', () {
+      test('should update username in Firestore and local cache', () async {
+        // Arrange
+        final specialDish1 = MockModels.createMockDish(
+          id: 'dish1',
+          name: 'Special Dish 1',
+          isSpecial: true,
+          userUsername: 'olduser',
+        );
+        final specialDish2 = MockModels.createMockDish(
+          id: 'dish2',
+          name: 'Special Dish 2',
+          isSpecial: true,
+          userUsername: 'olduser',
+        );
+        final regularDish = MockModels.createMockDish(
+          id: 'dish3',
+          name: 'Regular Dish',
+          isSpecial: false,
+        );
+
+        // Load dishes first
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [specialDish1, specialDish2, regularDish]);
+        await dishProvider.fetchDishes('restaurant123');
+
+        // Mock the update method
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: 'olduser',
+              newUsername: 'newuser',
+            )).thenAnswer((_) async {});
+
+        // Mock the refresh fetch
+        final updatedDish1 = specialDish1.copyWith(userUsername: 'newuser');
+        final updatedDish2 = specialDish2.copyWith(userUsername: 'newuser');
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [updatedDish1, updatedDish2, regularDish]);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert
+        verify(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: 'olduser',
+              newUsername: 'newuser',
+            )).called(1);
+
+        // Verify dishes were refreshed
+        verify(() => mockDishFirestore.getRestaurantDishes('restaurant123')).called(2);
+
+        // Verify local cache was updated
+        final specialDishes = dishProvider.dishes.where((d) => d.isSpecial).toList();
+        expect(specialDishes.every((d) => d.userUsername == 'newuser'), true);
+      });
+
+      test('should update local cache before refreshing', () async {
+        // Arrange
+        final specialDish = MockModels.createMockDish(
+          id: 'dish1',
+          isSpecial: true,
+          userUsername: 'olduser',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [specialDish]);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenAnswer((_) async {});
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [specialDish.copyWith(userUsername: 'newuser')]);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert - local cache should be updated
+        expect(dishProvider.dishes.first.userUsername, 'newuser');
+      });
+
+      test('should not update regular dishes', () async {
+        // Arrange
+        final regularDish = MockModels.createMockDish(
+          id: 'dish1',
+          isSpecial: false,
+          userUsername: null,
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [regularDish]);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenAnswer((_) async {});
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [regularDish]);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert - regular dish should remain unchanged
+        expect(dishProvider.dishes.first.isSpecial, false);
+        expect(dishProvider.dishes.first.userUsername, null);
+      });
+
+      test('should refresh dishes if restaurant is loaded', () async {
+        // Arrange
+        final dish = MockModels.createMockDish(
+          isSpecial: true,
+          userUsername: 'olduser',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [dish]);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenAnswer((_) async {});
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [dish.copyWith(userUsername: 'newuser')]);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert - should call fetchDishes to refresh
+        verify(() => mockDishFirestore.getRestaurantDishes('restaurant123')).called(2);
+        expect(dishProvider.currentRestaurantId, 'restaurant123');
+      });
+
+      test('should work when no restaurant is currently loaded', () async {
+        // Arrange - don't load any restaurant
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenAnswer((_) async {});
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert - should not try to refresh dishes
+        verify(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: 'olduser',
+              newUsername: 'newuser',
+            )).called(1);
+        verifyNever(() => mockDishFirestore.getRestaurantDishes(any()));
+      });
+
+      test('should set error message on failure', () async {
+        // Arrange
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenThrow(Exception('Update failed'));
+
+        // Act & Assert
+        expect(
+          () => dishProvider.updateUsernameForSpecialDishes(
+            oldUsername: 'olduser',
+            newUsername: 'newuser',
+          ),
+          throwsException,
+        );
+
+        // Assert error message was set
+        expect(dishProvider.errorMessage, isNotNull);
+      });
+
+      test('should rethrow exception after setting error', () async {
+        // Arrange
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenThrow(Exception('Database error'));
+
+        // Act & Assert - should rethrow to allow caller to handle
+        await expectLater(
+          dishProvider.updateUsernameForSpecialDishes(
+            oldUsername: 'olduser',
+            newUsername: 'newuser',
+          ),
+          throwsException,
+        );
+      });
+
+      test('should notify listeners on success', () async {
+        // Arrange
+        var notifyCount = 0;
+        dishProvider.addListener(() => notifyCount++);
+
+        final dish = MockModels.createMockDish(
+          isSpecial: true,
+          userUsername: 'olduser',
+        );
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [dish]);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenAnswer((_) async {});
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => [dish.copyWith(userUsername: 'newuser')]);
+
+        notifyCount = 0; // Reset after initial fetch
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert
+        expect(notifyCount, greaterThan(0));
+      });
+
+      test('should notify listeners on failure', () async {
+        // Arrange
+        var notifyCount = 0;
+        dishProvider.addListener(() => notifyCount++);
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: any(named: 'oldUsername'),
+              newUsername: any(named: 'newUsername'),
+            )).thenThrow(Exception('Update error'));
+
+        // Act
+        try {
+          await dishProvider.updateUsernameForSpecialDishes(
+            oldUsername: 'olduser',
+            newUsername: 'newuser',
+          );
+        } catch (e) {
+          // Expected
+        }
+
+        // Assert
+        expect(notifyCount, greaterThan(0));
+      });
+
+      test('should handle multiple special dishes with same old username', () async {
+        // Arrange
+        final dishes = [
+          MockModels.createMockDish(
+            id: 'dish1',
+            isSpecial: true,
+            userUsername: 'olduser',
+          ),
+          MockModels.createMockDish(
+            id: 'dish2',
+            isSpecial: true,
+            userUsername: 'olduser',
+          ),
+          MockModels.createMockDish(
+            id: 'dish3',
+            isSpecial: true,
+            userUsername: 'olduser',
+          ),
+        ];
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => dishes);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: 'olduser',
+              newUsername: 'newuser',
+            )).thenAnswer((_) async {});
+
+        final updatedDishes = dishes
+            .map((d) => d.copyWith(userUsername: 'newuser'))
+            .toList();
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => updatedDishes);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert - all dishes should be updated
+        final allUpdated = dishProvider.dishes.every(
+          (d) => d.isSpecial && d.userUsername == 'newuser',
+        );
+        expect(allUpdated, true);
+        expect(dishProvider.dishes.length, 3);
+      });
+
+      test('should only update dishes matching old username', () async {
+        // Arrange
+        final dishes = [
+          MockModels.createMockDish(
+            id: 'dish1',
+            isSpecial: true,
+            userUsername: 'olduser',
+          ),
+          MockModels.createMockDish(
+            id: 'dish2',
+            isSpecial: true,
+            userUsername: 'differentuser',
+          ),
+        ];
+
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => dishes);
+        await dishProvider.fetchDishes('restaurant123');
+
+        when(() => mockDishFirestore.updateUsernameForSpecialDishes(
+              oldUsername: 'olduser',
+              newUsername: 'newuser',
+            )).thenAnswer((_) async {});
+
+        final updatedDishes = [
+          dishes[0].copyWith(userUsername: 'newuser'),
+          dishes[1], // This one stays unchanged
+        ];
+        when(() => mockDishFirestore.getRestaurantDishes('restaurant123'))
+            .thenAnswer((_) async => updatedDishes);
+
+        // Act
+        await dishProvider.updateUsernameForSpecialDishes(
+          oldUsername: 'olduser',
+          newUsername: 'newuser',
+        );
+
+        // Assert
+        final dish1 = dishProvider.dishes.firstWhere((d) => d.id == 'dish1');
+        final dish2 = dishProvider.dishes.firstWhere((d) => d.id == 'dish2');
+
+        expect(dish1.userUsername, 'newuser');
+        expect(dish2.userUsername, 'differentuser');
+      });
+    });
   });
 }

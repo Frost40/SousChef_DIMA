@@ -15,7 +15,9 @@ class OrderProvider extends ChangeNotifier {
   /// In production, defaults to real service instance
   OrderProvider({
     OrderFirestore? orderFirestore,
-  }) : _orderFirestore = orderFirestore ?? OrderFirestore();
+    RestaurantProvider? restaurantProvider,
+  })  : _orderFirestore = orderFirestore ?? OrderFirestore(),
+        _restaurantProvider = restaurantProvider;
 
   void setContext(BuildContext context) {
     _restaurantProvider = Provider.of<RestaurantProvider>(

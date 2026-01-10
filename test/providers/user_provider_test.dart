@@ -298,7 +298,11 @@ void main() {
             )).thenThrow(Exception('Update failed'));
 
         // Act
-        await userProvider.updateUserProfile(username: 'newusername');
+        try {
+          await userProvider.updateUserProfile(username: 'newusername');
+        } catch (e) {
+          // Expected exception
+        }
 
         // Assert
         expect(userProvider.isLoading, false);
@@ -315,7 +319,11 @@ void main() {
             )).thenThrow(Exception('username error'));
 
         // Act
-        await userProvider.updateUserProfile(username: 'newusername');
+        try {
+          await userProvider.updateUserProfile(username: 'newusername');
+        } catch (e) {
+          // Expected exception
+        }
 
         // Assert
         expect(userProvider.hasUsernameError, true);
@@ -331,7 +339,11 @@ void main() {
             )).thenThrow(Exception('phone error'));
 
         // Act
-        await userProvider.updateUserProfile(phone: 'invalid');
+        try {
+          await userProvider.updateUserProfile(phone: 'invalid');
+        } catch (e) {
+          // Expected exception
+        }
 
         // Assert
         expect(userProvider.hasPhoneError, true);
@@ -979,7 +991,11 @@ void main() {
             )).thenThrow(Exception('email validation failed'));
 
         // Act
-        await userProvider.updateUserProfile(username: 'test');
+        try {
+          await userProvider.updateUserProfile(username: 'test');
+        } catch (e) {
+          // Expected exception
+        }
 
         // Assert
         expect(userProvider.hasEmailError, true);
@@ -995,7 +1011,11 @@ void main() {
             )).thenThrow(Exception('password is invalid'));
 
         // Act
-        await userProvider.updateUserProfile(username: 'test');
+        try {
+          await userProvider.updateUserProfile(username: 'test');
+        } catch (e) {
+          // Expected exception
+        }
 
         // Assert
         expect(userProvider.hasPasswordError, true);

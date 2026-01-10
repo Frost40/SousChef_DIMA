@@ -194,7 +194,7 @@ class UserFirestore {
     }
 
     final String userId = _uid!;
-    final FirebaseFirestore db = FirebaseFirestore.instance;
+    final FirebaseFirestore db = _firestore;
     final WriteBatch batch = db.batch();
 
     try {

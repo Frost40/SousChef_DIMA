@@ -2,8 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sous_chef/providers/order_provider.dart';
-import 'package:sous_chef/services/database/order_firestore.dart';
-import 'package:sous_chef/models/order.dart';
+import 'package:sous_chef/providers/restaurant_provider.dart';
+import 'package:sous_chef/models/order.dart' as order_model;
+import 'package:sous_chef/models/restaurant.dart';
 import '../mocks/mock_services.dart';
 import '../mocks/mock_models.dart';
 
@@ -11,6 +12,16 @@ void main() {
   group('OrderProvider Tests', () {
     late OrderProvider orderProvider;
     late MockOrderFirestore mockOrderFirestore;
+
+    setUpAll(() {
+      // Register fallback value for OrderItem
+      registerFallbackValue(order_model.OrderItem(
+        dishId: 'fallback',
+        name: 'Fallback',
+        quantity: 1,
+        price: 0.0,
+      ));
+    });
 
     setUp(() {
       mockOrderFirestore = MockOrderFirestore();
@@ -835,5 +846,578 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    group('addOrder', () {
+      late FakeRestaurantProvider fakeRestaurantProvider;
+      late OrderProvider orderProviderWithRestaurant;
+
+      setUp(() {
+        fakeRestaurantProvider = FakeRestaurantProvider();
+        // Create a new provider instance with injected RestaurantProvider
+        orderProviderWithRestaurant = OrderProvider(
+          orderFirestore: mockOrderFirestore,
+          restaurantProvider: fakeRestaurantProvider,
+        );
+      });
+
+      tearDown(() {
+        orderProviderWithRestaurant.dispose();
+      });
+
+      test('should fail when restaurant provider is not set', () async {
+        // Arrange - use orderProvider without RestaurantProvider
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+
+        // Act
+        await orderProvider.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: DateTime.now().add(const Duration(hours: 2)),
+        );
+
+        // Assert
+        expect(orderProvider.errorMessage, 'Restaurant not found');
+        expect(orderProvider.isLoading, false);
+      });
+
+      test('should create new order when no pending order exists', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'Test Restaurant',
+        );
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((_) async => 'newOrder123');
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        verify(() => mockOrderFirestore.createNewOrder(order: any(named: 'order'))).called(1);
+        expect(orderProviderWithRestaurant.userOrders.length, 1);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.length, 1);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.first.dishId, 'dish1');
+        expect(orderProviderWithRestaurant.userOrders.first.total, 15.0);
+        expect(orderProviderWithRestaurant.isLoading, false);
+        expect(orderProviderWithRestaurant.errorMessage, isNull);
+      });
+
+      test('should handle error when createNewOrder returns empty ID', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((_) async => ''); // Empty ID indicates failure
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.errorMessage, 'Failed to create new order');
+        expect(orderProviderWithRestaurant.isLoading, false);
+        expect(orderProviderWithRestaurant.userOrders.isEmpty, true);
+      });
+
+      test('should add new dish to existing order', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          total: 20.0,
+          dishes: [
+            order_model.OrderItem(
+              dishId: 'dish1',
+              name: 'Pasta',
+              quantity: 1,
+              price: 20.0,
+            ),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.addDishToOrder(
+              orderId: any(named: 'orderId'),
+              orderItem: any(named: 'orderItem'),
+            )).thenAnswer((_) async {});
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish2',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        verify(() => mockOrderFirestore.addDishToOrder(
+              orderId: 'order1',
+              orderItem: any(named: 'orderItem'),
+            )).called(1);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.length, 2);
+        expect(orderProviderWithRestaurant.isLoading, false);
+      });
+
+      test('should increase quantity when adding same dish to existing order', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          total: 15.0,
+          dishes: [
+            order_model.OrderItem(
+              dishId: 'dish1',
+              name: 'Pizza',
+              quantity: 1,
+              price: 15.0,
+            ),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.updateOrder(
+              orderId: any(named: 'orderId'),
+              dishId: any(named: 'dishId'),
+              newQuantity: any(named: 'newQuantity'),
+              dishPrice: any(named: 'dishPrice'),
+            )).thenAnswer((_) async {});
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        verify(() => mockOrderFirestore.updateOrder(
+              orderId: 'order1',
+              dishId: 'dish1',
+              newQuantity: 2,
+              dishPrice: 15.0,
+            )).called(1);
+        expect(orderProviderWithRestaurant.userOrders.first.total, 30.0);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.first.quantity, 2);
+        expect(orderProviderWithRestaurant.isLoading, false);
+      });
+
+      test('should update local order state when increasing quantity', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          total: 10.0,
+          dishes: [
+            order_model.OrderItem(
+              dishId: 'dish1',
+              name: 'Salad',
+              quantity: 2,
+              price: 5.0,
+            ),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.updateOrder(
+              orderId: any(named: 'orderId'),
+              dishId: any(named: 'dishId'),
+              newQuantity: any(named: 'newQuantity'),
+              dishPrice: any(named: 'dishPrice'),
+            )).thenAnswer((_) async {});
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Salad',
+          dishPrice: 5.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.userOrders.first.total, 15.0);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.first.quantity, 3);
+      });
+
+      test('should handle error during order creation', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenThrow(Exception('Database error'));
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.errorMessage, isNotNull);
+        expect(orderProviderWithRestaurant.isLoading, false);
+      });
+
+      test('should handle error when adding dish to existing order', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          dishes: [
+            order_model.OrderItem(
+              dishId: 'dish1',
+              name: 'Pasta',
+              quantity: 1,
+              price: 12.0,
+            ),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.addDishToOrder(
+              orderId: any(named: 'orderId'),
+              orderItem: any(named: 'orderItem'),
+            )).thenThrow(Exception('Failed to add dish'));
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish2',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.errorMessage, isNotNull);
+        expect(orderProviderWithRestaurant.isLoading, false);
+      });
+
+      test('should handle error when updating dish quantity', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          dishes: [
+            order_model.OrderItem(
+              dishId: 'dish1',
+              name: 'Pizza',
+              quantity: 1,
+              price: 15.0,
+            ),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.updateOrder(
+              orderId: any(named: 'orderId'),
+              dishId: any(named: 'dishId'),
+              newQuantity: any(named: 'newQuantity'),
+              dishPrice: any(named: 'dishPrice'),
+            )).thenThrow(Exception('Update failed'));
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.errorMessage, isNotNull);
+        expect(orderProviderWithRestaurant.isLoading, false);
+      });
+
+      test('should create order with correct restaurant details', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(
+          id: 'rest123',
+          name: 'La Bella Vita',
+          address: '123 Main Street',
+          location: const GeoPoint(45.4642, 9.1900),
+        );
+        final pickupTime = DateTime.now().add(const Duration(hours: 3));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((_) async => 'order123');
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'johndoe',
+          dishId: 'dish1',
+          dishName: 'Margherita Pizza',
+          dishPrice: 12.50,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        final createdOrder = orderProviderWithRestaurant.userOrders.first;
+        expect(createdOrder.restaurantId, 'rest123');
+        expect(createdOrder.restaurantName, 'La Bella Vita');
+        expect(createdOrder.restaurantAddress, '123 Main Street');
+        expect(createdOrder.username, 'johndoe');
+        expect(createdOrder.userId, 'user123');
+        expect(createdOrder.status, 'ready_for_checkout');
+      });
+
+      test('should generate verification code for new order', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((_) async => 'order123');
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        final createdOrder = orderProviderWithRestaurant.userOrders.first;
+        expect(createdOrder.verificationCode, isNotNull);
+        expect(createdOrder.verificationCode.length, 6);
+        expect(int.tryParse(createdOrder.verificationCode), isNotNull);
+        expect(int.parse(createdOrder.verificationCode), greaterThanOrEqualTo(100000));
+        expect(int.parse(createdOrder.verificationCode), lessThan(1000000));
+      });
+
+      test('should notify listeners during addOrder operation', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        var notifyCount = 0;
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => []);
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((_) async => 'order123');
+
+        orderProviderWithRestaurant.addListener(() => notifyCount++);
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert - should notify at least twice (loading start, loading end)
+        expect(notifyCount, greaterThanOrEqualTo(2));
+      });
+
+      test('should handle multiple dishes in new order workflow', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+
+        // First call returns empty, subsequent calls return the created order
+        var callCount = 0;
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [];
+          } else {
+            // Return an order that matches what was created
+            return [
+              MockModels.createMockOrder(
+                id: 'order_dish1',
+                restaurantId: 'rest123',
+                status: 'ready_for_checkout',
+                pickupDateTime: pickupTime,
+                total: 15.0,
+                dishes: [
+                  order_model.OrderItem(
+                    dishId: 'dish1',
+                    name: 'Pizza',
+                    quantity: 1,
+                    price: 15.0,
+                  ),
+                ],
+              ),
+            ];
+          }
+        });
+
+        when(() => mockOrderFirestore.createNewOrder(order: any(named: 'order')))
+            .thenAnswer((invocation) async {
+          final order = invocation.namedArguments[#order] as order_model.Order;
+          return 'order_${order.dishes.first.dishId}';
+        });
+        when(() => mockOrderFirestore.addDishToOrder(
+              orderId: any(named: 'orderId'),
+              orderItem: any(named: 'orderItem'),
+            )).thenAnswer((_) async {});
+
+        // Act - add first dish (creates order)
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish1',
+          dishName: 'Pizza',
+          dishPrice: 15.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Act - add second dish to same order
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish2',
+          dishName: 'Pasta',
+          dishPrice: 12.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.length, 2);
+      });
+
+      test('should preserve existing dishes when adding new dish', () async {
+        // Arrange
+        final mockRestaurant = MockModels.createMockRestaurant(id: 'rest123');
+        final pickupTime = DateTime.now().add(const Duration(hours: 2));
+        final existingOrder = MockModels.createMockOrder(
+          id: 'order1',
+          restaurantId: 'rest123',
+          status: 'ready_for_checkout',
+          pickupDateTime: pickupTime,
+          total: 25.0,
+          dishes: [
+            order_model.OrderItem(dishId: 'dish1', name: 'Pizza', quantity: 1, price: 15.0),
+            order_model.OrderItem(dishId: 'dish2', name: 'Pasta', quantity: 1, price: 10.0),
+          ],
+        );
+
+        fakeRestaurantProvider.setRestaurant(mockRestaurant);
+        when(() => mockOrderFirestore.getUserOrders(any()))
+            .thenAnswer((_) async => [existingOrder]);
+        when(() => mockOrderFirestore.addDishToOrder(
+              orderId: any(named: 'orderId'),
+              orderItem: any(named: 'orderItem'),
+            )).thenAnswer((_) async {});
+
+        // Act
+        await orderProviderWithRestaurant.addOrder(
+          userId: 'user123',
+          username: 'testuser',
+          dishId: 'dish3',
+          dishName: 'Salad',
+          dishPrice: 8.0,
+          pickupDateTime: pickupTime,
+        );
+
+        // Assert
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.length, 3);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.any((d) => d.dishId == 'dish1'), true);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.any((d) => d.dishId == 'dish2'), true);
+        expect(orderProviderWithRestaurant.userOrders.first.dishes.any((d) => d.dishId == 'dish3'), true);
+      });
+    });
   });
 }
+
+// Fake class for RestaurantProvider to properly mock restaurant property
+class FakeRestaurantProvider extends Fake implements RestaurantProvider {
+  Restaurant? _restaurant;
+
+  @override
+  Restaurant? get restaurant => _restaurant;
+
+  void setRestaurant(Restaurant? restaurant) {
+    _restaurant = restaurant;
+  }
+}
+

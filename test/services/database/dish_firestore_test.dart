@@ -16,8 +16,16 @@ class MockQuerySnapshot extends Mock implements QuerySnapshot<Map<String, dynami
 class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
 // ignore: subtype_of_sealed_class
 class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Map<String, dynamic>> {}
+class MockWriteBatch extends Mock implements WriteBatch {}
+
+/// Fake classes for fallback values
+class FakeDocumentReference extends Fake implements DocumentReference<Map<String, dynamic>> {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeDocumentReference());
+    registerFallbackValue(<String, dynamic>{});
+  });
   group('DishFirestore Service Tests', () {
     late DishFirestore dishFirestore;
     late MockFirebaseFirestore mockFirestore;
@@ -340,6 +348,327 @@ void main() {
         expect(specialDish.isSpecial, true);
         expect(specialDish.userUsername, 'specialchef');
         expect(specialDish.minForewarningDays, 3);
+      });
+    });
+
+    group('getSpecialDishesByUsername', () {
+      test('should return special dishes for a given username across restaurants', () async {
+        // Arrange
+        final mockRestaurantsSnapshot = MockQuerySnapshot();
+        final mockRestaurantDoc1 = MockQueryDocumentSnapshot();
+        final mockRestaurantDoc2 = MockQueryDocumentSnapshot();
+
+        final mockDishesSnapshot1 = MockQuerySnapshot();
+        final mockDishDoc1 = MockQueryDocumentSnapshot();
+
+        final mockDishesSnapshot2 = MockQuerySnapshot();
+        final mockDishDoc2 = MockQueryDocumentSnapshot();
+
+        final mockDishesCollection1 = MockCollectionReference();
+        final mockDishesCollection2 = MockCollectionReference();
+        final mockRestaurantDoc1Ref = MockDocumentReference();
+        final mockRestaurantDoc2Ref = MockDocumentReference();
+
+        // Setup restaurant collection
+        when(() => mockRestaurantCollection.get())
+            .thenAnswer((_) async => mockRestaurantsSnapshot);
+        when(() => mockRestaurantsSnapshot.docs)
+            .thenReturn([mockRestaurantDoc1, mockRestaurantDoc2]);
+
+        when(() => mockRestaurantDoc1.id).thenReturn('restaurant1');
+        when(() => mockRestaurantDoc2.id).thenReturn('restaurant2');
+
+        // Setup dishes queries
+        when(() => mockRestaurantCollection.doc('restaurant1'))
+            .thenReturn(mockRestaurantDoc1Ref);
+        when(() => mockRestaurantCollection.doc('restaurant2'))
+            .thenReturn(mockRestaurantDoc2Ref);
+
+        when(() => mockRestaurantDoc1Ref.collection('dishes'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockRestaurantDoc2Ref.collection('dishes'))
+            .thenReturn(mockDishesCollection2);
+
+        when(() => mockDishesCollection1.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.where('user_username', isEqualTo: 'chef123'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.get())
+            .thenAnswer((_) async => mockDishesSnapshot1);
+
+        when(() => mockDishesCollection2.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection2);
+        when(() => mockDishesCollection2.where('user_username', isEqualTo: 'chef123'))
+            .thenReturn(mockDishesCollection2);
+        when(() => mockDishesCollection2.get())
+            .thenAnswer((_) async => mockDishesSnapshot2);
+
+        when(() => mockDishesSnapshot1.docs).thenReturn([mockDishDoc1]);
+        when(() => mockDishesSnapshot2.docs).thenReturn([mockDishDoc2]);
+
+        when(() => mockDishDoc1.id).thenReturn('dish1');
+        when(() => mockDishDoc1.data()).thenReturn({
+          'name': 'Special Pasta',
+          'description': 'Chef special',
+          'price': 25.0,
+          'course': 'main',
+          'cuisine': 'italian',
+          'is_available': true,
+          'is_special': true,
+          'user_username': 'chef123',
+          'min_forewarning_days': 2,
+        });
+
+        when(() => mockDishDoc2.id).thenReturn('dish2');
+        when(() => mockDishDoc2.data()).thenReturn({
+          'name': 'Special Pizza',
+          'description': 'Chef special pizza',
+          'price': 30.0,
+          'course': 'main',
+          'cuisine': 'italian',
+          'is_available': true,
+          'is_special': true,
+          'user_username': 'chef123',
+          'min_forewarning_days': 3,
+        });
+
+        // Act
+        final result = await dishFirestore.getSpecialDishesByUsername('chef123');
+
+        // Assert
+        expect(result.length, 2);
+        expect(result[0]['restaurantId'], 'restaurant1');
+        expect(result[0]['dishId'], 'dish1');
+        expect(result[0]['dish'].name, 'Special Pasta');
+        expect(result[1]['restaurantId'], 'restaurant2');
+        expect(result[1]['dishId'], 'dish2');
+        expect(result[1]['dish'].name, 'Special Pizza');
+      });
+
+      test('should return empty list when no special dishes found for username', () async {
+        // Arrange
+        final mockRestaurantsSnapshot = MockQuerySnapshot();
+        final mockRestaurantDoc = MockQueryDocumentSnapshot();
+        final mockDishesSnapshot = MockQuerySnapshot();
+        final mockDishesCollection1 = MockCollectionReference();
+        final mockRestaurantDocRef = MockDocumentReference();
+
+        when(() => mockRestaurantCollection.get())
+            .thenAnswer((_) async => mockRestaurantsSnapshot);
+        when(() => mockRestaurantsSnapshot.docs)
+            .thenReturn([mockRestaurantDoc]);
+
+        when(() => mockRestaurantDoc.id).thenReturn('restaurant1');
+
+        when(() => mockRestaurantCollection.doc('restaurant1'))
+            .thenReturn(mockRestaurantDocRef);
+        when(() => mockRestaurantDocRef.collection('dishes'))
+            .thenReturn(mockDishesCollection1);
+
+        when(() => mockDishesCollection1.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.where('user_username', isEqualTo: 'nonexistent'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.get())
+            .thenAnswer((_) async => mockDishesSnapshot);
+        when(() => mockDishesSnapshot.docs).thenReturn([]);
+
+        // Act
+        final result = await dishFirestore.getSpecialDishesByUsername('nonexistent');
+
+        // Assert
+        expect(result, isEmpty);
+      });
+
+      test('should throw exception when Firestore fails during query', () async {
+        // Arrange
+        when(() => mockRestaurantCollection.get())
+            .thenThrow(FirebaseException(plugin: 'firestore', message: 'Query failed'));
+
+        // Act & Assert
+        expect(
+          () => dishFirestore.getSpecialDishesByUsername('chef123'),
+          throwsA(isA<FirebaseException>()),
+        );
+      });
+    });
+
+    group('updateUsernameForSpecialDishes', () {
+      test('should update username for all special dishes in batch', () async {
+        // Arrange
+        final mockRestaurantsSnapshot = MockQuerySnapshot();
+        final mockRestaurantDoc = MockQueryDocumentSnapshot();
+        final mockDishesSnapshot = MockQuerySnapshot();
+        final mockDishDoc = MockQueryDocumentSnapshot();
+        final mockDishesCollection1 = MockCollectionReference();
+        final mockRestaurantDocRef = MockDocumentReference();
+        final mockDishDocRef = MockDocumentReference();
+        final mockWriteBatch = MockWriteBatch();
+
+        // Setup for getSpecialDishesByUsername call
+        when(() => mockRestaurantCollection.get())
+            .thenAnswer((_) async => mockRestaurantsSnapshot);
+        when(() => mockRestaurantsSnapshot.docs)
+            .thenReturn([mockRestaurantDoc]);
+
+        when(() => mockRestaurantDoc.id).thenReturn('restaurant1');
+
+        when(() => mockRestaurantCollection.doc('restaurant1'))
+            .thenReturn(mockRestaurantDocRef);
+        when(() => mockRestaurantDocRef.collection('dishes'))
+            .thenReturn(mockDishesCollection1);
+
+        when(() => mockDishesCollection1.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.where('user_username', isEqualTo: 'oldchef'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.get())
+            .thenAnswer((_) async => mockDishesSnapshot);
+
+        when(() => mockDishesSnapshot.docs).thenReturn([mockDishDoc]);
+
+        when(() => mockDishDoc.id).thenReturn('dish1');
+        when(() => mockDishDoc.data()).thenReturn({
+          'name': 'Special Dish',
+          'description': 'Description',
+          'price': 20.0,
+          'course': 'main',
+          'cuisine': 'italian',
+          'is_available': true,
+          'is_special': true,
+          'user_username': 'oldchef',
+          'min_forewarning_days': 2,
+        });
+
+        when(() => mockDishesCollection1.doc('dish1'))
+            .thenReturn(mockDishDocRef);
+
+        // Setup batch
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.update(any(), any())).thenReturn(null);
+        when(() => mockWriteBatch.commit()).thenAnswer((_) async => []);
+
+        // Act
+        await dishFirestore.updateUsernameForSpecialDishes(
+          oldUsername: 'oldchef',
+          newUsername: 'newchef',
+        );
+
+        // Assert
+        verify(() => mockFirestore.batch()).called(1);
+        verify(() => mockWriteBatch.update(
+          mockDishDocRef,
+          {'user_username': 'newchef'},
+        )).called(1);
+        verify(() => mockWriteBatch.commit()).called(1);
+      });
+
+      test('should handle no special dishes to update', () async {
+        // Arrange
+        final mockRestaurantsSnapshot = MockQuerySnapshot();
+        final mockRestaurantDoc = MockQueryDocumentSnapshot();
+        final mockDishesSnapshot = MockQuerySnapshot();
+        final mockDishesCollection1 = MockCollectionReference();
+        final mockRestaurantDocRef = MockDocumentReference();
+        final mockWriteBatch = MockWriteBatch();
+
+        when(() => mockRestaurantCollection.get())
+            .thenAnswer((_) async => mockRestaurantsSnapshot);
+        when(() => mockRestaurantsSnapshot.docs)
+            .thenReturn([mockRestaurantDoc]);
+
+        when(() => mockRestaurantDoc.id).thenReturn('restaurant1');
+
+        when(() => mockRestaurantCollection.doc('restaurant1'))
+            .thenReturn(mockRestaurantDocRef);
+        when(() => mockRestaurantDocRef.collection('dishes'))
+            .thenReturn(mockDishesCollection1);
+
+        when(() => mockDishesCollection1.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.where('user_username', isEqualTo: 'oldchef'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.get())
+            .thenAnswer((_) async => mockDishesSnapshot);
+
+        when(() => mockDishesSnapshot.docs).thenReturn([]);
+
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.commit()).thenAnswer((_) async => []);
+
+        // Act
+        await dishFirestore.updateUsernameForSpecialDishes(
+          oldUsername: 'oldchef',
+          newUsername: 'newchef',
+        );
+
+        // Assert
+        verify(() => mockFirestore.batch()).called(1);
+        verify(() => mockWriteBatch.commit()).called(1);
+        verifyNever(() => mockWriteBatch.update(any(), any()));
+      });
+
+      test('should throw exception when batch commit fails', () async {
+        // Arrange
+        final mockRestaurantsSnapshot = MockQuerySnapshot();
+        final mockRestaurantDoc = MockQueryDocumentSnapshot();
+        final mockDishesSnapshot = MockQuerySnapshot();
+        final mockDishDoc = MockQueryDocumentSnapshot();
+        final mockDishesCollection1 = MockCollectionReference();
+        final mockRestaurantDocRef = MockDocumentReference();
+        final mockDishDocRef = MockDocumentReference();
+        final mockWriteBatch = MockWriteBatch();
+
+        when(() => mockRestaurantCollection.get())
+            .thenAnswer((_) async => mockRestaurantsSnapshot);
+        when(() => mockRestaurantsSnapshot.docs)
+            .thenReturn([mockRestaurantDoc]);
+
+        when(() => mockRestaurantDoc.id).thenReturn('restaurant1');
+
+        when(() => mockRestaurantCollection.doc('restaurant1'))
+            .thenReturn(mockRestaurantDocRef);
+        when(() => mockRestaurantDocRef.collection('dishes'))
+            .thenReturn(mockDishesCollection1);
+
+        when(() => mockDishesCollection1.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.where('user_username', isEqualTo: 'oldchef'))
+            .thenReturn(mockDishesCollection1);
+        when(() => mockDishesCollection1.get())
+            .thenAnswer((_) async => mockDishesSnapshot);
+
+        when(() => mockDishesSnapshot.docs).thenReturn([mockDishDoc]);
+
+        when(() => mockDishDoc.id).thenReturn('dish1');
+        when(() => mockDishDoc.data()).thenReturn({
+          'name': 'Special Dish',
+          'description': 'Description',
+          'price': 20.0,
+          'course': 'main',
+          'cuisine': 'italian',
+          'is_available': true,
+          'is_special': true,
+          'user_username': 'oldchef',
+          'min_forewarning_days': 2,
+        });
+
+        when(() => mockDishesCollection1.doc('dish1'))
+            .thenReturn(mockDishDocRef);
+
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.update(any(), any())).thenReturn(null);
+        when(() => mockWriteBatch.commit())
+            .thenThrow(FirebaseException(plugin: 'firestore', message: 'Batch commit failed'));
+
+        // Act & Assert
+        expect(
+          () => dishFirestore.updateUsernameForSpecialDishes(
+            oldUsername: 'oldchef',
+            newUsername: 'newchef',
+          ),
+          throwsA(isA<FirebaseException>()),
+        );
       });
     });
   });

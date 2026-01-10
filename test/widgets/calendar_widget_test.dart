@@ -212,8 +212,26 @@ void main() {
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
 
-        // Select a date (tap OK to confirm)
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        // Switch month if tomorrow is in the next month
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        // Tap the day number
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
+        // Confirm date selection
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for the bottom sheet animation to complete
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Time picker bottom sheet should appear with CupertinoPicker
@@ -234,8 +252,24 @@ void main() {
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
 
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         // Select a date
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Confirm Time button should be visible
@@ -259,8 +293,24 @@ void main() {
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
 
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         // Select a date
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Confirm time
@@ -285,8 +335,24 @@ void main() {
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
 
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         // Select a date
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Dismiss bottom sheet by tapping outside (scrim)
@@ -307,7 +373,24 @@ void main() {
 
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
+
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         expect(find.byType(CupertinoPicker), findsOneWidget);
@@ -341,8 +424,24 @@ void main() {
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
 
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         // Select a date
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Confirm time
@@ -393,7 +492,24 @@ void main() {
 
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
+
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Bottom sheet should be visible
@@ -524,7 +640,24 @@ void main() {
         // Open date picker and select date
         await tester.tap(find.byType(GestureDetector).first);
         await tester.pumpAndSettle();
+
+        // Calculate tomorrow to ensure available times
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(days: 1));
+
+        if (tomorrow.month != now.month) {
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('${tomorrow.day}').last);
+        await tester.pumpAndSettle();
+
         await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Wait for bottom sheet animation
+        await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
         // Scroll the picker to change time

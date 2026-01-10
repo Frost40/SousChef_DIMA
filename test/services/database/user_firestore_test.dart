@@ -505,9 +505,370 @@ void main() {
         );
       });
 
-      // Note: Full deleteUserData testing is limited because the method
-      // uses FirebaseFirestore.instance directly instead of the injected _firestore.
-      // The internal batch operations cannot be mocked with the current implementation.
+      test('should delete all user data including owned restaurant and dishes', () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+
+        final mockRestaurantQuery = MockQuerySnapshot();
+        final mockRestaurantDoc = MockQueryDocumentSnapshot();
+        final mockRestaurantRef = MockDocumentReference();
+        final mockRestaurantsCollection = MockCollectionReference();
+        final mockRestaurantQuery2 = MockQuery();
+
+        final mockDishesQuery = MockQuerySnapshot();
+        final mockDishDoc = MockQueryDocumentSnapshot();
+        final mockDishRef = MockDocumentReference();
+        final mockDishesCollection = MockCollectionReference();
+
+        final mockSpecialDishesQuery = MockQuerySnapshot();
+        final mockOrdersQuery = MockQuerySnapshot();
+        final mockSentMessagesQuery = MockQuerySnapshot();
+        final mockReceivedMessagesQuery = MockQuerySnapshot();
+
+        final mockWriteBatch = MockWriteBatch();
+        final mockUserDocRef = MockDocumentReference();
+
+        // Setup user document reference
+        when(() => mockUsersCollection.doc('user123'))
+            .thenReturn(mockUserDocRef);
+
+        // Setup firestore collection access
+        when(() => mockFirestore.collection('restaurants'))
+            .thenReturn(mockRestaurantsCollection);
+        when(() => mockRestaurantsCollection.where('owner_id', isEqualTo: 'user123'))
+            .thenReturn(mockRestaurantQuery2);
+        when(() => mockRestaurantQuery2.get())
+            .thenAnswer((_) async => mockRestaurantQuery);
+        when(() => mockRestaurantQuery.docs).thenReturn([mockRestaurantDoc]);
+
+        when(() => mockRestaurantDoc.id).thenReturn('restaurant123');
+        when(() => mockRestaurantDoc.reference).thenReturn(mockRestaurantRef);
+
+        // Setup dishes subcollection
+        when(() => mockRestaurantsCollection.doc('restaurant123'))
+            .thenReturn(mockRestaurantRef);
+        when(() => mockRestaurantRef.collection('dishes'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.get())
+            .thenAnswer((_) async => mockDishesQuery);
+        when(() => mockDishesQuery.docs).thenReturn([mockDishDoc]);
+        when(() => mockDishDoc.reference).thenReturn(mockDishRef);
+
+        // Setup special dishes query
+        when(() => mockFirestore.collectionGroup('dishes'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.get())
+            .thenAnswer((_) async => mockSpecialDishesQuery);
+        when(() => mockSpecialDishesQuery.docs).thenReturn([]);
+
+        // Setup orders query
+        final mockOrdersCollection = MockCollectionReference();
+        final mockOrdersQuery2 = MockQuery();
+        when(() => mockFirestore.collection('orders'))
+            .thenReturn(mockOrdersCollection);
+        when(() => mockOrdersCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockOrdersQuery2);
+        when(() => mockOrdersQuery2.get())
+            .thenAnswer((_) async => mockOrdersQuery);
+        when(() => mockOrdersQuery.docs).thenReturn([]);
+
+        // Setup messages queries
+        final mockMessagesCollection = MockCollectionReference();
+        final mockSentMessagesQuery2 = MockQuery();
+        final mockReceivedMessagesQuery2 = MockQuery();
+        when(() => mockFirestore.collection('messages'))
+            .thenReturn(mockMessagesCollection);
+        when(() => mockMessagesCollection.where('sender_id', isEqualTo: 'user123'))
+            .thenReturn(mockSentMessagesQuery2);
+        when(() => mockSentMessagesQuery2.get())
+            .thenAnswer((_) async => mockSentMessagesQuery);
+        when(() => mockSentMessagesQuery.docs).thenReturn([]);
+
+        when(() => mockMessagesCollection.where('receiver_id', isEqualTo: 'user123'))
+            .thenReturn(mockReceivedMessagesQuery2);
+        when(() => mockReceivedMessagesQuery2.get())
+            .thenAnswer((_) async => mockReceivedMessagesQuery);
+        when(() => mockReceivedMessagesQuery.docs).thenReturn([]);
+
+        // Setup batch
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.delete(any())).thenReturn(null);
+        when(() => mockWriteBatch.commit()).thenAnswer((_) async => []);
+
+        // Act
+        await userFirestore.deleteUserData();
+
+        // Assert
+        verify(() => mockFirestore.batch()).called(1);
+        verify(() => mockWriteBatch.delete(any())).called(greaterThan(0));
+        verify(() => mockWriteBatch.commit()).called(1);
+      });
+
+      test('should delete user data when no restaurant owned', () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+
+        final mockRestaurantQuery = MockQuerySnapshot();
+        final mockRestaurantsCollection = MockCollectionReference();
+        final mockRestaurantQuery2 = MockQuery();
+
+        final mockDishesCollection = MockCollectionReference();
+        final mockSpecialDishesQuery = MockQuerySnapshot();
+        final mockOrdersQuery = MockQuerySnapshot();
+        final mockSentMessagesQuery = MockQuerySnapshot();
+        final mockReceivedMessagesQuery = MockQuerySnapshot();
+
+        final mockWriteBatch = MockWriteBatch();
+        final mockUserDocRef = MockDocumentReference();
+
+        // Setup user document reference
+        when(() => mockUsersCollection.doc('user123'))
+            .thenReturn(mockUserDocRef);
+
+        // Setup firestore - no restaurants owned
+        when(() => mockFirestore.collection('restaurants'))
+            .thenReturn(mockRestaurantsCollection);
+        when(() => mockRestaurantsCollection.where('owner_id', isEqualTo: 'user123'))
+            .thenReturn(mockRestaurantQuery2);
+        when(() => mockRestaurantQuery2.get())
+            .thenAnswer((_) async => mockRestaurantQuery);
+        when(() => mockRestaurantQuery.docs).thenReturn([]);
+
+        // Setup special dishes query
+        when(() => mockFirestore.collectionGroup('dishes'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.get())
+            .thenAnswer((_) async => mockSpecialDishesQuery);
+        when(() => mockSpecialDishesQuery.docs).thenReturn([]);
+
+        // Setup orders query
+        final mockOrdersCollection = MockCollectionReference();
+        final mockOrdersQuery2 = MockQuery();
+        when(() => mockFirestore.collection('orders'))
+            .thenReturn(mockOrdersCollection);
+        when(() => mockOrdersCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockOrdersQuery2);
+        when(() => mockOrdersQuery2.get())
+            .thenAnswer((_) async => mockOrdersQuery);
+        when(() => mockOrdersQuery.docs).thenReturn([]);
+
+        // Setup messages queries
+        final mockMessagesCollection = MockCollectionReference();
+        final mockSentMessagesQuery2 = MockQuery();
+        final mockReceivedMessagesQuery2 = MockQuery();
+        when(() => mockFirestore.collection('messages'))
+            .thenReturn(mockMessagesCollection);
+        when(() => mockMessagesCollection.where('sender_id', isEqualTo: 'user123'))
+            .thenReturn(mockSentMessagesQuery2);
+        when(() => mockSentMessagesQuery2.get())
+            .thenAnswer((_) async => mockSentMessagesQuery);
+        when(() => mockSentMessagesQuery.docs).thenReturn([]);
+
+        when(() => mockMessagesCollection.where('receiver_id', isEqualTo: 'user123'))
+            .thenReturn(mockReceivedMessagesQuery2);
+        when(() => mockReceivedMessagesQuery2.get())
+            .thenAnswer((_) async => mockReceivedMessagesQuery);
+        when(() => mockReceivedMessagesQuery.docs).thenReturn([]);
+
+        // Setup batch
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.delete(any())).thenReturn(null);
+        when(() => mockWriteBatch.commit()).thenAnswer((_) async => []);
+
+        // Act
+        await userFirestore.deleteUserData();
+
+        // Assert
+        verify(() => mockFirestore.batch()).called(1);
+        verify(() => mockWriteBatch.delete(any())).called(1);
+        verify(() => mockWriteBatch.commit()).called(1);
+      });
+
+      test('should delete special dishes, orders and messages', () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+
+        final mockRestaurantQuery = MockQuerySnapshot();
+        final mockRestaurantsCollection = MockCollectionReference();
+        final mockRestaurantQuery2 = MockQuery();
+
+        final mockDishesCollection = MockCollectionReference();
+        final mockSpecialDishesQuery = MockQuerySnapshot();
+        final mockSpecialDishDoc = MockQueryDocumentSnapshot();
+        final mockSpecialDishRef = MockDocumentReference();
+
+        final mockOrdersQuery = MockQuerySnapshot();
+        final mockOrderDoc = MockQueryDocumentSnapshot();
+        final mockOrderRef = MockDocumentReference();
+
+        final mockSentMessagesQuery = MockQuerySnapshot();
+        final mockSentMessageDoc = MockQueryDocumentSnapshot();
+        final mockSentMessageRef = MockDocumentReference();
+
+        final mockReceivedMessagesQuery = MockQuerySnapshot();
+        final mockReceivedMessageDoc = MockQueryDocumentSnapshot();
+        final mockReceivedMessageRef = MockDocumentReference();
+
+        final mockWriteBatch = MockWriteBatch();
+        final mockUserDocRef = MockDocumentReference();
+
+        // Setup user document reference
+        when(() => mockUsersCollection.doc('user123'))
+            .thenReturn(mockUserDocRef);
+
+        // Setup restaurants query - no restaurants
+        when(() => mockFirestore.collection('restaurants'))
+            .thenReturn(mockRestaurantsCollection);
+        when(() => mockRestaurantsCollection.where('owner_id', isEqualTo: 'user123'))
+            .thenReturn(mockRestaurantQuery2);
+        when(() => mockRestaurantQuery2.get())
+            .thenAnswer((_) async => mockRestaurantQuery);
+        when(() => mockRestaurantQuery.docs).thenReturn([]);
+
+        // Setup special dishes query
+        when(() => mockFirestore.collectionGroup('dishes'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.get())
+            .thenAnswer((_) async => mockSpecialDishesQuery);
+        when(() => mockSpecialDishesQuery.docs).thenReturn([mockSpecialDishDoc]);
+        when(() => mockSpecialDishDoc.reference).thenReturn(mockSpecialDishRef);
+
+        // Setup orders query
+        final mockOrdersCollection = MockCollectionReference();
+        final mockOrdersQuery2 = MockQuery();
+        when(() => mockFirestore.collection('orders'))
+            .thenReturn(mockOrdersCollection);
+        when(() => mockOrdersCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockOrdersQuery2);
+        when(() => mockOrdersQuery2.get())
+            .thenAnswer((_) async => mockOrdersQuery);
+        when(() => mockOrdersQuery.docs).thenReturn([mockOrderDoc]);
+        when(() => mockOrderDoc.reference).thenReturn(mockOrderRef);
+
+        // Setup messages queries
+        final mockMessagesCollection = MockCollectionReference();
+        final mockSentMessagesQuery2 = MockQuery();
+        final mockReceivedMessagesQuery2 = MockQuery();
+        when(() => mockFirestore.collection('messages'))
+            .thenReturn(mockMessagesCollection);
+        when(() => mockMessagesCollection.where('sender_id', isEqualTo: 'user123'))
+            .thenReturn(mockSentMessagesQuery2);
+        when(() => mockSentMessagesQuery2.get())
+            .thenAnswer((_) async => mockSentMessagesQuery);
+        when(() => mockSentMessagesQuery.docs).thenReturn([mockSentMessageDoc]);
+        when(() => mockSentMessageDoc.reference).thenReturn(mockSentMessageRef);
+
+        when(() => mockMessagesCollection.where('receiver_id', isEqualTo: 'user123'))
+            .thenReturn(mockReceivedMessagesQuery2);
+        when(() => mockReceivedMessagesQuery2.get())
+            .thenAnswer((_) async => mockReceivedMessagesQuery);
+        when(() => mockReceivedMessagesQuery.docs).thenReturn([mockReceivedMessageDoc]);
+        when(() => mockReceivedMessageDoc.reference).thenReturn(mockReceivedMessageRef);
+
+        // Setup batch
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.delete(any())).thenReturn(null);
+        when(() => mockWriteBatch.commit()).thenAnswer((_) async => []);
+
+        // Act
+        await userFirestore.deleteUserData();
+
+        // Assert
+        verify(() => mockFirestore.batch()).called(1);
+        verify(() => mockWriteBatch.delete(any())).called(5); // 1 special dish + 1 order + 1 sent message + 1 received message + 1 user doc
+        verify(() => mockWriteBatch.commit()).called(1);
+      });
+
+      test('should throw exception when batch commit fails', () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockFirebaseUser);
+        when(() => mockFirebaseUser.uid).thenReturn('user123');
+
+        final mockRestaurantQuery = MockQuerySnapshot();
+        final mockRestaurantsCollection = MockCollectionReference();
+        final mockRestaurantQuery2 = MockQuery();
+
+        final mockDishesCollection = MockCollectionReference();
+        final mockSpecialDishesQuery = MockQuerySnapshot();
+        final mockOrdersQuery = MockQuerySnapshot();
+        final mockSentMessagesQuery = MockQuerySnapshot();
+        final mockReceivedMessagesQuery = MockQuerySnapshot();
+
+        final mockWriteBatch = MockWriteBatch();
+
+        // Setup firestore queries
+        when(() => mockFirestore.collection('restaurants'))
+            .thenReturn(mockRestaurantsCollection);
+        when(() => mockRestaurantsCollection.where('owner_id', isEqualTo: 'user123'))
+            .thenReturn(mockRestaurantQuery2);
+        when(() => mockRestaurantQuery2.get())
+            .thenAnswer((_) async => mockRestaurantQuery);
+        when(() => mockRestaurantQuery.docs).thenReturn([]);
+
+        when(() => mockFirestore.collectionGroup('dishes'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.where('is_special', isEqualTo: true))
+            .thenReturn(mockDishesCollection);
+        when(() => mockDishesCollection.get())
+            .thenAnswer((_) async => mockSpecialDishesQuery);
+        when(() => mockSpecialDishesQuery.docs).thenReturn([]);
+
+        final mockOrdersCollection = MockCollectionReference();
+        final mockOrdersQuery2 = MockQuery();
+        when(() => mockFirestore.collection('orders'))
+            .thenReturn(mockOrdersCollection);
+        when(() => mockOrdersCollection.where('user_id', isEqualTo: 'user123'))
+            .thenReturn(mockOrdersQuery2);
+        when(() => mockOrdersQuery2.get())
+            .thenAnswer((_) async => mockOrdersQuery);
+        when(() => mockOrdersQuery.docs).thenReturn([]);
+
+        final mockMessagesCollection = MockCollectionReference();
+        final mockSentMessagesQuery2 = MockQuery();
+        final mockReceivedMessagesQuery2 = MockQuery();
+        when(() => mockFirestore.collection('messages'))
+            .thenReturn(mockMessagesCollection);
+        when(() => mockMessagesCollection.where('sender_id', isEqualTo: 'user123'))
+            .thenReturn(mockSentMessagesQuery2);
+        when(() => mockSentMessagesQuery2.get())
+            .thenAnswer((_) async => mockSentMessagesQuery);
+        when(() => mockSentMessagesQuery.docs).thenReturn([]);
+
+        when(() => mockMessagesCollection.where('receiver_id', isEqualTo: 'user123'))
+            .thenReturn(mockReceivedMessagesQuery2);
+        when(() => mockReceivedMessagesQuery2.get())
+            .thenAnswer((_) async => mockReceivedMessagesQuery);
+        when(() => mockReceivedMessagesQuery.docs).thenReturn([]);
+
+        // Setup batch to fail
+        when(() => mockFirestore.batch()).thenReturn(mockWriteBatch);
+        when(() => mockWriteBatch.delete(any())).thenReturn(null);
+        when(() => mockWriteBatch.commit())
+            .thenThrow(Exception('Batch commit failed'));
+
+        // Act & Assert
+        expect(
+          () => userFirestore.deleteUserData(),
+          throwsException,
+        );
+      });
     });
 
     group('User Model Tests', () {

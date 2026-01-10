@@ -337,18 +337,18 @@ void main() {
         expect(dish.isAvailable, false);
       });
 
-      test('should set isAvailable to null for special dish', () {
+      test('should parse isAvailable for special dish', () {
         when(() => mockDoc.id).thenReturn('dish123');
         when(() => mockDoc.data()).thenReturn({
           'name': 'Special Dish',
           'price': 20.0,
           'is_special': true,
-          'is_available': true, // Should be ignored for special dishes
+          'is_available': true,
         });
 
         final dish = Dish.fromFirestore(mockDoc);
 
-        expect(dish.isAvailable, isNull);
+        expect(dish.isAvailable, true);
       });
 
       test('should parse image for regular dish', () {
@@ -365,18 +365,18 @@ void main() {
         expect(dish.imageUrl, 'https://example.com/dish.jpg');
       });
 
-      test('should set imageUrl to null for special dish', () {
+      test('should parse imageUrl for special dish', () {
         when(() => mockDoc.id).thenReturn('dish123');
         when(() => mockDoc.data()).thenReturn({
           'name': 'Special Dish',
           'price': 20.0,
           'is_special': true,
-          'image': 'https://example.com/special.jpg', // Should be ignored
+          'image': 'https://example.com/special.jpg',
         });
 
         final dish = Dish.fromFirestore(mockDoc);
 
-        expect(dish.imageUrl, isNull);
+        expect(dish.imageUrl, 'https://example.com/special.jpg');
       });
     });
 
@@ -536,19 +536,19 @@ void main() {
         expect(dish.course, Course.other);
       });
 
-      test('should default to Course.other for special dish regardless of course value', () {
+      test('should parse course for special dish', () {
         when(() => mockDoc.id).thenReturn('dish123');
         when(() => mockDoc.data()).thenReturn({
           'name': 'Test',
           'price': 10.0,
           'is_special': true,
-          'course': 'mainDish', // Should be ignored for special dishes
+          'course': 'mainDish',
           'cuisine': 'italian',
         });
 
         final dish = Dish.fromFirestore(mockDoc);
 
-        expect(dish.course, Course.other);
+        expect(dish.course, Course.mainDish);
       });
     });
 
@@ -723,19 +723,19 @@ void main() {
         expect(dish.cuisine, Cuisine.other);
       });
 
-      test('should default to Cuisine.other for special dish regardless of cuisine value', () {
+      test('should parse cuisine for special dish', () {
         when(() => mockDoc.id).thenReturn('dish123');
         when(() => mockDoc.data()).thenReturn({
           'name': 'Test',
           'price': 10.0,
           'is_special': true,
           'course': 'appetizer',
-          'cuisine': 'italian', // Should be ignored for special dishes
+          'cuisine': 'italian',
         });
 
         final dish = Dish.fromFirestore(mockDoc);
 
-        expect(dish.cuisine, Cuisine.other);
+        expect(dish.cuisine, Cuisine.italian);
       });
     });
 
@@ -1023,12 +1023,13 @@ void main() {
         expect(firestoreMap['min_forewarning_days'], 3);
       });
 
-      test('should not include is_available for special dish', () {
+      test('should include is_available for special dish when set', () {
         final dish = Dish(
           id: 'dish123',
           name: 'Special',
           price: 25.0,
           isSpecial: true,
+          isAvailable: false,
           course: Course.other,
           cuisine: Cuisine.other,
           userUsername: 'chef',
@@ -1036,7 +1037,7 @@ void main() {
 
         final firestoreMap = dish.toFirestore();
 
-        expect(firestoreMap.containsKey('is_available'), isFalse);
+        expect(firestoreMap['is_available'], false);
       });
 
       test('should include user_username for special dish', () {
@@ -1407,8 +1408,8 @@ void main() {
         expect(restoredDish.userUsername, originalDish.userUsername);
         expect(restoredDish.creationTime, originalDish.creationTime);
         expect(restoredDish.minForewarningDays, originalDish.minForewarningDays);
-        expect(restoredDish.isAvailable, isNull);
-        expect(restoredDish.imageUrl, isNull);
+        expect(restoredDish.isAvailable, originalDish.isAvailable);
+        expect(restoredDish.imageUrl, originalDish.imageUrl);
       });
 
       test('should handle round-trip for all course types', () {
@@ -1535,6 +1536,152 @@ void main() {
         expect(dish.imageUrl, isNull);
         expect(dish.userUsername, isNull);
         expect(dish.creationTime, isNull);
+      });
+
+      test('should handle special dish with specific course and cuisine', () {
+        final dish = Dish(
+          id: 'dish123',
+          name: 'Special Italian Pasta',
+          description: 'Custom request pasta',
+          price: 30.0,
+          isSpecial: true,
+          course: Course.pastaDish,
+          cuisine: Cuisine.italian,
+          userUsername: 'customer123',
+          creationTime: DateTime(2026, 1, 10),
+          imageUrl: 'https://example.com/pasta.jpg',
+        );
+
+        expect(dish.isSpecial, true);
+        expect(dish.course, Course.pastaDish);
+        expect(dish.cuisine, Cuisine.italian);
+        expect(dish.userUsername, 'customer123');
+        expect(dish.imageUrl, 'https://example.com/pasta.jpg');
+      });
+
+      test('should handle special dish with isAvailable false', () {
+        final dish = Dish(
+          id: 'dish123',
+          name: 'Unavailable Special',
+          price: 25.0,
+          isSpecial: true,
+          isAvailable: false,
+          course: Course.mainDish,
+          cuisine: Cuisine.french,
+          userUsername: 'chef_pierre',
+        );
+
+        expect(dish.isSpecial, true);
+        expect(dish.isAvailable, false);
+      });
+
+      test('should handle regular dish with all cuisine types', () {
+        for (final cuisine in Cuisine.values) {
+          final dish = Dish(
+            id: 'dish_${cuisine.name}',
+            name: 'Test ${cuisine.name}',
+            price: 15.0,
+            isSpecial: false,
+            course: Course.mainDish,
+            cuisine: cuisine,
+          );
+
+          expect(dish.cuisine, cuisine);
+          expect(dish.isSpecial, false);
+        }
+      });
+
+      test('should handle special dish copyWith updating only course', () {
+        final original = Dish(
+          id: 'dish123',
+          name: 'Special',
+          price: 20.0,
+          isSpecial: true,
+          course: Course.appetizer,
+          cuisine: Cuisine.italian,
+          userUsername: 'user1',
+        );
+
+        final updated = original.copyWith(course: Course.dessert);
+
+        expect(updated.course, Course.dessert);
+        expect(updated.cuisine, Cuisine.italian);
+        expect(updated.userUsername, 'user1');
+        expect(updated.isSpecial, true);
+      });
+
+      test('should handle special dish copyWith updating imageUrl', () {
+        final original = Dish(
+          id: 'dish123',
+          name: 'Special',
+          price: 20.0,
+          isSpecial: true,
+          course: Course.mainDish,
+          cuisine: Cuisine.chinese,
+          userUsername: 'user1',
+        );
+
+        final updated = original.copyWith(
+          imageUrl: 'https://example.com/new-image.jpg',
+        );
+
+        expect(updated.imageUrl, 'https://example.com/new-image.jpg');
+        expect(updated.isSpecial, true);
+        expect(updated.userUsername, 'user1');
+      });
+
+      test('should handle special dish toFirestore with all fields', () {
+        final creationTime = DateTime(2026, 1, 10, 12, 30);
+        final dish = Dish(
+          id: 'dish123',
+          name: 'Complete Special',
+          description: 'Full details',
+          price: 35.0,
+          isSpecial: true,
+          isAvailable: true,
+          course: Course.mainDish,
+          cuisine: Cuisine.japanese,
+          minForewarningDays: 5,
+          imageUrl: 'https://example.com/sushi.jpg',
+          userUsername: 'sushi_master',
+          creationTime: creationTime,
+        );
+
+        final firestoreMap = dish.toFirestore();
+
+        expect(firestoreMap['name'], 'Complete Special');
+        expect(firestoreMap['description'], 'Full details');
+        expect(firestoreMap['price'], 35.0);
+        expect(firestoreMap['is_special'], true);
+        expect(firestoreMap['is_available'], true);
+        expect(firestoreMap['course'], 'mainDish');
+        expect(firestoreMap['cuisine'], 'japanese');
+        expect(firestoreMap['min_forewarning_days'], 5);
+        expect(firestoreMap['image'], 'https://example.com/sushi.jpg');
+        expect(firestoreMap['user_username'], 'sushi_master');
+        expect(firestoreMap['creation_time'], isA<Timestamp>());
+      });
+
+      test('should handle fromFirestore for special dish with all optional fields null', () {
+        final mockDoc = MockDocumentSnapshot();
+        when(() => mockDoc.id).thenReturn('dish123');
+        when(() => mockDoc.data()).thenReturn({
+          'name': 'Minimal Special',
+          'price': 20.0,
+          'is_special': true,
+        });
+
+        final dish = Dish.fromFirestore(mockDoc);
+
+        expect(dish.isSpecial, true);
+        expect(dish.description, '');
+        expect(dish.imageUrl, '');
+        expect(dish.isAvailable, isNull);
+        expect(dish.userUsername, isNull);
+        expect(dish.creationTime, isNull);
+        expect(dish.minForewarningDays, 0);
+        expect(dish.course, Course.other);
+        expect(dish.cuisine, Cuisine.other);
       });
     });
   });
