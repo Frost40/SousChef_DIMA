@@ -26,6 +26,7 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   DetailView _selectedView = DetailView.none;
+  LayoutType? _previousLayoutType;
 
   LayoutType _getLayoutType(BuildContext context) {
     final orientationManager = OrientationManager();
@@ -44,6 +45,18 @@ class _AccountScreenState extends State<AccountScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     final layoutType = _getLayoutType(context);
+
+    // Se siamo passati a tablet orizzontale e c'era una vista selezionata,
+    // manteniamo la selezione nella vista divisa
+    if (layoutType == LayoutType.tabletHorizontal &&
+        _previousLayoutType != LayoutType.tabletHorizontal &&
+        _selectedView == DetailView.none) {
+      // La vista verrà impostata quando l'utente clicca su un'opzione
+      // o quando torna da una schermata dettaglio in modalità verticale
+    }
+
+    // Aggiorna il layout precedente
+    _previousLayoutType = layoutType;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -196,6 +209,10 @@ class _AccountScreenState extends State<AccountScreen> {
                 _selectedView = DetailView.accountSettings;
               });
             } else {
+              // Salva la selezione anche per modalità verticale
+              setState(() {
+                _selectedView = DetailView.accountSettings;
+              });
               Navigator.of(context).pushNamed(
                 '/account-settings',
                 arguments: {'transitionType': TransitionType.slideRight},
@@ -215,6 +232,10 @@ class _AccountScreenState extends State<AccountScreen> {
                 _selectedView = DetailView.pastOrders;
               });
             } else {
+              // Salva la selezione anche per modalità verticale
+              setState(() {
+                _selectedView = DetailView.pastOrders;
+              });
               Navigator.of(context).pushNamed(
                 '/past-orders',
                 arguments: {'transitionType': TransitionType.slideRight},

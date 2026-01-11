@@ -4,6 +4,7 @@ import 'package:sous_chef/models/message.dart';
 import 'package:sous_chef/providers/auth_provider.dart';
 import 'package:sous_chef/providers/chat_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:sous_chef/services/orientation_manager.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -174,6 +175,23 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final userId = _authProvider.user?.id;
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Se non è embedded e siamo in tablet orizzontale, torna indietro
+    // per mostrare la vista divisa in AllChatsScreen
+    if (!widget.isEmbedded) {
+      final orientationManager = OrientationManager();
+      final isTablet = orientationManager.isTablet(context);
+      final isLandscape =
+          MediaQuery.of(context).orientation == Orientation.landscape;
+
+      if (isTablet && isLandscape) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        });
+      }
+    }
 
     return Scaffold(
       appBar:

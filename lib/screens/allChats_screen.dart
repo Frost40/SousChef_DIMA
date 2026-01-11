@@ -289,6 +289,18 @@ class _AllChatsScreenState extends State<AllChatsScreen> {
                         });
                       } else {
                         // In mobile/tablet vertical, navigate to chat screen
+                        // Salva l'ultima chat visualizzata per poterla selezionare
+                        // se si ruota il dispositivo in orizzontale
+                        setState(() {
+                          _selectedChatId = chat.id;
+                          _selectedOtherUserName =
+                              displayName.isNotEmpty
+                                  ? displayName
+                                  : 'Utente Sconosciuto';
+                          _selectedOtherUserImageUrl = restaurantImageUrl;
+                          _selectedOtherUserId = otherUser?.id;
+                        });
+
                         debugPrint('Navigating to chat: ${chat.id}');
                         Navigator.push(
                           context,

@@ -56,6 +56,16 @@ class _PastOrdersScreenState extends State<PastOrdersScreen> {
   Widget build(BuildContext context) {
     final layoutType = _getLayoutType(context);
 
+    // Se non è embedded e siamo in tablet orizzontale, torna indietro
+    // per mostrare la vista divisa in AccountScreen
+    if (!widget.isEmbedded && layoutType == LayoutType.tabletHorizontal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+    }
+
     return Scaffold(
       appBar:
           widget.isEmbedded
