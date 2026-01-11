@@ -995,18 +995,17 @@ class _DishScreenState extends State<DishScreen> {
         ),
 
         // Availability button on the bottom-left corner (not for special dishes)
-        if (!isSpecial)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: DishAvailabilityButton(
-              initialValue: _availabilityStatus,
-              isEditable: false,
-              size: 40,
-              symbolResize: 0.6,
-              onToggle: null,
-            ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: false,
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: null,
           ),
+        ),
       ],
     );
   }
@@ -1075,41 +1074,40 @@ class _DishScreenState extends State<DishScreen> {
         ),
 
         // Availability button on the bottom-left corner (not for special dishes)
-        if (!isSpecial)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: DishAvailabilityButton(
-              initialValue: _availabilityStatus,
-              isEditable: widget.isEditable,
-              size: 40,
-              symbolResize: 0.6,
-              onToggle: (value) {
-                debugPrint("Availability changed: $value");
-                setState(() {
-                  _availabilityStatus = value;
-                });
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: DishAvailabilityButton(
+            initialValue: _availabilityStatus,
+            isEditable: widget.isEditable,
+            size: 40,
+            symbolResize: 0.6,
+            onToggle: (value) {
+              debugPrint("Availability changed: $value");
+              setState(() {
+                _availabilityStatus = value;
+              });
 
-                if (widget.dishId != null) {
-                  final dishProvider = Provider.of<DishProvider>(
-                    context,
-                    listen: false,
+              if (widget.dishId != null) {
+                final dishProvider = Provider.of<DishProvider>(
+                  context,
+                  listen: false,
+                );
+                final restaurantId = dishProvider.currentRestaurantId;
+
+                if (restaurantId != null) {
+                  dishProvider.updateDishAvailability(
+                    restaurantId,
+                    widget.dishId!,
+                    value,
                   );
-                  final restaurantId = dishProvider.currentRestaurantId;
-
-                  if (restaurantId != null) {
-                    dishProvider.updateDishAvailability(
-                      restaurantId,
-                      widget.dishId!,
-                      value,
-                    );
-                  }
                 }
+              }
 
-                widget.onAvailabilityChanged?.call(value);
-              },
-            ),
+              widget.onAvailabilityChanged?.call(value);
+            },
           ),
+        ),
       ],
     );
   }
