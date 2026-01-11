@@ -191,12 +191,18 @@ void main() {
       final datePickerTrigger = find.byType(DateTimePickerWidget);
       // Or closer matcher: find.widgetWithIcon(Container, Icons.calendar_today);
 
-      expect(datePickerTrigger, findsOneWidget, reason: 'Could not find the DateTimePicker trigger widget');
+      expect(
+        datePickerTrigger,
+        findsOneWidget,
+        reason: 'Could not find the DateTimePicker trigger widget',
+      );
 
       await tester.ensureVisible(datePickerTrigger);
       await tester.pumpAndSettle();
       await tester.tap(datePickerTrigger);
-      await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for Dialog to open
+      await tester.pumpAndSettle(
+        const Duration(seconds: 1),
+      ); // Wait for Dialog to open
 
       // 2. Select Date in the Native Material Date Picker Dialog
       // On a tablet, this opens a dialog. We usually just want to accept the default (Today)
@@ -211,12 +217,20 @@ void main() {
       } else {
         // Fallback: Tap the current day (usually indicated by a selected decoration)
         // or just tap a visible day number like '15' or '28' to be safe
-        final confirmText = find.text('OK'); // Standard flutter date picker confirm text
-        expect(confirmText, findsOneWidget, reason: 'Date picker dialog did not open or OK button missing');
+        final confirmText = find.text(
+          'OK',
+        ); // Standard flutter date picker confirm text
+        expect(
+          confirmText,
+          findsOneWidget,
+          reason: 'Date picker dialog did not open or OK button missing',
+        );
         await tester.tap(confirmText);
       }
 
-      await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for Date Dialog to close and Time Sheet to open
+      await tester.pumpAndSettle(
+        const Duration(seconds: 1),
+      ); // Wait for Date Dialog to close and Time Sheet to open
 
       // 3. Select Time in the Modal Bottom Sheet (CupertinoPicker)
       // The code in calendar_widget.dart opens showModalBottomSheet immediately after date selection
@@ -229,7 +243,9 @@ void main() {
         // Check for the SnackBar "Nessun orario disponibile..."
         final snackBar = find.byType(SnackBar);
         if (snackBar.evaluate().isNotEmpty) {
-          print('⚠ Warning: No times available for today. Test might fail on "Add to Cart".');
+          print(
+            '⚠ Warning: No times available for today. Test might fail on "Add to Cart".',
+          );
         } else {
           fail('Time picker bottom sheet did not appear after selecting date.');
         }
@@ -241,17 +257,25 @@ void main() {
 
         // Tap "Confirm Time"
         await tester.tap(confirmTimeButton);
-        await tester.pumpAndSettle(const Duration(seconds: 1)); // Wait for sheet to close
+        await tester.pumpAndSettle(
+          const Duration(seconds: 1),
+        ); // Wait for sheet to close
       }
 
       // 4. Verification
       // The DateTimePickerWidget text updates to show the formatted date/time
       final dateTimeText = find.descendant(
         of: find.byType(DateTimePickerWidget),
-        matching: find.textContaining(RegExp(r':')), // Looks for time format like 12:30
+        matching: find.textContaining(
+          RegExp(r':'),
+        ), // Looks for time format like 12:30
       );
 
-      expect(dateTimeText, findsOneWidget, reason: 'Date/Time text did not update in the widget');
+      expect(
+        dateTimeText,
+        findsOneWidget,
+        reason: 'Date/Time text did not update in the widget',
+      );
       print('✓ Date and Time successfully selected');
 
       // ============================================
@@ -286,7 +310,8 @@ void main() {
         expect(
           addButton,
           isNotNull,
-          reason: 'FAIL: Add button not found on dish screen. Cannot add item to cart.',
+          reason:
+              'FAIL: Add button not found on dish screen. Cannot add item to cart.',
         );
 
         await tester.ensureVisible(addButton!);
@@ -338,7 +363,9 @@ void main() {
 
       // 2. Close the RestaurantScreen (if we are not yet at Home)
       // If we see "Fixed menu" or "On Request", we are still in a restaurant.
-      final restaurantTabs = find.textContaining(RegExp(r'Fixed menu|On Request'));
+      final restaurantTabs = find.textContaining(
+        RegExp(r'Fixed menu|On Request'),
+      );
 
       if (restaurantTabs.evaluate().isNotEmpty) {
         // We are in the restaurant, go back one more time
@@ -352,7 +379,11 @@ void main() {
 
       // 3. Now verify we are on the Home Screen
       // "Sous Chef" is likely the title in the AppBar of the home screen
-      expect(find.text('Sous Chef'), findsOneWidget, reason: 'Failed to return to Home Screen');
+      expect(
+        find.text('Sous Chef'),
+        findsOneWidget,
+        reason: 'Failed to return to Home Screen',
+      );
 
       print('✓ Successfully returned to Home');
 
@@ -429,11 +460,14 @@ void main() {
         // STOP HERE:
         // We cannot automate the Native Stripe Sheet using standard flutter_test.
         // If the logs show "Presenting...", the integration is working.
-        print('✓ Test Completed Successfully (Stopping before Native UI interaction)');
+        print(
+          '✓ Test Completed Successfully (Stopping before Native UI interaction)',
+        );
 
         // Optional: If you want to prevent the test from hanging indefinitely,
         // do NOT await a condition that requires the native sheet to close.
-      }});
+      }
+    });
 
     testWidgets('Add dish to cart without selecting date shows error', (
       WidgetTester tester,
@@ -545,7 +579,8 @@ void main() {
         warningDialog.evaluate().isNotEmpty ||
             stillOnDishScreen.evaluate().isNotEmpty,
         isTrue,
-        reason: 'FAIL: Expected error handling when adding without date/time selection, but no warning was shown and dish screen was closed.',
+        reason:
+            'FAIL: Expected error handling when adding without date/time selection, but no warning was shown and dish screen was closed.',
       );
 
       print('✓ Error handling works: Cannot add without date/time selection');
@@ -592,23 +627,37 @@ void main() {
       // Verify we're in cart
       expect(find.text('Cart'), findsOneWidget);
 
-      // Navigate back using back button
-      final backButton = find.byIcon(Icons.arrow_back);
+      // We try to find the button by type first (most robust),
+      // then fallback to specific icons (Material, iOS, or Close)
+      Finder backButton = find.byType(BackButton);
+
+      if (backButton.evaluate().isEmpty) {
+        // If standard BackButton isn't found, look for specific icons
+        backButton = find.byIcon(Icons.arrow_back); // Android default
+      }
+
+      if (backButton.evaluate().isEmpty) {
+        backButton = find.byIcon(Icons.arrow_back_ios); // iOS default
+      }
+
+      if (backButton.evaluate().isEmpty) {
+        backButton = find.byIcon(Icons.close); // Fullscreen dialog default
+      }
 
       expect(
         backButton.evaluate().isNotEmpty,
         isTrue,
-        reason: 'FAIL: Back button not found in cart screen. Cannot navigate back to home.',
+        reason:
+            'FAIL: Could not find Back, Arrow_Back_IOS, or Close button in Cart screen.',
       );
 
       await tester.tap(backButton.first);
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Verify we're back on home by checking for home icon in bottom navigation
+      // Verify we're back on home
       expect(find.byIcon(Icons.home_rounded), findsAtLeastNWidgets(1));
 
       print('✓ Navigation between cart and home successful');
     });
   });
 }
-
