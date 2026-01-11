@@ -75,7 +75,7 @@ class Dish {
       course: dishCourse,
       cuisine: dishCuisine,
       minForewarningDays: data['min_forewarning_days'] ?? 0,
-      imageUrl: data['image'],
+      imageUrl: data['image'] ?? '',
 
       // Special dish attributes
       userUsername: isSpecial ? data['user_username'] : null,

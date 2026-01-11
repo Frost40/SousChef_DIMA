@@ -771,7 +771,7 @@ void main() {
         expect(dish.creationTime, creationTime.toDate());
         expect(dish.minForewarningDays, 3);
         expect(dish.isAvailable, isNull);
-        expect(dish.imageUrl, isNull);
+        expect(dish.imageUrl, '');
         expect(dish.course, Course.other);
         expect(dish.cuisine, Cuisine.other);
       });
