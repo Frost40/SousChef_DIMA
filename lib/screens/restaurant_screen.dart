@@ -472,24 +472,28 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               pinned: true, // Make the tab bar stick
               delegate: _StickyTabBarDelegate(
                 // Pass necessary data and callbacks to the delegate
-                tabBar: NavigationTabbar(
-                  tabCount: 2,
-                  tabLabels: const ['Fixed menu', 'On Request'],
-                  height: 40.0, // Adjust height as needed
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 0,
-                    vertical: 0,
-                  ),
-                  radius: 25.0,
-                  initialIndex: _selectedTabIndex, // Pass current index
-                  onTabSelected: (index) {
-                    // Update state when tab changes
-                    setState(() {
-                      _selectedTabIndex = index;
-                    });
-                    debugPrint('Selected tab $index');
-                  },
-                ),
+                // Show TabBar only if both services are available
+                tabBar: restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                        restaurant.hasRestaurantType(RestaurantType.onRequest)
+                    ? NavigationTabbar(
+                        tabCount: 2,
+                        tabLabels: const ['Fixed menu', 'On Request'],
+                        height: 40.0, // Adjust height as needed
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 0,
+                        ),
+                        radius: 25.0,
+                        initialIndex: _selectedTabIndex,
+                        onTabSelected: (index) {
+                          // Update state when tab changes
+                          setState(() {
+                            _selectedTabIndex = index;
+                          });
+                          debugPrint('Selected tab $index');
+                        },
+                      )
+                    : null,
                 backgroundColor:
                     colorScheme.surface, // Background for the tab bar area
                 padding: EdgeInsets.symmetric(
@@ -502,10 +506,24 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 actionButton: CircularButton(
                   icon: Icons.add,
                   onPressed: () {
+                    // Determine if creating a special dish based on available services
+                    bool isSpecial;
+                    if (restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                        restaurant.hasRestaurantType(RestaurantType.onRequest)) {
+                      // Both services available: use selected tab
+                      isSpecial = _selectedTabIndex == 1;
+                    } else if (restaurant.hasRestaurantType(RestaurantType.onRequest)) {
+                      // Only On Request available: create special dish
+                      isSpecial = true;
+                    } else {
+                      // Only Fixed Menu available: create normal dish
+                      isSpecial = false;
+                    }
+
                     _openDishScreen(
                       isEditable: isOwner,
                       isNew: true,
-                      isSpecial: _selectedTabIndex == 1,
+                      isSpecial: isSpecial,
                     );
                   },
                 ),
@@ -515,7 +533,14 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             // --- 5. Menu List ---
             // This is the main scrollable content area below the sticky tab bar
             _buildSliverMenuList(
-              _selectedTabIndex == 0,
+              // Determine which menu to show based on available services
+              // If both services available, use selected tab
+              // If only Fixed Menu available, show Fixed Menu (true)
+              // If only On Request available, show On Request (false)
+              restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                      restaurant.hasRestaurantType(RestaurantType.onRequest)
+                  ? _selectedTabIndex == 0
+                  : restaurant.hasRestaurantType(RestaurantType.fixedMenu),
               isOwner,
               layoutType: layoutType,
             ),
@@ -681,22 +706,26 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _StickyTabBarDelegate(
-                      tabBar: NavigationTabbar(
-                        tabCount: 2,
-                        tabLabels: const ['Fixed menu', 'On Request'],
-                        height: 40.0,
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 0,
-                          vertical: 0,
-                        ),
-                        radius: 25.0,
-                        initialIndex: _selectedTabIndex,
-                        onTabSelected: (index) {
-                          setState(() {
-                            _selectedTabIndex = index;
-                          });
-                        },
-                      ),
+                      // Show TabBar only if both services are available
+                      tabBar: restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                              restaurant.hasRestaurantType(RestaurantType.onRequest)
+                          ? NavigationTabbar(
+                              tabCount: 2,
+                              tabLabels: const ['Fixed menu', 'On Request'],
+                              height: 40.0,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 0,
+                              ),
+                              radius: 25.0,
+                              initialIndex: _selectedTabIndex,
+                              onTabSelected: (index) {
+                                setState(() {
+                                  _selectedTabIndex = index;
+                                });
+                              },
+                            )
+                          : null,
                       backgroundColor: colorScheme.surface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 50.0,
@@ -706,10 +735,24 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       actionButton: CircularButton(
                         icon: Icons.add,
                         onPressed: () {
+                          // Determine if creating a special dish based on available services
+                          bool isSpecial;
+                          if (restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                              restaurant.hasRestaurantType(RestaurantType.onRequest)) {
+                            // Both services available: use selected tab
+                            isSpecial = _selectedTabIndex == 1;
+                          } else if (restaurant.hasRestaurantType(RestaurantType.onRequest)) {
+                            // Only On Request available: create special dish
+                            isSpecial = true;
+                          } else {
+                            // Only Fixed Menu available: create normal dish
+                            isSpecial = false;
+                          }
+
                           _openDishScreen(
                             isEditable: isOwner,
                             isNew: true,
-                            isSpecial: _selectedTabIndex == 1,
+                            isSpecial: isSpecial,
                           );
                         },
                       ),
@@ -718,7 +761,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
                   // Menu in visualizzazione a singola colonna
                   _buildSliverMenuList(
-                    _selectedTabIndex == 0,
+                    // Determine which menu to show based on available services
+                    restaurant.hasRestaurantType(RestaurantType.fixedMenu) &&
+                            restaurant.hasRestaurantType(RestaurantType.onRequest)
+                        ? _selectedTabIndex == 0
+                        : restaurant.hasRestaurantType(RestaurantType.fixedMenu),
                     isOwner,
                     layoutType: LayoutType.tabletHorizontal,
                     forceColumnView: true, // Forza vista a colonna singola
@@ -1125,8 +1172,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
 // --- Custom Delegate for the Sticky TabBar ---
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  // The tab bar widget itself
-  final NavigationTabbar tabBar;
+  // The tab bar widget itself (nullable when only one service is available)
+  final NavigationTabbar? tabBar;
   // Background color for the delegate area
   final Color backgroundColor;
   // Padding around the content (tab bar and button)
@@ -1146,10 +1193,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   // Calculate minimum extent based on tab bar height and vertical padding
   @override
-  double get minExtent => tabBar.height + padding.vertical;
+  double get minExtent => (tabBar?.height ?? 40.0) + padding.vertical;
   // Calculate maximum extent based on tab bar height and vertical padding
   @override
-  double get maxExtent => tabBar.height + padding.vertical;
+  double get maxExtent => (tabBar?.height ?? 40.0) + padding.vertical;
 
   @override
   Widget build(
@@ -1161,39 +1208,53 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       color: backgroundColor, // Use the passed background color
       padding: padding, // Apply the specified padding
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.center, // Center items vertically
-        children: [
-          // TabBar takes up available space
-          Expanded(
-            child: NavigationTabbar(
-              // Rebuild tab bar without margin, as padding is handled by the delegate
-              key: tabBar.key,
-              tabCount: tabBar.tabCount,
-              tabLabels: tabBar.tabLabels,
-              height: tabBar.height,
-              margin:
-                  EdgeInsets.zero, // Margin is handled by delegate's padding
-              radius: tabBar.radius,
-              onTabSelected: tabBar.onTabSelected,
-              initialIndex: tabBar.initialIndex,
+      child: tabBar != null
+          ? Row(
+              crossAxisAlignment:
+                  CrossAxisAlignment.center, // Center items vertically
+              children: [
+                // TabBar takes up available space
+                Expanded(
+                  child: NavigationTabbar(
+                    // Rebuild tab bar without margin, as padding is handled by the delegate
+                    key: tabBar!.key,
+                    tabCount: tabBar!.tabCount,
+                    tabLabels: tabBar!.tabLabels,
+                    height: tabBar!.height,
+                    margin:
+                        EdgeInsets.zero, // Margin is handled by delegate's padding
+                    radius: tabBar!.radius,
+                    onTabSelected: tabBar!.onTabSelected,
+                    initialIndex: tabBar!.initialIndex,
+                  ),
+                ),
+                // Conditionally display the button next to the tab bar if the user is the owner
+                if (isOwner && actionButton != null) ...[
+                  const SizedBox(width: 10), // Spacing between tab bar and button
+                  AnimatedButton(
+                    onTap:
+                        actionButton!.onPressed ??
+                        () {
+                          debugPrint('Button pressed');
+                        },
+                    child: actionButton!,
+                  ),
+                ],
+              ],
+            )
+          : Center(
+              // When no TabBar, center the button
+              child: isOwner && actionButton != null
+                  ? AnimatedButton(
+                      onTap:
+                          actionButton!.onPressed ??
+                          () {
+                            debugPrint('Button pressed');
+                          },
+                      child: actionButton!,
+                    )
+                  : const SizedBox.shrink(),
             ),
-          ),
-          // Conditionally display the button next to the tab bar if the user is the owner
-          if (isOwner && actionButton != null) ...[
-            const SizedBox(width: 10), // Spacing between tab bar and button
-            AnimatedButton(
-              onTap:
-                  actionButton!.onPressed ??
-                  () {
-                    debugPrint('Button pressed');
-                  },
-              child: actionButton!,
-            ),
-          ],
-        ],
-      ),
     );
   }
 

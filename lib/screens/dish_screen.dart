@@ -17,6 +17,7 @@ import 'package:sous_chef/widgets/image_upload_button.dart';
 import 'package:sous_chef/widgets/restaurant_screen/dish_availability_button.dart';
 
 import '../providers/order_provider.dart';
+import '../providers/restaurant_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/circular_number_input.dart';
 import '../widgets/custom_alert_dialog.dart';
@@ -833,6 +834,48 @@ class _DishScreenState extends State<DishScreen> {
                                               "Restaurant information is missing.",
                                           icon: Icon(
                                             Icons.error_outline,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      // Fetch the latest restaurant data to verify it's still open
+                                      final restaurantProvider =
+                                          Provider.of<RestaurantProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+
+                                      await restaurantProvider
+                                          .fetchRestaurantOnly(restaurantId);
+
+                                      final latestRestaurant =
+                                          restaurantProvider.restaurant;
+
+                                      if (latestRestaurant == null) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Error",
+                                          message:
+                                              "Restaurant information could not be retrieved.",
+                                          icon: Icon(
+                                            Icons.error_outline,
+                                            color: colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      // Check if restaurant is still open
+                                      if (!latestRestaurant.isOpen) {
+                                        CustomAlertDialog.showInfoDialog(
+                                          context: context,
+                                          title: "Warning",
+                                          message:
+                                              "The restaurant is currently closed.",
+                                          icon: Icon(
+                                            Icons.warning_amber_rounded,
                                             color: colorScheme.error,
                                           ),
                                         );
