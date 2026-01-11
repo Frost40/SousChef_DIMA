@@ -50,7 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Controlla se ci sono nuovi messaggi e li marca come letti
   void _checkAndMarkNewMessagesAsRead(List<Message> messages) {
-    if (messages.length > _lastMessageCount) {
+    if (_lastMessageCount > 0 && messages.length > _lastMessageCount) {
       // Ci sono nuovi messaggi, marcali come letti
       _markMessagesAsRead();
     }
