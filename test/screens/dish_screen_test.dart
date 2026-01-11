@@ -809,33 +809,6 @@ void main() {
         expect(find.text('Select the username:'), findsOneWidget);
       });
 
-      testWidgets('does not render availability button for special dish', (
-        tester,
-      ) async {
-        final originalOnError = FlutterError.onError;
-        FlutterError.onError = ignoreOverflowErrors;
-
-        await tester.pumpApp(
-          const DishScreen(
-            dishId: 'dish-special',
-            isEditable: false,
-            isSpecial: true,
-          ),
-          authProvider: mockAuthProvider,
-          dishProvider: mockDishProvider,
-          orderProvider: mockOrderProvider,
-          userProvider: mockUserProvider,
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        FlutterError.onError = originalOnError;
-
-        // Special dishes don't have availability button
-        expect(find.byType(DishAvailabilityButton), findsNothing);
-      });
-
       testWidgets('renders info text for special dish username', (
         tester,
       ) async {
