@@ -16,15 +16,23 @@ import 'package:sous_chef/models/dish.dart';
 /// - No Mocks!
 ///
 /// Prerequisites:
-/// 1. Restaurant user must exist in Firebase Console (Authentication):
-///    Email: owner@example.com
-///    Password: REDACTED_PASSWORD
+/// 1. Restaurant owner test user must exist in Firebase Console (Authentication) and be passed via --dart-define:
+///    --dart-define=TEST_OWNER_EMAIL=your-test-owner@example.com
+///    --dart-define=TEST_OWNER_PASSWORD=your-owner-password
 ///
 /// 2. Restaurant must be available in Firebase
 ///
 /// 3. Run the test:
-///    flutter test integration_test/restaurant_add_dish_flow_test.dart -d <device_id>
-///    flutter test integration_test/restaurant_add_dish_flow_test.dart -d "29043A99-7A90-404A-BD0D-153B519BEB50"
+///    flutter test integration_test/restaurant_add_dish_flow_test.dart -d <device_id> --dart-define=TEST_OWNER_EMAIL=... --dart-define=TEST_OWNER_PASSWORD=...
+
+const String _testOwnerEmail = String.fromEnvironment(
+  'TEST_OWNER_EMAIL',
+  defaultValue: 'owner@example.com',
+);
+const String _testOwnerPassword = String.fromEnvironment(
+  'TEST_OWNER_PASSWORD',
+  defaultValue: 'CHANGE_ME',
+);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -50,10 +58,10 @@ void main() {
       final textFields = find.byType(TextField);
       expect(textFields, findsAtLeastNWidgets(2));
 
-      await tester.enterText(textFields.first, 'owner@example.com');
+      await tester.enterText(textFields.first, _testOwnerEmail);
       await tester.pump(const Duration(milliseconds: 500));
 
-      await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+      await tester.enterText(textFields.last, _testOwnerPassword);
       await tester.pump(const Duration(milliseconds: 500));
 
       // Tap login button

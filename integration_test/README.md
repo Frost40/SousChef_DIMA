@@ -15,14 +15,17 @@ Questi sono **veri test di integrazione** che usano:
 Nel Firebase Console del tuo progetto:
 
 1. Vai su **Authentication** → **Users**
-2. Clicca su **Add user**
-3. Inserisci:
-   ```
-   Email: test@example.com
-   Password: REDACTED_PASSWORD
+2. Clicca su **Add user** e crea gli account di test dedicati (cliente + ristoratore)
+3. Passa le credenziali via `--dart-define` durante l'esecuzione:
+   ```bash
+   flutter test integration_test/ \
+     --dart-define=TEST_EMAIL=your-test-user@example.com \
+     --dart-define=TEST_PASSWORD=your-test-password \
+     --dart-define=TEST_OWNER_EMAIL=your-test-owner@example.com \
+     --dart-define=TEST_OWNER_PASSWORD=your-owner-password
    ```
 
-> **Nota**: Questo utente deve esistere realmente nel tuo progetto Firebase per far funzionare i test!
+> **Nota**: Non salvare mai credenziali reali nel repository; usa sempre `--dart-define` o un project Firebase Emulator isolato.
 
 ### 2. (Opzionale) Usa Firebase Emulators per i test
 

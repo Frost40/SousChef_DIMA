@@ -4,6 +4,15 @@ import 'package:integration_test/integration_test.dart';
 import 'package:sous_chef/main.dart' as app;
 import 'package:firebase_auth/firebase_auth.dart';
 
+const String _testEmail = String.fromEnvironment(
+  'TEST_EMAIL',
+  defaultValue: 'test@example.com',
+);
+const String _testPassword = String.fromEnvironment(
+  'TEST_PASSWORD',
+  defaultValue: 'CHANGE_ME',
+);
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -32,16 +41,16 @@ void main() {
       final passwordField = find.byType(TextField).at(1);
 
       // Inserimento Email
-      await tester.enterText(emailField, 'test@example.com');
+      await tester.enterText(emailField, _testEmail);
       await tester.pump();
       expect(
-        find.text('test@example.com'),
+        find.text(_testEmail),
         findsOneWidget,
         reason: "Email non inserita nel campo",
       );
 
       // Inserimento Password
-      await tester.enterText(passwordField, 'REDACTED_PASSWORD');
+      await tester.enterText(passwordField, _testPassword);
       await tester.pump();
 
       // Tap Login
@@ -124,8 +133,8 @@ void main() {
       await resetToLogin(tester);
 
       // Login rapido
-      await tester.enterText(find.byType(TextField).at(0), 'test@example.com');
-      await tester.enterText(find.byType(TextField).at(1), 'REDACTED_PASSWORD');
+      await tester.enterText(find.byType(TextField).at(0), _testEmail);
+      await tester.enterText(find.byType(TextField).at(1), _testPassword);
       await tester.tap(find.text('Login').last);
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
@@ -175,8 +184,8 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       if (FirebaseAuth.instance.currentUser == null) {
-        await tester.enterText(find.byType(TextField).at(0), 'test@example.com');
-        await tester.enterText(find.byType(TextField).at(1), 'REDACTED_PASSWORD');
+        await tester.enterText(find.byType(TextField).at(0), _testEmail);
+        await tester.enterText(find.byType(TextField).at(1), _testPassword);
         await tester.tap(find.text('Login').last);
         await tester.pumpAndSettle(const Duration(seconds: 5));
       }
@@ -200,8 +209,8 @@ void main() {
 
       // Assicurati di essere loggato prima di testare la navigazione
       if (FirebaseAuth.instance.currentUser == null) {
-        await tester.enterText(find.byType(TextField).at(0), 'test@example.com');
-        await tester.enterText(find.byType(TextField).at(1), 'REDACTED_PASSWORD');
+        await tester.enterText(find.byType(TextField).at(0), _testEmail);
+        await tester.enterText(find.byType(TextField).at(1), _testPassword);
         await tester.tap(find.text('Login').last);
         await tester.pumpAndSettle(const Duration(seconds: 5));
       }

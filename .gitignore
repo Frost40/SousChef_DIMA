@@ -60,4 +60,15 @@ app.*.map.json
 /android/app/release
 
 .env
+.env.*
+!.env.example
+ios/Flutter/Secrets.xcconfig
+macos/Flutter/Secrets.xcconfig
+android/key.properties
+*.jks
+*.keystore
+pglite-debug.log
+firebase-debug.log
+firebase-debug.*.log
+functions/.secret.local
 coverage/

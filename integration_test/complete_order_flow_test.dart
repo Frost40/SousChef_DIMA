@@ -16,9 +16,9 @@ import 'package:sous_chef/widgets/dish_screen/calendar_widget.dart';
 /// - No Mocks!
 ///
 /// Prerequisites:
-/// 1. Test user must exist in Firebase Console (Authentication):
-///    Email: test@example.com
-///    Password: REDACTED_PASSWORD
+/// 1. Test user must exist in Firebase Console (Authentication) and be passed via --dart-define:
+///    --dart-define=TEST_EMAIL=your-test-user@example.com
+///    --dart-define=TEST_PASSWORD=your-test-password
 ///
 /// 2. Test data requirements:
 ///    - User must have a saved address
@@ -26,11 +26,18 @@ import 'package:sous_chef/widgets/dish_screen/calendar_widget.dart';
 ///    - The restaurant must have at least one dish in the menu
 ///
 /// 3. Run the test:
-///    flutter test integration_test/complete_order_flow_test.dart -d <device_id>
-///    flutter test integration_test/complete_order_flow_test.dart -d "29043A99-7A90-404A-BD0D-153B519BEB50"
-///    flutter test integration_test/complete_order_flow_test.dart -d "emulator-5556"
+///    flutter test integration_test/complete_order_flow_test.dart -d <device_id> --dart-define=TEST_EMAIL=... --dart-define=TEST_PASSWORD=...
 /// Note: Make sure you have an Android emulator, iOS simulator, or
 /// physical device running before executing the tests.
+
+const String _testEmail = String.fromEnvironment(
+  'TEST_EMAIL',
+  defaultValue: 'test@example.com',
+);
+const String _testPassword = String.fromEnvironment(
+  'TEST_PASSWORD',
+  defaultValue: 'CHANGE_ME',
+);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -56,10 +63,10 @@ void main() {
       final textFields = find.byType(TextField);
       expect(textFields, findsAtLeastNWidgets(2));
 
-      await tester.enterText(textFields.first, 'test@example.com');
+      await tester.enterText(textFields.first, _testEmail);
       await tester.pump(const Duration(milliseconds: 500));
 
-      await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+      await tester.enterText(textFields.last, _testPassword);
       await tester.pump(const Duration(milliseconds: 500));
 
       // Tap login button
@@ -483,8 +490,8 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final textFields = find.byType(TextField);
-      await tester.enterText(textFields.first, 'test@example.com');
-      await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+      await tester.enterText(textFields.first, _testEmail);
+      await tester.enterText(textFields.last, _testPassword);
       await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tap(find.text('Login').last);
@@ -600,8 +607,8 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final textFields = find.byType(TextField);
-      await tester.enterText(textFields.first, 'test@example.com');
-      await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+      await tester.enterText(textFields.first, _testEmail);
+      await tester.enterText(textFields.last, _testPassword);
       await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tap(find.text('Login').last);

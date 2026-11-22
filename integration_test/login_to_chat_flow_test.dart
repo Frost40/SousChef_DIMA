@@ -13,18 +13,26 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// - No Mocks!
 ///
 /// Prerequisites:
-/// 1. Create a test user in Firebase Console (Authentication):
-///    Email: test@example.com
-///    Password: REDACTED_PASSWORD
+/// 1. Create a test user in Firebase Console (Authentication) and pass via --dart-define:
+///    --dart-define=TEST_EMAIL=your-test-user@example.com
+///    --dart-define=TEST_PASSWORD=your-test-password
 ///
 /// 2. Ensure there are restaurants in the database visible to this user
 ///
 /// 3. Run the test:
-///    flutter test integration_test/login_to_chat_flow_test.dart -d <device_id>
-///    flutter test integration_test/login_to_chat_flow_test.dart -d "29043A99-7A90-404A-BD0D-153B519BEB50"
+///    flutter test integration_test/login_to_chat_flow_test.dart -d <device_id> --dart-define=TEST_EMAIL=... --dart-define=TEST_PASSWORD=...
 ///
 /// Note: Make sure you have an Android emulator, iOS simulator, or
 /// physical device running before executing the tests.
+
+const String _testEmail = String.fromEnvironment(
+  'TEST_EMAIL',
+  defaultValue: 'test@example.com',
+);
+const String _testPassword = String.fromEnvironment(
+  'TEST_PASSWORD',
+  defaultValue: 'CHANGE_ME',
+);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -69,11 +77,11 @@ void main() {
         );
 
         // Enter email
-        await tester.enterText(textFields.first, 'test@example.com');
+        await tester.enterText(textFields.first, _testEmail);
         await tester.pump(const Duration(milliseconds: 500));
 
         // Enter password
-        await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+        await tester.enterText(textFields.last, _testPassword);
         await tester.pump(const Duration(milliseconds: 500));
 
         // ============================================
@@ -340,8 +348,8 @@ void main() {
         expect(find.byType(app.LoginScreen), findsOneWidget);
 
         final textFields = find.byType(TextField);
-        await tester.enterText(textFields.first, 'test@example.com');
-        await tester.enterText(textFields.last, 'REDACTED_PASSWORD');
+        await tester.enterText(textFields.first, _testEmail);
+        await tester.enterText(textFields.last, _testPassword);
         await tester.pump(const Duration(milliseconds: 500));
 
         await tester.tap(find.text('Login').last);
