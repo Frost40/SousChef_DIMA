@@ -1,0 +1,119 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRestaurantOwner(restaurantId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid;
+    }
+
+    function isChatParticipant(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId)).data;
+      return isSignedIn()
+        && (chat.user1_id == request.auth.uid || chat.user2_id == request.auth.uid);
+    }
+
+    // Users: authenticated reads; unauthenticated limited strictly to limit(1) username check during sign-up.
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() || request.query.limit <= 1;
+      allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Restaurants & Dishes
+    match /restaurants/{restaurantId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.owner_id == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.owner_id == request.auth.uid;
+
+      match /dishes/{dishId} {
+        allow read: if isSignedIn();
+        allow create: if isRestaurantOwner(restaurantId);
+        allow delete: if isRestaurantOwner(restaurantId)
+          || (isSignedIn() && resource.data.is_special == true && resource.data.user_id == request.auth.uid);
+        allow update: if isRestaurantOwner(restaurantId)
+          || (isSignedIn()
+              && resource.data.is_special == true
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['user_username']));
+      }
+    }
+
+    // Collection-group support for account deletion cleanup of special dishes
+    match /{path=**}/dishes/{dishId} {
+      allow read: if isSignedIn();
+      allow delete: if isSignedIn()
+        && resource.data.is_special == true
+        && resource.data.user_id == request.auth.uid;
+    }
+
+    // Orders: clients can NEVER mark orders as 'paid' (Cloud Functions / Admin SDK only).
+    match /orders/{orderId} {
+      allow read: if isSignedIn()
+        && (resource.data.user_id == request.auth.uid
+            || isRestaurantOwner(resource.data.restaurant_id));
+
+      allow create: if isSignedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.status == 'ready_for_checkout';
+
+      allow update: if isSignedIn() && (
+        // Customer cart updates before checkout
+        (resource.data.user_id == request.auth.uid
+          && resource.data.status == 'ready_for_checkout'
+          && request.resource.data.status == 'ready_for_checkout'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dishes', 'total']))
+        ||
+        // Customer or owner expiring stale paid orders (>= 24h past pickup)
+        ((resource.data.user_id == request.auth.uid || isRestaurantOwner(resource.data.restaurant_id))
+          && resource.data.status == 'paid'
+          && request.resource.data.status == 'expired'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        ||
+        // Restaurant owner verifying 6-digit pickup code
+        (isRestaurantOwner(resource.data.restaurant_id)
+          && resource.data.status == 'paid'
+          && request.resource.data.status == 'completed'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        ||
+        // Restaurant owner propagating restaurant name/address changes
+        (isRestaurantOwner(resource.data.restaurant_id)
+          && resource.data.status in ['ready_for_checkout', 'pending', 'paid']
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['restaurant_name', 'restaurant_address', 'restaurant_location']))
+      );
+
+      allow delete: if isSignedIn() && resource.data.user_id == request.auth.uid;
+    }
+
+    // Chats & Messages
+    match /chats/{chatId} {
+      allow read, update, delete: if isSignedIn()
+        && (resource.data.user1_id == request.auth.uid
+            || resource.data.user2_id == request.auth.uid);
+      allow create: if isSignedIn()
+        && (request.resource.data.user1_id == request.auth.uid
+            || request.resource.data.user2_id == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read, delete: if isChatParticipant(chatId);
+        allow create: if isChatParticipant(chatId)
+          && request.resource.data.sender_id == request.auth.uid;
+        allow update: if isChatParticipant(chatId)
+          && resource.data.receiver_id == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_read']);
+      }
+    }
+
+    // Legacy top-level messages cleanup during account deletion
+    match /messages/{messageId} {
+      allow read, delete: if isSignedIn()
+        && (resource.data.sender_id == request.auth.uid
+            || resource.data.receiver_id == request.auth.uid);
+    }
+  }
+}
